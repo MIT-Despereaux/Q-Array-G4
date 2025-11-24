@@ -1,0 +1,75 @@
+# Macro file for example tutorial
+# 
+# Can be run in batch, without graphic
+# or interactively: Idle> /control/execute run1.mac
+#
+
+# Change geometry before initialize!
+#/QR/geom/globalOffset 0 -0.4 0
+#/QR/geom/scint_I det_A
+#/QR/geom/det_A/pos 0 1 1
+#/QR/geom/det_A/rot 0 0 90 deg
+#/QR/geom/scint_I det_B
+#/QR/geom/det_B/pos 1.5 1 1
+#/QR/geom/scint_II det_C
+#/QR/geom/det_C/pos 2 1 1
+#/QR/geom/scint_II det_D
+#/QR/geom/det_D/pos 2.5 1 1
+#
+#/QR/geom/can_I mxc_can
+#/QR/geom/mxc_can/pos 0 0 2.5
+#/run/reinitializeGeometry
+
+/QR/geom/globalOffset 2.64 -0.77 -1.509 m
+#/QR/geom/globalOffset 0 0 0 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+/QR/geom/tableVer 20230601
+
+/run/initialize
+# Visualization setting
+#/control/execute vis_1.mac
+/control/execute vis_2.mac
+
+# Particle Gun
+/QR/generator/mode particleGun
+/QR/generator/sideL 0.05
+
+# CRY
+/QR/generator/CRYconfig returnNeutrons 1
+/QR/generator/CRYconfig returnProtons 0
+/QR/generator/CRYconfig returnGammas 0
+/QR/generator/CRYconfig returnElectrons 0
+/QR/generator/CRYconfig returnMuons 1
+/QR/generator/CRYconfig returnPions 0
+/QR/generator/CRYconfig returnKaons 0
+/QR/generator/CRYconfig altitude 0
+/QR/generator/CRYconfig latitude 42.3601
+/QR/generator/CRYconfig date 05-29-2023
+#01-01-2021
+/QR/generator/CRYconfig nParticlesMin 1
+/QR/generator/CRYconfig nParticlesMax 1000
+# The subbox size is within: [-0.5x, 0.5x] U [-0.5y, 0.5y]
+/QR/generator/CRYconfig subboxLength 5.0
+
+#/QR/generator/CRYOffset 0 0 6 m
+#/QR/generator/acceptance/apply true
+#/QR/generator/acceptance/targetVolume detQPhysical
+#/QR/generator/acceptance/targetRadius 0.5 m
+
+/QR/output/writeSteps true
+/QR/output/addNtuple copyNo copyno ancestor
+#/QR/output/mergeNtuples true
+
+/QR/output/filename r1
+/random/setSeeds 148854 4824
+#/random/setSeeds 33 105
+#/QR/event/keepEvents [537]
+/run/beamOn 10
+
+#/gun/particle proton
+#/random/setSeeds 124 2342
+#/run/beamOn 50
+
+/vis/viewer/rebuild
