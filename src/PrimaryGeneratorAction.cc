@@ -21,9 +21,11 @@
 #include "G4UIcmdWithAnInteger.hh"
 #include "G4UIcmdWithABool.hh"
 
+#ifdef QR_WITH_CRY
 #include "CRYSetup.h"
 #include "CRYGenerator.h"
 #include "CRYParticle.h"
+#endif
 
 #include <sstream>
 
@@ -77,7 +79,9 @@ namespace QR
     delete mGeneralParticleSource;
     delete mParticleGun;
     delete mMessenger;
+#ifdef QR_WITH_CRY
     delete mCRYGen;
+#endif
     delete mSampler;
   }
 
@@ -94,8 +98,14 @@ namespace QR
       mParticleGun->GeneratePrimaryVertex(anEvent);
       break;
     case kCRY:
+#ifdef QR_WITH_CRY
       // Use CRY
       GenerateCRYEvent(anEvent);
+#else
+      G4Exception("PrimaryGeneratorAction::GeneratePrimaries", "CRYDisabled",
+                  FatalException,
+                  "CRY support was not compiled. Rebuild with -DWITH_CRY=ON.");
+#endif
       break;
     }
   }
@@ -193,7 +203,15 @@ namespace QR
     if (mode == "gps")
       mMode = kGPS;
     else if (mode == "cry")
+    {
+#ifdef QR_WITH_CRY
       mMode = kCRY;
+#else
+      G4Exception("PrimaryGeneratorAction::BeginOfRunAction", "CRYDisabled",
+                  FatalException,
+                  "CRY support was not compiled. Rebuild with -DWITH_CRY=ON.");
+#endif
+    }
     else if (mode == "particleGun")
       mMode = kParticleGun;
     else
@@ -205,6 +223,7 @@ namespace QR
     }
     if (mMode == kCRY)
     {
+#ifdef QR_WITH_CRY
       G4cout << "Initializing CRY cosmic ray generator..." << G4endl;
       std::stringstream ss;
       jsonmap settings = meta->Get<jsonmap>(CRYCONFIGKEY);
@@ -226,6 +245,11 @@ namespace QR
 
       // set the seconds simulated to make sure it exists later
       meta->Set("/QR/generator/CRYTotalTime", 0.);
+#else
+      G4Exception("PrimaryGeneratorAction::BeginOfRunAction", "CRYDisabled",
+                  FatalException,
+                  "CRY support was not compiled. Rebuild with -DWITH_CRY=ON.");
+#endif
     }
 
     bApplyAcceptance = meta->Get<bool>("/QR/generator/acceptance/apply");
@@ -261,6 +285,7 @@ namespace QR
 
   void PrimaryGeneratorAction::EndOfRunAction()
   {
+#ifdef QR_WITH_CRY
     if (mCRYGen)
     {
       // write some statistics:
@@ -272,8 +297,10 @@ namespace QR
       delete mCRYGen;
       mCRYGen = 0;
     }
+#endif
   }
 
+#ifdef QR_WITH_CRY
   void PrimaryGeneratorAction::GenerateCRYEvent(G4Event *anEvent)
   {
     mCRYGen->genEvent(&vecCRYParts);
@@ -304,6 +331,7 @@ namespace QR
     }
     vecCRYParts.clear();
   }
+#endif
 
   G4double GeneratePhi()
   {
@@ -479,8 +507,13 @@ namespace QR
 
     auto *genModeCmd = meta->AddParamCommand<G4UIcmdWithAString>(
         "/QR/generator/mode", "Generator mode.");
+#ifdef QR_WITH_CRY
     genModeCmd->SetCandidates("particleGun gps cry");
     meta->Set("/QR/generator/mode", "cry");
+#else
+    genModeCmd->SetCandidates("particleGun gps");
+    meta->Set("/QR/generator/mode", "particleGun");
+#endif
 
     // register CRY config
     meta->AddParamCommand<G4UIcmdWithAString>(CRYCONFIGKEY,

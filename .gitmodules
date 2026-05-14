@@ -1,0 +1,6 @@
+[submodule "submodules/eigen"]
+	path = submodules/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+[submodule "submodules/mcmc"]
+	path = submodules/mcmc
+	url = https://github.com/kthohr/mcmc.git

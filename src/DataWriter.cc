@@ -14,9 +14,16 @@
 #include "G4LogicalVolumeStore.hh"
 #include "G4LogicalVolume.hh"
 
+#include "G4Version.hh"
+#if G4VERSION_NUMBER >= 1100
 #include "G4AnalysisManager.hh"
+#else
+#include "G4GenericAnalysisManager.hh"
+using G4AnalysisManager = G4GenericAnalysisManager;
+#endif
 #include <functional> // include this header for std::hash
 #include <algorithm>
+#include <cctype>
 #include <time.h>
 
 namespace QR
@@ -311,7 +318,9 @@ namespace QR
     G4cout << "Closing output file " << outfile << G4endl;
     AMan->Write();
     AMan->CloseFile();
+#if G4VERSION_NUMBER >= 1100
     AMan->Clear(); //< Resets the NtupleID
+#endif
     if (isMaster)
     {
       auto meta = Metadata::GetInstance();
@@ -467,7 +476,8 @@ namespace QR
 
     // Convert the string to all uppper case
     // Finds the string; if not found, output an error
-    G4StrUtil::to_upper(name);
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](unsigned char c) { return std::toupper(c); });
     auto lvlitr = HitData::csRLVLTABLE.find(name);
     if (lvlitr == HitData::csRLVLTABLE.end())
     {

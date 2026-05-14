@@ -48,3 +48,13 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Folders and cache files
+build/
+build-*/
+ext/
+.cache/
+cache/
+data
+data/
+output
+output/

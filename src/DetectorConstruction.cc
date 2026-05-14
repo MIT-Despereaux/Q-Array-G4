@@ -26,6 +26,14 @@
 
 namespace QR
 {
+  void AddMultiUnionNode(G4MultiUnion *unionSolid,
+                         G4VSolid *nodeSolid,
+                         const G4Transform3D &transform)
+  {
+    G4Transform3D nodeTransform = transform;
+    unionSolid->AddNode(*nodeSolid, nodeTransform);
+  }
+
   // Initialize static member variables
   // G4int DetectorConstruction::fNDet1 = 0;
   // G4int DetectorConstruction::fNDet2 = 0;
@@ -187,16 +195,16 @@ namespace QR
                                               1.24 * cm);
     G4RotationMatrix r = G4RotationMatrix();
     G4MultiUnion *munion = new G4MultiUnion("frame");
-    munion->AddNode(*vBeamBack, G4Transform3D(r, G4ThreeVector(-2.925 * m, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
-    munion->AddNode(*vBeamBack, G4Transform3D(r, G4ThreeVector(-7.5 * cm, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
-    munion->AddNode(*vBeamBack, G4Transform3D(r, G4ThreeVector(7.5 * cm, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
-    munion->AddNode(*vBeamBack, G4Transform3D(r, G4ThreeVector(2.925 * m, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
-    munion->AddNode(*vBeamFront, G4Transform3D(r, G4ThreeVector(2.925 * m, -1.30 * m / 2, (2.54 * m - 50 * cm) / 2)));
-    munion->AddNode(*vBeamFront, G4Transform3D(r, G4ThreeVector(-2.925 * m, -1.30 * m / 2, (2.54 * m - 50 * cm) / 2)));
-    munion->AddNode(*hBeamBack, G4Transform3D(r, G4ThreeVector(0, 1.30 * m / 2, (2.54 * m - 7.5 * cm))));
-    munion->AddNode(*hBeamFront, G4Transform3D(r, G4ThreeVector(0, -1.30 * m / 2, (2.54 * m - 25 * cm))));
-    munion->AddNode(*hBeamLight, G4Transform3D(r, G4ThreeVector(-3.0 * m + 5 * cm + 12.5 * cm, 0, (2.54 * m - 13 * cm - 11 * cm / 2))));
-    munion->AddNode(*hBeamLight, G4Transform3D(r, G4ThreeVector(-3.0 * m + 5 * cm + 25 * cm + 1.05 * m + 12.5 * cm, 0, (2.54 * m - 13 * cm - 11 * cm / 2))));
+    AddMultiUnionNode(munion, vBeamBack, G4Transform3D(r, G4ThreeVector(-2.925 * m, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
+    AddMultiUnionNode(munion, vBeamBack, G4Transform3D(r, G4ThreeVector(-7.5 * cm, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
+    AddMultiUnionNode(munion, vBeamBack, G4Transform3D(r, G4ThreeVector(7.5 * cm, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
+    AddMultiUnionNode(munion, vBeamBack, G4Transform3D(r, G4ThreeVector(2.925 * m, 1.30 * m / 2, (2.54 * m - 15 * cm) / 2)));
+    AddMultiUnionNode(munion, vBeamFront, G4Transform3D(r, G4ThreeVector(2.925 * m, -1.30 * m / 2, (2.54 * m - 50 * cm) / 2)));
+    AddMultiUnionNode(munion, vBeamFront, G4Transform3D(r, G4ThreeVector(-2.925 * m, -1.30 * m / 2, (2.54 * m - 50 * cm) / 2)));
+    AddMultiUnionNode(munion, hBeamBack, G4Transform3D(r, G4ThreeVector(0, 1.30 * m / 2, (2.54 * m - 7.5 * cm))));
+    AddMultiUnionNode(munion, hBeamFront, G4Transform3D(r, G4ThreeVector(0, -1.30 * m / 2, (2.54 * m - 25 * cm))));
+    AddMultiUnionNode(munion, hBeamLight, G4Transform3D(r, G4ThreeVector(-3.0 * m + 5 * cm + 12.5 * cm, 0, (2.54 * m - 13 * cm - 11 * cm / 2))));
+    AddMultiUnionNode(munion, hBeamLight, G4Transform3D(r, G4ThreeVector(-3.0 * m + 5 * cm + 25 * cm + 1.05 * m + 12.5 * cm, 0, (2.54 * m - 13 * cm - 11 * cm / 2))));
 
     munion->Voxelize();
     return munion;
@@ -311,8 +319,8 @@ namespace QR
                                              rOuter);
     G4Tubs *stageOVCVac = new G4Tubs("stageOVCVac", 0, outerR - t, (h + flangeT) / 2, 0, twopi);
     G4MultiUnion *stageOVCSolid = new G4MultiUnion("stageOVCSolid");
-    stageOVCSolid->AddNode(*stageOVCTop, G4Transform3D(G4RotationMatrix(), G4ThreeVector(0, 0, 0)));
-    stageOVCSolid->AddNode(*stageOVCCan, G4Transform3D(G4RotationMatrix(), G4ThreeVector(0, 0, -(40.0 / 2 + bottomT + h + 0.001 + flangeT))));
+    AddMultiUnionNode(stageOVCSolid, stageOVCTop, G4Transform3D(G4RotationMatrix(), G4ThreeVector(0, 0, 0)));
+    AddMultiUnionNode(stageOVCSolid, stageOVCCan, G4Transform3D(G4RotationMatrix(), G4ThreeVector(0, 0, -(40.0 / 2 + bottomT + h + 0.001 + flangeT))));
     stageOVCSolid->Voxelize();
 
     G4SubtractionSolid *stageOVC = new G4SubtractionSolid("stageOVC", stageOVCSolid, stageOVCVac, 0, G4ThreeVector(0, 0, -(40.0 + h + flangeT) / 2));
