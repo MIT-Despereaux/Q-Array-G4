@@ -17,8 +17,10 @@
 #include <unordered_map>
 #include <random>
 
+#ifdef QR_WITH_CRY
 class CRYGenerator;
 class CRYParticle;
+#endif
 
 namespace QR
 {
@@ -35,7 +37,9 @@ namespace QR
     std::unordered_map<std::string, MODE> mModeMap = {
         {"particleGun", kParticleGun},
         {"gps", kGPS},
+#ifdef QR_WITH_CRY
         {"cry", kCRY}
+#endif
     };
 
     PrimaryGeneratorAction();
@@ -60,7 +64,9 @@ namespace QR
   private:
     void DefineCommands();
 
+#ifdef QR_WITH_CRY
     void GenerateCRYEvent(G4Event *);
+#endif
 
     // Generate the energy for the particle following a predetermined distribution.
     // The predetermined distribution is Gaisser parametrization at 0 zenith angle.
@@ -86,9 +92,11 @@ namespace QR
     MCSampler *mSampler = nullptr;
 
     MODE mMode = kParticleGun;
+#ifdef QR_WITH_CRY
     CRYGenerator *mCRYGen = nullptr;                // CRY cosmic particle generator
     std::vector<CRYParticle *> vecCRYParts; // hold particles from CRY
     G4ThreeVector mCRYOffset;             // offset of CRY surface since it's not built-into CRY
+#endif
     G4bool bApplyAcceptance = true;       // apply acceptance cuts to CRY particles
     G4ThreeVector mAcceptanceTarget;
     G4double fAcceptanceConeRsq;

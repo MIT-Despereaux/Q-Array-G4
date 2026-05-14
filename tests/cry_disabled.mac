@@ -1,0 +1,4 @@
+# This macro should fail in default builds where WITH_CRY is OFF.
+/QR/generator/mode cry
+/run/initialize
+/run/beamOn 1

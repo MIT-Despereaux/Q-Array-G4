@@ -3,6 +3,7 @@
 
 #include "G4RunManagerFactory.hh"
 #include "G4SteppingVerbose.hh"
+#include "G4Version.hh"
 #include "G4UImanager.hh"
 #include "G4PhysListFactory.hh"
 #include "G4VisExecutive.hh"
@@ -27,8 +28,10 @@ int main(int argc, char **argv)
   // G4Random::setTheEngine(new CLHEP::MTwistEngine);
 
   // use G4SteppingVerboseWithUnits
+#if G4VERSION_NUMBER >= 1100
   G4int precision = 4;
   G4SteppingVerbose::UseBestUnit(precision);
+#endif
 
   // Construct the default run manager
   //

@@ -49,6 +49,9 @@ Thumbs.db
 *.wmv
 
 # Folders and cache files
+build/
+build-*/
+ext/
 .cache/
 cache/
 data
