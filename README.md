@@ -45,6 +45,8 @@ Run the interactive visualization session:
 cd build && ./main
 ```
 
+Note, you might need to use `export QT_QPA_PLATFORM=xcb` to force an X11 session if you're using Wayland. 
+
 Run a batch macro:
 
 ```sh

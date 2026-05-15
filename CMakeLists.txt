@@ -22,7 +22,7 @@ enable_testing()
 # to build a batch mode only executable
 #
 option(WITH_GEANT4_UIVIS "Build with Geant4 UI and Vis drivers" ON)
-option(BUILD_STATIC_LIBS "Build static libraries" ON)
+option(BUILD_STATIC_LIBS "Build static libraries" OFF)
 option(WITH_CRY "Build with CRY cosmic ray generator support" OFF)
 
 # Determine required components for Geant4 based on the given options.
