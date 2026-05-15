@@ -6,7 +6,7 @@
 # Use these open statements to open selected visualization
 #
 # Use this open statement to create an OpenGL view:
-#/vis/open OGL 600x600-0+0
+/vis/open OGL 1200x1200-0+0
 #
 # Use this open statement to create an OpenInventor view:
 #/vis/open OI
@@ -24,7 +24,7 @@
 #/vis/open VRML2FILE
 #
 # Use this open statement to create an offscreen file with TSG:
-/vis/open TSG_OFFSCREEN 1200x1200
+#/vis/open TSG_OFFSCREEN 1200x1200
 
 # See the tsg_offscreen.mac file for more commands to change
 # the file format, file name, picture size, etc.
@@ -37,6 +37,11 @@
 /vis/viewer/set/background white
 /vis/viewer/set/globalLineWidthScale 2
 /vis/viewer/set/globalMarkerScale 2
+
+# Export settings
+/vis/ogl/set/printFilename lab
+/vis/ogl/set/printMode pixmap
+/vis/ogl/set/printSize 1200 1200
 
 # Draw geometry:
 /vis/drawVolume
@@ -133,9 +138,4 @@
 /vis/viewer/zoom 4
 
 /vis/viewer/addCutawayPlane 0 -1.5 0 m 0 1 0
-#/vis/viewer/rebuild
-
-/vis/tsg/offscreen/set/format gl2ps_pdf
-/vis/tsg/offscreen/set/transparency false
-/vis/tsg/offscreen/set/file lab.pdf
 /vis/viewer/rebuild

@@ -24,6 +24,7 @@ namespace QR
                                                                  mHitCollection(nullptr),
                                                                  mMessenger(nullptr),
                                                                  bIsReducible(bIsReducible),
+                                                                 fStepThreshold(0.),
                                                                  bWriteLocalCoords(false),
                                                                  bWriteDeepCopyNo(false)
   {
@@ -197,7 +198,7 @@ namespace QR
     // Find the parent of this hit in the HC
     HitData *hitParent = FindParent(mHitCollection, hit);
     hit->decayAncestor = hitParent;
-    hit->decayAncestorHashID = hitParent->hash();
+    hit->decayAncestorHashID = hitParent ? hitParent->hash() : 0;
 
     // Add the initial vertex to the hit
     FillInitialVertex(hit, step);

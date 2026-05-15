@@ -1,6 +1,6 @@
 # Minimal no-visualization smoke test for the default particle gun path.
+/run/initialize
 /QR/generator/mode particleGun
 /QR/generator/sideL 0.05 m
 /QR/output/filename particle_gun_smoke
-/run/initialize
 /run/beamOn 1

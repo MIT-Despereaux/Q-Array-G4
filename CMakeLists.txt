@@ -137,6 +137,7 @@ set(EXTRA_SCRIPTS
   vis_2.mac
   run_test.mac
   tests/particle_gun_smoke.mac
+  tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
 )
 
@@ -152,7 +153,11 @@ add_test(
   NAME particle_gun_smoke
   COMMAND main tests/particle_gun_smoke.mac
 )
-set(SMOKE_TESTS particle_gun_smoke)
+add_test(
+  NAME mt_single_thread_no_vis
+  COMMAND main tests/mt_single_thread_no_vis.mac
+)
+set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis)
 
 if(NOT WITH_CRY)
   add_test(

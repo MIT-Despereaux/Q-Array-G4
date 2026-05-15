@@ -4,6 +4,8 @@
 # or interactively: Idle> /control/execute run1.mac
 #
 
+# Change the default number of threads (in multi-threaded mode)
+/run/numberOfThreads 2
 # Change geometry before initialize!
 #/QR/geom/globalOffset 0 -0.4 0
 #/QR/geom/scint_I det_A
@@ -73,3 +75,4 @@
 #/run/beamOn 50
 
 /vis/viewer/rebuild
+#/vis/ogl/export

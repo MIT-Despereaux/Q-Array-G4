@@ -1,0 +1,16 @@
+# Non-visual regression for MT builds running with one worker thread.
+/QR/geom/globalOffset 2.64 -0.77 -1.509 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+/QR/geom/tableVer 20230601
+
+/run/initialize
+
+/QR/generator/mode particleGun
+/QR/generator/sideL 0.05 m
+/QR/output/writeSteps true
+/QR/output/addNtuple copyNo copyno ancestor
+/QR/output/filename mt_single_thread_no_vis
+/random/setSeeds 148854 4824
+/run/beamOn 10
