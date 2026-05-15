@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 # Setup the project
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.20)
 project(QURAD_G4_SIM)
 
 set(CMAKE_CXX_STANDARD 17)
