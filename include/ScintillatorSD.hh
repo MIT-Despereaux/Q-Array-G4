@@ -7,7 +7,7 @@
 #include "G4Step.hh"
 #include "G4HCofThisEvent.hh"
 
-namespace QR
+namespace QArray
 {
 
   /// Scintillator sensitive detector class

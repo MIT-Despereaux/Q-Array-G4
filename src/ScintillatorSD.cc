@@ -7,7 +7,7 @@
 #include "G4ios.hh"
 #include "G4SystemOfUnits.hh"
 
-namespace QR
+namespace QArray
 {
 
   ScintillatorSD::ScintillatorSD(const G4String &name)

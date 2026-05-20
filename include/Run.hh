@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace QR
+namespace QArray
 {
     struct EventUtils;
     using DC = class DetectorConstruction;

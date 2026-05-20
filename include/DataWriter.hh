@@ -14,7 +14,7 @@ class G4Run;
 class G4Event;
 class G4Track;
 
-namespace QR
+namespace QArray
 {
     class DataWriter
     {

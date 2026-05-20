@@ -7,7 +7,7 @@
 #include "G4RunManager.hh"
 #include "G4LogicalVolume.hh"
 
-namespace QR
+namespace QArray
 {
   SteppingAction::SteppingAction(EventAction *eventAction)
       : fEventAction(eventAction)

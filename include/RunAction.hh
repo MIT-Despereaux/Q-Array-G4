@@ -10,7 +10,7 @@
 
 #include <vector>
 
-namespace QR
+namespace QArray
 {
   class RunAction : public G4UserRunAction
   {

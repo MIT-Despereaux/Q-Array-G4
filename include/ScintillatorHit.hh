@@ -7,7 +7,7 @@
 #include "G4ThreeVector.hh"
 #include "tls.hh" // For thread_local
 
-namespace QR
+namespace QArray
 {
 
   /// Scintillator Hit class: inheriting from G4VHit

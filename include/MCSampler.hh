@@ -28,7 +28,7 @@ namespace DistData
     static const double GAMMA = 2.7;
 };
 
-namespace QR
+namespace QArray
 {
 
     // MC sampler

@@ -24,7 +24,7 @@
 #include "G4UIcmdWithABool.hh"
 #include "G4UIcmdWithAnInteger.hh"
 
-namespace QR
+namespace QArray
 {
   void AddMultiUnionNode(G4MultiUnion *unionSolid,
                          G4VSolid *nodeSolid,

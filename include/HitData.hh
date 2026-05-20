@@ -13,7 +13,7 @@ class G4Track;
 class G4Step;
 class G4VAnalysisManager;
 
-namespace QR
+namespace QArray
 {
   class HitData : public G4VHit
   {

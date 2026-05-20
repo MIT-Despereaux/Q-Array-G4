@@ -11,7 +11,7 @@
 #ifndef QREventUtils_h
 #define QREventUtils_h 1
 
-namespace QR
+namespace QArray
 {
     using DC = class DetectorConstruction;
 

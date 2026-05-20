@@ -5,7 +5,7 @@
 #include "HitData.hh"
 #include "DataWriter.hh"
 
-namespace QR
+namespace QArray
 {
     class SensitiveDetector;
     

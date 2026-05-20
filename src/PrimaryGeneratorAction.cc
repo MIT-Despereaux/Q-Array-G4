@@ -51,7 +51,7 @@ json UpdateCRYSetting(G4UIcommand *, const G4String &newValue)
   return allvals;
 }
 
-namespace QR
+namespace QArray
 {
   typedef std::vector<G4PhysicalVolumesSearchScene::Findings> FindingsVector;
 

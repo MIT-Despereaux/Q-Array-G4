@@ -11,7 +11,7 @@
 
 #include <exception>
 
-namespace QR
+namespace QArray
 {
   inline EventAction::timept getms()
   {

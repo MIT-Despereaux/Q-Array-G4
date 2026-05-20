@@ -3,7 +3,7 @@
 
 #include "G4TrackingManager.hh"
 
-namespace QR
+namespace QArray
 {
     TrackingAction::TrackingAction(DataWriter *writer) : G4UserTrackingAction(),
                                                          mDataWriter(writer)

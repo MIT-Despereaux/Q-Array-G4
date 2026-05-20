@@ -15,7 +15,7 @@ class G4LogicalVolume;
 
 /// Detector construction class to define materials and geometry.
 
-namespace QR
+namespace QArray
 {
   class DetectorConstruction : public G4VUserDetectorConstruction
   {

@@ -11,14 +11,8 @@ batch scripts are in `scripts/`; pinned Eigen and MCMC submodules are under
 
 ## Build, Test, and Development Commands
 
-To ensure Geant4 is available in the agent terminal environment, run the following to source G4 v10.7.4 before configuring or building:
-
-```sh
-### GEANT4 v10.7.4
-if [ -f "$HOME/.local/GEANT4-10.7.4/bin/geant4.sh" ]; then
-    source "$HOME/.local/GEANT4-10.7.4/bin/geant4.sh"
-fi
-```
+Geant4 is already available in the agent terminal environment; do not source a
+local `geant4.sh` file before configuring or building.
 
 Configure from a separate build directory:
 
@@ -60,12 +54,13 @@ cmake -S . -B build-cry -DWITH_CRY=ON
 
 ## Coding Style & Naming Conventions
 
-Use C++17 and keep project code inside the `QR` namespace. Follow the existing
-style: `.cc` sources in `src/`, `.hh` headers in `include/`, Geant4-style class
-names such as `DetectorConstruction`, and member names consistent with nearby
-code. Prefer Geant4 units and types (`G4String`, `G4bool`, `G4int`) when using
-Geant4 APIs. Keep comments short and focused on simulation assumptions,
-geometry, or output metadata.
+Use C++17 and keep project code inside the `QArray` namespace. The Geant4 UI
+command prefix remains `/QR/...` for compatibility with existing macros and
+user scripts. Follow the existing style: `.cc` sources in `src/`, `.hh` headers
+in `include/`, Geant4-style class names such as `DetectorConstruction`, and
+member names consistent with nearby code. Prefer Geant4 units and types
+(`G4String`, `G4bool`, `G4int`) when using Geant4 APIs. Keep comments short and
+focused on simulation assumptions, geometry, or output metadata.
 
 ## Testing Guidelines
 

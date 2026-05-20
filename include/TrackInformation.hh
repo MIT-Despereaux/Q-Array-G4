@@ -8,7 +8,7 @@
 #include "G4Allocator.hh"
 #include "G4VUserTrackInformation.hh"
 
-namespace QR
+namespace QArray
 {
     class TrackInformation : public G4VUserTrackInformation
     {

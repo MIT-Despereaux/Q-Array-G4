@@ -2,7 +2,7 @@
 
 #include "G4VAnalysisManager.hh"
 
-namespace QR
+namespace QArray
 {
   DataReducer::DataReducer() : reducelvl(HitData::kFull) {}
 

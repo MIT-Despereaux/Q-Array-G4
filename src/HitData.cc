@@ -18,7 +18,7 @@
 #include <algorithm>
 #include <numeric>
 
-namespace QR
+namespace QArray
 {
   // initialize the allocators
   G4ThreadLocal G4Allocator<HitData> *HitDataAllocator = nullptr;

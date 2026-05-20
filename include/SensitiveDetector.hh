@@ -12,7 +12,7 @@ class G4Step;
 class G4HCofThisEvent;
 class G4TouchableHistory;
 
-namespace QR
+namespace QArray
 {
   class SensitiveDetector : public G4VSensitiveDetector
   {

@@ -16,7 +16,7 @@
 
 // #include <set>
 
-namespace QR
+namespace QArray
 {
   SensitiveDetector::SensitiveDetector(G4String name,
                                        bool bIsReducible,

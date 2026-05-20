@@ -2,7 +2,7 @@
 
 #include "G4SystemOfUnits.hh"
 
-namespace QR
+namespace QArray
 {
     G4ThreadLocal G4Allocator<TrackInformation> *
         TrackInformationAllocator = nullptr;

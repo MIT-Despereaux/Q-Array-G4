@@ -5,7 +5,7 @@
 #include "TrackingAction.hh"
 #include "SteppingAction.hh"
 
-namespace QR
+namespace QArray
 {
   void ActionInitialization::BuildForMaster() const
   {

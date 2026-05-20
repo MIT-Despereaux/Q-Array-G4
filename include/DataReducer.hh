@@ -14,7 +14,7 @@
 
 class G4VAnalsisManager;
 
-namespace QR
+namespace QArray
 {
   typedef G4THitsCollection<HitData> QRHitsCollection;
 

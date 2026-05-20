@@ -8,7 +8,7 @@
 /// Stepping action class
 ///
 
-namespace QR
+namespace QArray
 {
   class EventAction;
 

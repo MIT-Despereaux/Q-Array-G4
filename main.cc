@@ -12,7 +12,7 @@
 
 #include "MCSampler.hh"
 
-using namespace QR;
+using namespace QArray;
 
 int main(int argc, char **argv)
 {

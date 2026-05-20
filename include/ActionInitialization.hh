@@ -5,7 +5,7 @@
 
 /// Action initialization class.
 
-namespace QR
+namespace QArray
 {
   class ActionInitialization : public G4VUserActionInitialization
   {

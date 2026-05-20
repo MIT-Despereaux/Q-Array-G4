@@ -10,7 +10,7 @@
 #include <set>
 #include <chrono>
 
-namespace QR
+namespace QArray
 {
   class EventAction : public G4UserEventAction
   {

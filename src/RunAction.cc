@@ -9,7 +9,7 @@
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
 
-namespace QR
+namespace QArray
 {
   RunAction::RunAction() : G4UserRunAction(),
                            mPGen(nullptr), mWriter(new DataWriter())

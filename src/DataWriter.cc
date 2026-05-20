@@ -26,7 +26,7 @@ using G4AnalysisManager = G4GenericAnalysisManager;
 #include <cctype>
 #include <time.h>
 
-namespace QR
+namespace QArray
 {
 
   // some predefined reduce types
@@ -140,7 +140,7 @@ namespace QR
 
     meta->AddParamCommand<G4UIcommand>("/QR/output/listMappings",
                                        "List available mappings for data reducer",
-                                       std::bind(&QR::ListReducers, this, _1, _2),
+                                       std::bind(&QArray::ListReducers, this, _1, _2),
                                        meta->NullKey());
 
     meta->AddParamCommand<G4UIcmdWithAString>("/QR/output/setReduceLvl",

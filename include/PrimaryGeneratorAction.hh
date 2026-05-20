@@ -22,7 +22,7 @@ class CRYGenerator;
 class CRYParticle;
 #endif
 
-namespace QR
+namespace QArray
 {
   class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
   {

@@ -8,7 +8,7 @@
 
 // #include <iomanip>
 
-namespace QR
+namespace QArray
 {
 
   G4ThreadLocal G4Allocator<ScintillatorHit> *ScintillatorHitAllocator = nullptr;

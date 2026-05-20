@@ -4,7 +4,7 @@
 #include "G4LogicalVolumeStore.hh"
 #include "G4SDManager.hh"
 
-namespace QR
+namespace QArray
 {
     Run::Run() : G4Run()
     {

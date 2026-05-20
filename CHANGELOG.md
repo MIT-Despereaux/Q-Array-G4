@@ -13,6 +13,8 @@ This file is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Makes CRY support optional via `-DWITH_CRY=ON`; default builds use particle gun/GPS without downloading CRY.
 - Lets CMake generate the MCMC header-only include directory when needed.
 - Improves compatibility with Geant4 10.7 headers used by the local smoke-test environment.
+- Renames the internal C++ namespace from `QR` to `QArray` while retaining the
+  `/QR/...` Geant4 UI command prefix for compatibility.
 
 ## [Qurad-G4-Simulation_v0.1.3] 2023-12-13
 ### Added
