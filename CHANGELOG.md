@@ -4,10 +4,14 @@ This file is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## Unreleased
+## [QArray-G4_v0.2.0] TBD
 ### Added
 - Pins Eigen and MCMC as git submodules under `submodules/`.
 - Adds CTest smoke macros for particle-gun runs and CRY-disabled validation.
+- Adds a `QARRAY_DETECTOR_GEOMETRY` CMake selector with `LEIDEN_II` as the
+  current supported detector geometry.
+- Documents the cached simulation geometry structure and DSPX cryostat merge
+  plan under `.agents/`.
 
 ### Changed
 - Makes CRY support optional via `-DWITH_CRY=ON`; default builds use particle gun/GPS without downloading CRY.

@@ -24,6 +24,8 @@ enable_testing()
 option(WITH_GEANT4_UIVIS "Build with Geant4 UI and Vis drivers" ON)
 option(BUILD_STATIC_LIBS "Build static libraries" OFF)
 option(WITH_CRY "Build with CRY cosmic ray generator support" OFF)
+set(QARRAY_DETECTOR_GEOMETRY "LEIDEN_II" CACHE STRING "Detector geometry implementation: CURIE, LEIDEN_II, or DSPX")
+set_property(CACHE QARRAY_DETECTOR_GEOMETRY PROPERTY STRINGS CURIE LEIDEN_II DSPX)
 
 # Determine required components for Geant4 based on the given options.
 set(GEANT4_COMPONENTS)
@@ -115,13 +117,27 @@ include_directories(${MCMC_HEADER_ONLY_DIR})
 #
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
-list(REMOVE_ITEM sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc)
+list(REMOVE_ITEM sources
+  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc
+  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc
+)
+
+if(QARRAY_DETECTOR_GEOMETRY STREQUAL "CURIE")
+  message(FATAL_ERROR "QARRAY_DETECTOR_GEOMETRY=CURIE is reserved for src/DetectorConstruction_CURIE.cc, but CURIE is not wired into the current QArray application build yet")
+elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
+  list(APPEND sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc)
+elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
+  message(FATAL_ERROR "QARRAY_DETECTOR_GEOMETRY=DSPX is reserved for the translated cache geometry, but DSPX detector construction is not implemented yet")
+else()
+  message(FATAL_ERROR "Unsupported QARRAY_DETECTOR_GEOMETRY=${QARRAY_DETECTOR_GEOMETRY}; expected CURIE, LEIDEN_II, or DSPX")
+endif()
 
 # ----------------------------------------------------------------------------
 # Add the executable, and link it to the Geant4 libraries
 #
 add_executable(main main.cc ${sources} ${headers})
 target_link_libraries(main ${Geant4_LIBRARIES})
+target_compile_definitions(main PRIVATE QARRAY_DETECTOR_GEOMETRY_${QARRAY_DETECTOR_GEOMETRY})
 if(WITH_CRY)
   add_dependencies(main cry)
   target_link_libraries(main CRY)
