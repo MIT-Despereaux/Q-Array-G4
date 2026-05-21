@@ -288,24 +288,24 @@ and `DSPX` are selected by source list. Keep `LEIDEN_II` as the default.
 
 Tasks:
 
-- [ ] Replace the current ad hoc exclusion of `DetectorConstruction_CURIE.cc` with
+- [x] Replace the current ad hoc exclusion of `DetectorConstruction_CURIE.cc` with
   explicit source selection.
-- [ ] Add a placeholder `DetectorConstruction_DSPX.cc` only if needed to prove
-  source selection before the full builder exists.
-- [ ] Keep shared files and existing macros available to all geometry variants.
+- [x] Add `DetectorConstruction_DSPX.cc` as the DSPX-specific implementation of
+  the existing `QArray::DetectorConstruction` class.
+- [x] Keep shared files and existing macros available to all geometry variants.
 
 Acceptance criteria:
 
-- [ ] `cmake -S . -B build` configures with default `LEIDEN_II`.
-- [ ] `cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX` selects the DSPX
+- [x] `cmake -S . -B build` configures with default `LEIDEN_II`.
+- [x] `cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX` selects the DSPX
   source path without compiling duplicate `DetectorConstruction` symbols.
 - [ ] `CURIE` selection remains expressible through the same cache variable.
 
 Verification:
 
-- [ ] `cmake -S . -B build`
-- [ ] `cmake --build build`
-- [ ] `cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX`
+- [x] `cmake -S . -B build`
+- [x] `cmake --build build`
+- [x] `cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX`
 
 Dependencies: Phase 0.
 
@@ -318,24 +318,24 @@ builder, without importing the cached geometry framework.
 
 Tasks:
 
-- [ ] Add `FilledTube`, `Bucket`, `ReversedBucket`, and `HexBride` in local
+- [x] Add `FilledTube`, `Bucket`, `ReversedBucket`, and `HexBride` in local
   `include/Geometry/Shapes.hh` and `src/Geometry/Shapes.cc`.
-- [ ] Add a compact placement helper only if it materially reduces repeated Geant4
+- [x] Add a compact placement helper only if it materially reduces repeated Geant4
   boilerplate.
-- [ ] Keep all helper types in `QArray::Geometry`.
+- [x] Keep all helper types in `QArray::Geometry`.
 
 Acceptance criteria:
 
-- [ ] Shape helpers compile independently of ROOT, SimuOutput, cached utility
+- [x] Shape helpers compile independently of ROOT, SimuOutput, cached utility
   classes, and cached messenger classes.
-- [ ] `HexBride` uses `G4Polyhedra` with the DSPX hexagonal outer profile.
-- [ ] `Bucket` represents a hollow cylindrical wall plus solid bottom disk with the
+- [x] `HexBride` uses `G4Polyhedra` with the DSPX hexagonal outer profile.
+- [x] `Bucket` represents a hollow cylindrical wall plus solid bottom disk with the
   origin semantics used by the DSPX diagram.
 
 Verification:
 
-- [ ] `cmake --build build-dspx`
-- [ ] Inspect generated solids in code for matching z-plane/origin semantics before
+- [x] `cmake --build build-dspx`
+- [x] Inspect generated solids in code for matching z-plane/origin semantics before
   integrating into `CryostatBuilder`.
 
 Dependencies: Phase 1.
@@ -351,26 +351,26 @@ detector placement.
 
 Tasks:
 
-- [ ] Add `include/Geometry/CryostatBuilder.hh` and
+- [x] Add `include/Geometry/CryostatBuilder.hh` and
   `src/Geometry/CryostatBuilder.cc`.
-- [ ] Translate the plate stack, screen cascade, OVC, and hex bride from the locked
+- [x] Translate the plate stack, screen cascade, OVC, and hex bride from the locked
   diagram values.
-- [ ] Populate `CryostatVolumes` with at least `ovcLogical`, `ovcVacuumLogical`,
+- [x] Populate `CryostatVolumes` with at least `ovcLogical`, `ovcVacuumLogical`,
   and `mixingChamberLogical`.
-- [ ] Keep materials local and minimal, using existing NIST material patterns where
+- [x] Keep materials local and minimal, using existing NIST material patterns where
   practical.
 
 Acceptance criteria:
 
-- [ ] The builder API is small and does not expose cache framework types.
-- [ ] Plate and screen positions match `.agents/diagram_cryostat_dspx.txt`.
-- [ ] The OVC top rim aligns with the bride open mouth.
-- [ ] `checkOverlaps` is configurable and passed to placements.
+- [x] The builder API is small and does not expose cache framework types.
+- [x] Plate and screen positions match `.agents/diagram_cryostat_dspx.txt`.
+- [x] The OVC top rim aligns with the bride open mouth.
+- [x] `checkOverlaps` is configurable and passed to placements.
 
 Verification:
 
-- [ ] `cmake --build build-dspx`
-- [ ] Run a short DSPX macro once `DetectorConstruction_DSPX.cc` delegates to the
+- [x] `cmake --build build-dspx`
+- [x] Run a short DSPX macro once `DetectorConstruction_DSPX.cc` delegates to the
   builder in Phase 4.
 
 Dependencies: Phase 2.
@@ -385,24 +385,24 @@ delegating cryostat internals to `CryostatBuilder`.
 
 Tasks:
 
-- [ ] Add or complete `src/DetectorConstruction_DSPX.cc`.
+- [x] Add or complete `src/DetectorConstruction_DSPX.cc`.
 - [ ] Preserve existing application-level placement behavior unless the DSPX geometry
   explicitly requires a documented change.
-- [ ] Use `CryostatVolumes` for detector/chip placement inside the OVC vacuum or the
+- [x] Use `CryostatVolumes` for detector/chip placement inside the OVC vacuum or the
   appropriate 10mK reference region.
 
 Acceptance criteria:
 
-- [ ] `LEIDEN_II` still builds and runs unchanged as the default.
-- [ ] `DSPX` builds without duplicate `DetectorConstruction` definitions.
+- [x] `LEIDEN_II` still builds and runs unchanged as the default.
+- [x] `DSPX` builds without duplicate `DetectorConstruction` definitions.
 - [ ] Detector placement is expressed relative to returned cryostat reference
   volumes or documented reference positions.
 
 Verification:
 
-- [ ] `cmake --build build`
-- [ ] `ctest --test-dir build --output-on-failure`
-- [ ] `cmake --build build-dspx`
+- [x] `cmake --build build`
+- [x] `ctest --test-dir build --output-on-failure`
+- [x] `cmake --build build-dspx`
 
 Dependencies: Phase 3.
 
@@ -415,10 +415,10 @@ handoff docs with what was actually built.
 
 Tasks:
 
-- [ ] Run overlap checks for the DSPX geometry.
+- [x] Run overlap checks for the DSPX geometry.
 - [ ] Run `geometry_lab_proton.mac` to visualize lab/fridge geometry with one
   10 MeV proton from the world top center.
-- [ ] Run `geometry_lab_proton_batch.mac` to test the same one-proton setup
+- [x] Run `geometry_lab_proton_batch.mac` to test the same one-proton setup
   without opening a visualization window.
 - [ ] Inspect any generated CSV/JSON outputs relevant to geometry metadata.
 - [ ] Update `.agents/diagram_cryostat_dspx.txt` if implementation exposes a
@@ -427,21 +427,21 @@ Tasks:
 
 Acceptance criteria:
 
-- [ ] Default `LEIDEN_II` smoke tests still pass.
-- [ ] DSPX batch run completes without fatal Geant4 overlap errors.
+- [x] Default `LEIDEN_II` smoke tests still pass.
+- [x] DSPX batch run completes without fatal Geant4 overlap errors.
 - [ ] The plan, diagram, and implementation agree on plate/screen/OVC/bride
   dimensions.
 
 Verification:
 
-- [ ] `cmake -S . -B build`
-- [ ] `cmake --build build`
-- [ ] `ctest --test-dir build --output-on-failure`
-- [ ] `cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX`
-- [ ] `cmake --build build-dspx`
+- [x] `cmake -S . -B build`
+- [x] `cmake --build build`
+- [x] `ctest --test-dir build --output-on-failure`
+- [x] `cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX`
+- [x] `cmake --build build-dspx`
 - [ ] `cd build-dspx && ./main run_test.mac`
 - [ ] `cd build-dspx && ./main geometry_lab_proton.mac`
-- [ ] `cd build-dspx && ./main geometry_lab_proton_batch.mac`
+- [x] `cd build-dspx && ./main geometry_lab_proton_batch.mac`
 
 Dependencies: Phase 4.
 
@@ -483,6 +483,10 @@ Implementation notes:
 
 - Avoid compiling multiple `DetectorConstruction` implementations that define
   the same class.
+- `src/DetectorConstruction_DSPX.cc` intentionally uses the existing
+  `include/DetectorConstruction.hh` declaration. A separate
+  `DetectorConstruction_DSPX.hh` is not needed unless DSPX becomes a distinct
+  class such as `DetectorConstructionDSPX`.
 - Replace the current ad hoc source exclusion:
   `list(REMOVE_ITEM sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc)`
   with explicit selection.
@@ -516,6 +520,17 @@ The important technical choice is to make detector geometry a configure-time
 selection, not a run-time switch between separately compiled
 `DetectorConstruction` classes with the same symbols. `LEIDEN_II` should remain
 the default until DSPX is implemented and validated.
+
+Current implementation status:
+
+- `LEIDEN_II` compiles `src/DetectorConstruction.cc`.
+- `DSPX` compiles `src/DetectorConstruction_DSPX.cc`,
+  `src/Geometry/CryostatBuilder.cc`, and `src/Geometry/Shapes.cc`.
+- Both detector construction `.cc` files implement the same
+  `QArray::DetectorConstruction` class declared by `include/DetectorConstruction.hh`;
+  CMake source selection prevents duplicate symbols.
+- The first verified DSPX slice is committed on `feature/dspx-cryostat-geometry`
+  as `8e9c31b feat: add DSPX cryostat geometry path`.
 
 ## Design Constraints
 
