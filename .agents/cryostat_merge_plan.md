@@ -135,6 +135,7 @@ namespace QArray::Geometry
   struct FilledTube;
   struct Bucket;
   struct ReversedBucket;
+  struct HexBride;      // new: hexagonal prism lid for DSPX
 }
 ```
 
@@ -142,8 +143,8 @@ For the cryostat merge, start with only the shapes needed by the cryostat:
 
 - `FilledTube`
 - `Bucket`
-- `ReversedBucket`
-- possibly `Tube` if useful internally
+- `ReversedBucket`  (kept for reference but NOT used for DSPX bride -- see below)
+- `HexBride`        (new, replaces ReversedBucket for DSPX)
 
 Do not import the whole volume-builder framework just to get these wrappers.
 In particular, avoid bringing over `VolumeBuilder`, `VolumeParser`,
@@ -172,6 +173,46 @@ factory.Add<FilledTube>("Plate10mK", "CopperPlate", position, radius, height);
 without adopting cache dependencies such as `MaterialColour`, `VolumePack`,
 `ColouredVolumeAdder`, `G4Helpers`, or command parsing.
 
+### HexBride shape (DSPX-specific)
+
+The DSPX bride is a hexagonal prism lid, not a cylinder. The cached
+`ReversedBucket` (G4Polycone) cannot represent a hexagonal outer wall.
+
+Use `G4Polyhedra` directly in `CryostatBuilder.cc` or wrap it in a
+`HexBride` struct in `Shapes.hh`:
+
+```cpp
+namespace QArray::Geometry
+{
+  // Inverted hexagonal cup (lid). Origin = open mouth center (bottom).
+  // Wall section: ri=innerRadius, ro=circumRadius, height=Bride_h
+  // Lid disk:     ri=0, ro=circumRadius, thickness=Bride_e
+  // Total height: Bride_h + Bride_e
+  //
+  // G4Polyhedra parameters:
+  //   phiStart = 0, phiTotal = 360*deg, numSide = 6
+  //   z-planes (4): [0, Bride_h, Bride_h, Bride_h + Bride_e]
+  //   rInner:       [innerRadius, innerRadius, 0, 0]
+  //   rOuter:       [circumRadius, circumRadius, circumRadius, circumRadius]
+  struct HexBride : G4Polyhedra
+  {
+    HexBride(const G4String& name,
+             double innerRadius,   // bore radius = 187 mm for DSPX
+             double circumRadius,  // hex vertex-to-center = 240.2 mm for DSPX
+             double Bride_h,       // inner cavity height = 97 mm
+             double Bride_e);      // top disk thickness  = 14 mm
+  };
+}
+```
+
+DSPX confirmed values:
+  innerRadius   = 187 mm
+  flat-to-flat  = 416 mm  ->  inradius = 208 mm
+  circumRadius  = 208 / cos(30 deg) = 240.2 mm
+  Bride_h       = 97 mm
+  Bride_e       = 14 mm   (= 111 mm total - 97 mm inner height)
+  Total height  = 111 mm
+
 ## Output Dependency Clarification
 
 The output dependencies in the cached geometry module are not needed just to
@@ -197,11 +238,13 @@ geometry is constructed instead of adopting `SimuOutput`.
 2. Move reusable cryostat helpers out of `DetectorConstruction::ConstructFridge`
    where appropriate, such as can/screen construction helpers.
 3. Add a small `QArray::Geometry` shape-helper layer inspired by cache
-   `Shapes.hh`, especially `FilledTube`, `Bucket`, and `ReversedBucket`.
+   `Shapes.hh`, especially `FilledTube`, `Bucket`, `ReversedBucket` (retained for
+   reference / non-DSPX configs only), and `HexBride` (new, DSPX bride).
 4. Mine dimensions and final-design construction logic from
-   `GenericCryostatBuilder`, translating framework calls like
-   `factory.Add<FilledTube>(...)` into local helper calls using
-   `QArray::Geometry::FilledTube` and direct `G4PVPlacement`.
+   `GenericCryostatBuilder`, translating framework calls into local helper calls.
+   **Primary dimension source for DSPX: `.agents/diagram_cryostat_dspx.txt`.**
+   All plate, screen, OVC, and bride values are fully locked there; do not rely
+   on the cached config setters for DSPX numbers.
 5. Keep material setup local and minimal. Prefer NIST materials already used in
    this project. Define custom cryostat materials only when the geometry needs
    names not available through NIST.
@@ -283,7 +326,54 @@ the default until DSPX is implemented and validated.
 
 - Which cached cryostat configuration is the target: `RicochetFinalDesign`,
   `RicochetRUN013`, `RicochetRUN014`, `RicochetRUN015`, or `RicochetRUN016`?
+  **(resolved -- see Resolved Decisions below)**
 - Does current chip/detector placement need access to the OVC vacuum logical
   volume or another internal cryostat logical volume?
+  **(resolved -- see Resolved Decisions below)**
 - Should the new cryostat replace the current `ConstructFridge()` geometry in
   one step, or should it be gated behind a metadata option for comparison?
+  **(resolved -- see Resolved Decisions below)**
+
+## Resolved Decisions
+
+**Q1 -- Target configuration: CryoConcept2020 plate dimensions + Bucket screen construction**
+
+DSPX screens have no bolt flanges, so the `BuildScreen()` flanged-cylinder path
+(RicochetFinalDesign) does not match the hardware. Use `Bucket` G4Polycone
+shapes for all screens and the OVC instead.
+
+Plate dimensions: `CryoConcept2020` (updated inter-plate gaps from CROSS baseline).
+Screen construction: `Bucket(innerRadius, thickness, height)` for Screen1K,
+Screen4K, Screen50K, and OVC. No Screen10mK. No floating plate.
+Bride: `HexBride` (G4Polyhedra, hexagonal outer, NOT ReversedBucket -- see HexBride
+section below).
+Position cascade: CryoConcept/CROSS-style gap chain (not the single absolute
+`DisPlate10mK_InnerBottomOVC` anchor used by RicochetFinalDesign).
+
+Screen heights are fully DERIVED from the gap cascade -- not free parameters.
+Only two genuinely unknown DSPX values remain:
+  - `DisPlate10mK_BottomScreen1K`: how far below Plate10mK bottom the Screen1K
+    inner bottom center sits (replaces the Screen10mK cascade since there is none).
+  - `OVC_h`: total height of the OVC Bucket wall.
+All inter-screen gap distances default to CROSS values (1.95 cm, 1.98 cm, 2.0 cm)
+until DSPX drawings confirm otherwise.
+
+See `.agents/diagram_cryostat_bucket.txt` for the full annotated diagram.
+
+**Q2 -- Downstream logical volume access: required**
+
+`DetectorConstruction` needs logical volume pointers back from `CryostatBuilder`.
+`CryostatVolumes` must be populated. At minimum populate:
+- `ovcLogical` -- OVC shell logical volume
+- `ovcVacuumLogical` -- vacuum interior of the OVC (detector array lives here)
+- `mixingChamberLogical` -- region around the 10mK plate
+
+Add `plate10mKCenter` as a `G4ThreeVector` convenience field if chip placement
+is expressed relative to the 10mK plate origin rather than the cryostat Build()
+position.
+
+**Q3 -- Replacement strategy: CMake configure-time selection**
+
+Gate the new builder behind `QARRAY_DETECTOR_GEOMETRY=DSPX`. `LEIDEN_II` remains
+the default and is untouched during development. Do not use run-time switching
+between separately compiled `DetectorConstruction` classes with the same symbols.

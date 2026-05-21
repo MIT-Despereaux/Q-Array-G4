@@ -1,0 +1,178 @@
+================================================================================
+  NOTE: This file is a WORKING DESIGN DOCUMENT and is now SUPERSEDED for all
+  absolute dimensions and bride geometry by:
+      .agents/diagram_cryostat_dspx.txt  (canonical, all values confirmed)
+  Retain for conceptual reference: gap cascade logic, Bucket anatomy.
+  Key corrections vs this file: plate radii and thicknesses are CryoConcept2020
+  DSPX values (not CROSS); Bride is HexBride (G4Polyhedra hex), not ReversedBucket;
+  DisPlate10mK_BottomScreen1K = 302 mm (confirmed); OVC_h = 1021.7 mm (confirmed).
+================================================================================
+
+================================================================================
+  Diagram A: Bucket shape anatomy
+  (right-half cross-section, axis on left, +z upward)
+================================================================================
+
+  Bucket(name, innerRadius, thickness, height)
+  Origin = inner bottom center  (junction between bottom disk and wall)
+
+  <- innerRadius ->  th
+                     ick
+
+  |                  |##|         <- top rim, flush with anchoring plate bottom
+  |                  |  |            z = position + height
+  |                  |  |
+  |                  |  |
+  |      (hollow)    |  |         <- cylindrical wall
+  |                  |  |            ri = innerRadius
+  |                  |  |            ro = innerRadius + thickness
+  |                  |  |
+  |                  |  |
+  |                  |  |         <- z = position  (inner bottom center = origin)
+  |##################|##|         <- bottom disk (solid, ri = 0)
+  |##################|##|            thickness = "thickness" param (same as wall)
+  =====================            z = position - thickness
+
+  PARAMETER MEANINGS
+    innerRadius   inner radius of the hollow cylindrical wall
+    thickness     wall thickness = bottom disk thickness (same value for both)
+    height        height of the cylindrical wall section (NOT including bottom disk)
+    position      z coordinate of the inner bottom center (the origin of this shape)
+                  -> wall spans  z = position      to  z = position + height
+                  -> disk spans  z = position-thickness  to  z = position
+
+  DESIGN RULE (from Screen_h() formulas in cache):
+    Each screen's TOP RIM reaches exactly to the BOTTOM FACE of its anchoring plate.
+    So:   position + height = z_bottom_of_anchor_plate
+    i.e.: height = (z_bottom_of_anchor_plate) - position
+
+
+================================================================================
+  Diagram B: DSPX cryostat cross-section using Bucket geometry
+  (right-half, axis on left, +z upward, z=0 at Plate10mK bottom face)
+  No Screen10mK. No floating plate. OVC also a Bucket.
+  r scale: 1 char ~ 1 cm    z scale: 1 row ~ ~10 cm
+================================================================================
+
+  Bride (HexBride -- G4Polyhedra hexagonal lid, NOT ReversedBucket):
+                                          |====|   <- Bride top
+  z ~ +83cm  Plate50K  [############]    |    |
+             ___________^^^^_________    |    |   Bride_h = 11.1 cm
+                                         |    |
+                                         |====|   <- Bride bottom rim sits at
+                                                     Plate50K_bottom + DisPlate50K_Bride
+
+
+  Full cross-section with all 4 screens + OVC nested concentrically:
+
+                  r  0  10   15  16  17  18  19  20  21
+                  |  |   |    |   |   |   |   |   |   |
+                  |              [####]                    <- Plate50K (r=20, e=4mm)
+  z ~ +68cm       |  ____________^^^^____________
+                  |  |                          |
+                  |  |   [##]                   |         <- Plate4K  (r=18.35, e=4mm)
+  z ~ +49cm       |  |   ^^^                    |
+                  |  |  |   |                   |
+                  |  |  |   |  [##]             |         <- Plate1K  (r=16.7, e=4mm)
+  z ~ +27cm       |  |  |   |  ^^^              |
+                  |  | .|   |. |  |             |
+                  |  | .|   |. |  |  [#]        |         <- Plate100mK (r=15, e=4mm)
+  z ~ +16cm       |  | .|   |. |  |  ^^^        |
+                  |  | .|   |. |  | .|  |.      |
+                  |  | .|   |. |  | .|  |. [#]  |         <- Plate10mK  (r=15, e=5mm)
+  z =  0cm        |  | .|   |. |  | .|  |. ^^^  |         <- z=0 ORIGIN (Plate10mK bottom)
+                  |  | .|   |. |  | .|  |.      |
+                  | [screens hang below, cascade downward]
+                  |  | .|   |. |  | .|  |.      |
+                  |  | .|   |. |  | .|  |.      |  OVC wall
+                  |  | .|   |. |  | .|  |.      |
+                  |  | .|   |. |  | .====.       |  Screen50K top rim ~ Plate50K bottom
+  z ~ -68cm       |  | .|   |. |  |              |
+                  |  | .|   |. | .======.         |  Screen4K  top rim ~ Plate4K  bottom
+  z ~ -49cm       |  | .|   |. |                  |
+                  |  | .|   |.========.            |  Screen1K  top rim ~ Plate1K  bottom
+  z ~ -27cm       |  | .|   |                      |
+                  |  | .======.                     |  bottom of Screen1K
+  z ~ -95cm       |  |                              |
+                  |  . (OVC bottom disk)             |
+  z ~ -115cm      |  ================================|
+
+
+  NESTING (innermost to outermost):
+    Plate10mK / 100mK   r = 15.0 cm
+    Screen1K  inner     r = 15.65 cm   <- 6.5 mm gap from Plate10mK outer edge
+    Screen1K  outer     r = 15.65 + 0.2 = 15.85 cm
+    Gap                 DisOuterBottomScreen1K_InnerBottomScreen4K = 1.95 cm (from CROSS)
+    Screen4K  inner     r = 17.2  cm
+    Screen4K  outer     r = 17.4  cm
+    Gap                 DisOuterBottomScreen4K_InnerBottomScreen50K = 1.98 cm (from CROSS)
+    Screen50K inner     r = 18.85 cm
+    Screen50K outer     r = 19.05 cm
+    Gap                 DisOuterBottomScreen50K_InnerBottomOVC = 2.0 cm (from CROSS)
+    OVC       inner     r = 20.7  cm
+    OVC       outer     r = 21.1  cm   (e = 4mm for CROSS OVC)
+    Bride     inner     r = 21.1  cm   (= OVC outer)
+    Bride     outer     r = 21.1 + 6.0 = 27.1 cm
+
+
+================================================================================
+  Diagram C: Bucket cascade -- position and height derivation for DSPX
+  (no Screen10mK; z=0 at Plate10mK bottom face)
+================================================================================
+
+  Plates stack upward (+z):
+
+    z_Plate10mK_bottom  = 0                            (definition)
+    z_Plate10mK_top     = Plate10mK_e = 5 mm
+
+    z_Plate100mK_bottom = Plate10mK_e + DisPlate10mK_100mK
+                        = 5mm + 160mm = 165 mm
+    z_Plate1K_bottom    = z_Plate100mK_bottom + Plate100mK_e + DisPlate100mK_1K
+                        = 165mm + 4mm + 94mm = 263 mm
+    z_Plate4K_bottom    = z_Plate1K_bottom + Plate1K_e + DisPlate1K_4K
+                        = 263mm + 4mm + 203.5mm = 470.5 mm
+    z_Plate50K_bottom   = z_Plate4K_bottom + Plate4K_e + DisPlate4K_50K
+                        = 470.5mm + 4mm + 203.2mm = 677.7 mm
+
+  Screens hang downward (-z) via cascade of gap parameters:
+
+    position_Screen1K  = -DisPlate10mK_BottomScreen1K          <- [TBD from DSPX drawings]
+    height_Screen1K    = z_Plate1K_bottom - position_Screen1K  <- derived automatically
+                       = 263mm + DisPlate10mK_BottomScreen1K
+
+    position_Screen4K  = position_Screen1K - Screen1K_e - DisOuterBottomScreen1K_InnerBottomScreen4K
+                       = position_Screen1K - 2mm - 19.5mm      <- gap = 1.95cm from CROSS
+    height_Screen4K    = z_Plate4K_bottom - position_Screen4K  <- derived
+
+    position_Screen50K = position_Screen4K - Screen4K_e - DisOuterBottomScreen4K_InnerBottomScreen50K
+                       = position_Screen4K - 2mm - 19.8mm      <- gap = 1.98cm from CROSS
+    height_Screen50K   = z_Plate50K_bottom - position_Screen50K <- derived
+
+    position_OVC       = position_Screen50K - Screen50K_e - DisOuterBottomScreen50K_InnerBottomOVC
+                       = position_Screen50K - 2mm - 20mm       <- gap = 2.0cm from CROSS
+    height_OVC         = ?                  <- total OVC height, sets how far up OVC reaches
+                                               (must clear Plate50K + leave room for Bride)
+
+  Bride (ReversedBucket):
+    position_Bride     = z_Plate50K_bottom + DisPlate50K_Bride + Bride_h
+                       = 677.7mm + 126mm + 111mm = 914.7mm  (all from CryoConcept2020)
+
+  ALL DIMENSIONS NOW CONFIRMED -- see .agents/diagram_cryostat_dspx.txt
+
+  Previously unknown, now resolved:
+    DisPlate10mK_BottomScreen1K = 302.0 mm  (confirmed DSPX)
+    OVC_h = 1021.70 mm  (derived: OVC top rim = bride open mouth)
+    Screen1K:  ri=130.5 mm  e=2 mm  h=483.20 mm  pos=-302.00 mm
+    Screen4K:  ri=151.5 mm  e=2 mm  h=636.70 mm  pos=-323.50 mm
+    Screen50K: ri=170.0 mm  e=2 mm  h=868.00 mm  pos=-345.30 mm
+    OVC:       ri=190.5 mm  e=5 mm  h=1021.70mm  pos=-367.30 mm
+
+  Gap cascade (CROSS defaults):
+    Screen1K outer bot → Screen4K  inner bot:  19.5 mm
+    Screen4K outer bot → Screen50K inner bot:  19.8 mm
+    Screen50K outer bot → OVC inner bot:        20.0 mm
+
+  SUMMARY (all now confirmed from .agents/diagram_cryostat_dspx.txt):
+    Plates:   5 confirmed (CryoConcept2020 DSPX dims)
+    Screens:  4 confirmed (ri, e, h all derived)
+    Bride:    HexBride confirmed (ri=187mm, h=97mm, e=14mm, hex ff=416mm, circumr=240.2mm)
