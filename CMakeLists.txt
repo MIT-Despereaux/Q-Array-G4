@@ -120,6 +120,7 @@ file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 list(REMOVE_ITEM sources
   ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc
   ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc
+  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_DSPX.cc
 )
 
 if(QARRAY_DETECTOR_GEOMETRY STREQUAL "CURIE")
@@ -127,7 +128,11 @@ if(QARRAY_DETECTOR_GEOMETRY STREQUAL "CURIE")
 elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
   list(APPEND sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc)
 elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
-  message(FATAL_ERROR "QARRAY_DETECTOR_GEOMETRY=DSPX is reserved for the translated cache geometry, but DSPX detector construction is not implemented yet")
+  list(APPEND sources
+    ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_DSPX.cc
+    ${PROJECT_SOURCE_DIR}/src/Geometry/CryostatBuilder.cc
+    ${PROJECT_SOURCE_DIR}/src/Geometry/Shapes.cc
+  )
 else()
   message(FATAL_ERROR "Unsupported QARRAY_DETECTOR_GEOMETRY=${QARRAY_DETECTOR_GEOMETRY}; expected CURIE, LEIDEN_II, or DSPX")
 endif()
@@ -151,6 +156,8 @@ set(EXTRA_SCRIPTS
   init_vis.mac
   vis_1.mac
   vis_2.mac
+  geometry_lab_proton.mac
+  geometry_lab_proton_batch.mac
   run_test.mac
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
