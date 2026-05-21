@@ -39,6 +39,8 @@
 /vis/viewer/centreOn fridgePhysical
 /vis/viewer/zoom 3
 /vis/viewer/addCutawayPlane 0 0 0 m 0 1 0
+/vis/geometry/set/colour stageOVCVacLogical 0 0 1 0 0.15
+/vis/geometry/set/colour BrideBoreVacLogical 0 0 1 0 0.15
 /vis/viewer/set/autoRefresh true
 /vis/verbose warnings
 

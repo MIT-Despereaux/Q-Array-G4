@@ -12,6 +12,7 @@
 #include "G4SystemOfUnits.hh"
 #include "G4Tubs.hh"
 #include "G4VisAttributes.hh"
+#include <array>
 
 namespace QArray::Geometry
 {
@@ -94,7 +95,7 @@ namespace QArray::Geometry
 
     constexpr G4double ovcInnerBottomZ = -367.30 * mm;
     constexpr G4double ovcHeight = 1021.70 * mm;
-    constexpr G4double ovcVacuumEpsilon = 0.1 * mm;
+    constexpr G4double ovcVacuumEpsilon = 0.001 * mm;
     constexpr G4double ovcVacuumCenterZ = ovcInnerBottomZ + ovcHeight / 2.;
 
     auto* ovcVacuumSolid = new G4Tubs("ScreenOVCVacuum",
@@ -160,17 +161,40 @@ namespace QArray::Geometry
       }
     }
 
+    constexpr G4double brideInnerRadius  = 187.0 * mm;
+    constexpr G4double brideCircumRadius = 240.2 * mm;
+    constexpr G4double brideInnerHeight  = 97.0 * mm;
+    constexpr G4double brideTopThickness = 14.0 * mm;
+    constexpr G4double brideBottomZ      = 654.40 * mm;
+    constexpr G4double brideVacEpsilon   = 0.1 * mm;
+
     auto* brideSolid = new HexBride("Bride",
-                                    187.0 * mm,
-                                    240.2 * mm,
-                                    97.0 * mm,
-                                    14.0 * mm);
+                                    brideInnerRadius,
+                                    brideCircumRadius,
+                                    brideInnerHeight,
+                                    brideTopThickness);
     auto* brideLogical = new G4LogicalVolume(brideSolid, steel, "BrideLogical");
     brideLogical->SetVisAttributes(Vis(steelColour));
     Place(brideLogical,
           "BridePhysical",
           fridgeLogical,
-          G4ThreeVector(0., 0., 654.40 * mm - containerCenterZ),
+          G4ThreeVector(0., 0., brideBottomZ - containerCenterZ),
+          mCheckOverlaps);
+
+    // Vacuum plug filling the HexBride bore — sibling of BrideLogical in
+    // fridgeLogical, mirroring the OVC / OVC-vacuum pattern.
+    auto* brideBoreVacSolid = new G4Tubs("BrideBoreVacuum",
+                                         0.,
+                                         brideInnerRadius - brideVacEpsilon,
+                                         (brideInnerHeight - brideVacEpsilon) / 2.,
+                                         0.,
+                                         twopi);
+    auto* brideBoreVacLogical = new G4LogicalVolume(brideBoreVacSolid, vacuum, "BrideBoreVacLogical");
+    brideBoreVacLogical->SetVisAttributes(Vis(vacuumColour));
+    Place(brideBoreVacLogical,
+          "BrideBoreVacPhysical",
+          fridgeLogical,
+          G4ThreeVector(0., 0., brideBottomZ + brideInnerHeight / 2. - containerCenterZ),
           mCheckOverlaps);
 
     if (mVerbose > 0)
