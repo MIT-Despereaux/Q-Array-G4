@@ -3,6 +3,7 @@
 
 #include "G4Polycone.hh"
 #include "G4Polyhedra.hh"
+#include "G4SubtractionSolid.hh"
 #include "G4Tubs.hh"
 #include "globals.hh"
 
@@ -23,7 +24,7 @@ namespace QArray::Geometry
     ReversedBucket(const G4String& name, G4double innerRadius, G4double thickness, G4double height);
   };
 
-  struct HexBride : G4Polyhedra
+  struct HexBride : G4SubtractionSolid
   {
     HexBride(const G4String& name,
              G4double innerRadius,

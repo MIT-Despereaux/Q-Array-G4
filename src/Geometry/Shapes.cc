@@ -2,6 +2,7 @@
 
 #include "G4PhysicalConstants.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4ThreeVector.hh"
 
 #include <array>
 
@@ -45,14 +46,23 @@ namespace QArray::Geometry
                      G4double circumRadius,
                      G4double innerHeight,
                      G4double topThickness)
-      : G4Polyhedra(name,
-                    0.,
-                    twopi,
-                    6,
-                    4,
-                    std::array<G4double, 4>{0., innerHeight, innerHeight, innerHeight + topThickness}.data(),
-                    std::array<G4double, 4>{innerRadius, innerRadius, 0., 0.}.data(),
-                    std::array<G4double, 4>{circumRadius, circumRadius, circumRadius, circumRadius}.data())
+      : G4SubtractionSolid(name,
+                           new G4Polyhedra(G4String(name) + "_outer",
+                                           0.,
+                                           twopi,
+                                           6,
+                                           2,
+                                           std::array<G4double, 2>{0., innerHeight + topThickness}.data(),
+                                           std::array<G4double, 2>{0., 0.}.data(),
+                                           std::array<G4double, 2>{circumRadius, circumRadius}.data()),
+                           new G4Tubs(G4String(name) + "_mouth",
+                                      0.,
+                                      innerRadius,
+                                      (innerHeight + mm) / 2.,
+                                      0.,
+                                      twopi),
+                           nullptr,
+                           G4ThreeVector(0., 0., (innerHeight - mm) / 2.))
   {
   }
 }
