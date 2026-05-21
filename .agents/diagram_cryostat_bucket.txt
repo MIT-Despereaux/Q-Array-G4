@@ -56,10 +56,10 @@
 
   Bride (HexBride -- G4Polyhedra hexagonal lid, NOT ReversedBucket):
                                           |====|   <- Bride top
-  z ~ +83cm  Plate50K  [############]    |    |
-             ___________^^^^_________    |    |   Bride_h = 11.1 cm
-                                         |    |
-                                         |====|   <- Bride bottom rim sits at
+  z ~ +83cm  Plate50K  [############]     |    |
+             ___________^^^^_________     |    |   Bride_h = 11.1 cm
+                                          |    |
+                                          |====|   <- Bride bottom rim sits at
                                                      Plate50K_bottom + DisPlate50K_Bride
 
 
@@ -86,16 +86,16 @@
                   |  | .|   |. |  | .|  |.      |
                   |  | .|   |. |  | .|  |.      |  OVC wall
                   |  | .|   |. |  | .|  |.      |
-                  |  | .|   |. |  | .====.       |  Screen50K top rim ~ Plate50K bottom
-  z ~ -68cm       |  | .|   |. |  |              |
-                  |  | .|   |. | .======.         |  Screen4K  top rim ~ Plate4K  bottom
-  z ~ -49cm       |  | .|   |. |                  |
-                  |  | .|   |.========.            |  Screen1K  top rim ~ Plate1K  bottom
-  z ~ -27cm       |  | .|   |                      |
-                  |  | .======.                     |  bottom of Screen1K
-  z ~ -95cm       |  |                              |
-                  |  . (OVC bottom disk)             |
-  z ~ -115cm      |  ================================|
+                  |  | .|   |. |  | .====.      |  Screen50K top rim ~ Plate50K bottom
+  z ~ -68cm       |  | .|   |. |  |             |
+                  |  | .|   |. | .======.       |  Screen4K  top rim ~ Plate4K  bottom
+  z ~ -49cm       |  | .|   |. |                |
+                  |  | .|   |.========.         |  Screen1K  top rim ~ Plate1K  bottom
+  z ~ -27cm       |  | .|   |                   |
+                  |  | .======.                 |  bottom of Screen1K
+  z ~ -95cm       |  |                          |
+                  |  . (OVC bottom disk)        |
+  z ~ -115cm      |  ===========================|
 
 
   NESTING (innermost to outermost):
