@@ -38,8 +38,9 @@
 /vis/viewer/set/lightsVector 0.3 0 0.85
 /vis/viewer/set/style surface
 /vis/viewer/set/auxiliaryEdge false
-/vis/viewer/centreOn labPhysical
-/vis/viewer/zoom 1.5
+/vis/viewer/centreOn fridgePhysical
+/vis/viewer/zoom 3
+/vis/viewer/addCutawayPlane 0 0 0 m 0 1 0
 /vis/viewer/set/autoRefresh true
 /vis/verbose warnings
 
@@ -54,3 +55,5 @@
 /run/beamOn 1
 
 /vis/viewer/rebuild
+/vis/viewer/refresh
+/vis/viewer/flush
