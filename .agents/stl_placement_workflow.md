@@ -60,7 +60,7 @@ Open File > Export, choose STL format, then in the export dialog:
 |-------------------|-------------------|-------------------------------------------|
 | Surface deviation | <= 0.1 mm         | Adequate for curved cryostat surfaces     |
 | Angular deviation | <= 0.5 deg        | Avoids obvious faceting on cylinders      |
-| Format            | ASCII or Binary   | Both work with CADMesh; binary is smaller |
+| Format            | ASCII or Binary `.stl` | **Must be named `.stl`** -- FreeCAD ASCII export saves as `.ast`, rename before committing. CADMesh only recognises `.stl` extension. |
 
 ### Document every part in `src/Geometry/data/README.md`
 
@@ -261,3 +261,4 @@ make the placement math hard to audit later.
 | Fatal overlap on first run | Wrong parent LV or position sign error | Print extent, recalculate pos_in_parent |
 | Touching-surface warnings only | CSG plate top face = mesh bottom face | Expected; document in README, set tolerance |
 | `GetSolid()` returns nullptr | File not found at runtime | Check CMake copy rule; confirm file is in build dir |
+| `ReaderCantReadError` at startup | File has wrong extension (e.g. `.ast`) | FreeCAD ASCII STL exports as `.ast`; rename to `.stl` before committing |

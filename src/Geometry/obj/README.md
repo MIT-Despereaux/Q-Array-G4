@@ -11,14 +11,14 @@ Geant4 placement workflow.
 
 ## Export Convention
 
-| Parameter            | Value                                         |
-|----------------------|-----------------------------------------------|
-| Z axis               | Cryostat vertical (up = +Z)                   |
-| Origin               | Top face center of the part (see note below)  |
-| Units                | mm (FreeCAD default)                          |
-| Surface deviation    | <= 0.1 mm                                     |
-| Angular deviation    | <= 0.5 deg                                    |
-| Format               | ASCII Format STL                              |
+| Parameter            | Value                                                                       |
+|----------------------|-----------------------------------------------------------------------------|
+| Format               | ASCII or Binary STL, **named `.stl`**. FreeCAD's ASCII STL export saves as `.ast` -- rename to `.stl` before committing. CADMesh only recognises `.stl`. |
+| Z axis               | Cryostat vertical (up = +Z)                                                 |
+| Origin               | Top face center of the part (see note below)                                |
+| Units                | mm (FreeCAD default)                                                        |
+| Surface deviation    | <= 0.1 mm                                                                   |
+| Angular deviation    | <= 0.5 deg                                                                  |
 
 > **Note on origin convention:** The `Experimental_Paddle.stl` is exported
 > with the **top face center at (0,0,0)** — the part hangs downward into
