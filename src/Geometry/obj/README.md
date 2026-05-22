@@ -18,7 +18,7 @@ Geant4 placement workflow.
 | Units                | mm (FreeCAD default)                          |
 | Surface deviation    | <= 0.1 mm                                     |
 | Angular deviation    | <= 0.5 deg                                    |
-| Format               | Binary STL                                    |
+| Format               | ASCII Format STL                              |
 
 > **Note on origin convention:** The `Experimental_Paddle.stl` is exported
 > with the **top face center at (0,0,0)** — the part hangs downward into
@@ -32,7 +32,7 @@ Geant4 placement workflow.
 
 | Filename                   | STEP part name       | Origin point      | Bounding box (mm)                    | Material | Parent LV          | Notes                                          |
 |----------------------------|----------------------|-------------------|--------------------------------------|----------|--------------------|------------------------------------------------|
-| Experimental_Paddle.stl    | Experimental_Paddle  | Top face center   | X[-125,125] Y[-80,50] Z[-163,0]      | G4_Cu    | ovcVacuumLogical   | Placed with top face at Plate10mK bottom (z=0) |
+| Experimental_Paddle.stl   | Experimental_Paddle  | Top face center   | X[-125,125] Y[-80,50] Z[-163,0]      | G4_Cu    | ovcVacuumLogical   | ASCII STL; top face at Plate10mK bottom (z=0)  |
 
 ---
 
