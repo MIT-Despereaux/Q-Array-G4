@@ -447,6 +447,139 @@ Dependencies: Phase 4.
 
 Estimated scope: Small.
 
+### Phase 6 -- CADMesh Integration Setup
+
+Description: Introduce the CADMesh single-header dependency and establish the
+`src/Geometry/data/` folder as the canonical location for all STL mesh files
+used by the DSPX geometry. Define a naming convention and document the FreeCAD
+export workflow.
+
+Tasks:
+
+- [ ] Download `CADMesh.hh` (v2.0.x single-header release from
+  https://github.com/christopherpoole/CADMesh) and place it in `include/`.
+- [ ] Create `src/Geometry/data/` and add a `README.md` listing each expected
+  STL file, its source STEP part name, coordinate origin convention, and
+  target material.
+- [ ] Add `src/Geometry/data/` to `.gitignore` so binary mesh files are never
+  committed (they can be large; distribute via a side channel or regenerate
+  from STEP on demand). Add a comment to `AGENTS.md` noting the convention.
+- [ ] Update `CMakeLists.txt` to copy `src/Geometry/data/` into the build
+  directory so `./main` can find STL files at runtime:
+  ```cmake
+  file(GLOB DSPX_MESHES "${PROJECT_SOURCE_DIR}/src/Geometry/data/*.stl")
+  foreach(mesh ${DSPX_MESHES})
+    configure_file(${mesh} ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+  endforeach()
+  ```
+- [ ] Document the FreeCAD export settings in `src/Geometry/data/README.md`:
+  - Surface deviation: <= 0.1 mm (fine enough for curved faces, avoids
+    coarse faceting on cylindrical surfaces)
+  - Angular deviation: <= 0.5 degrees
+  - Export as ASCII STL (easier to inspect) or binary STL (smaller, faster
+    to load -- either works with CADMesh)
+  - Coordinate origin: export each part with its natural CAD origin unless
+    a different origin is explicitly documented in `README.md`
+  - Unit: mm (FreeCAD default); CADMesh reads in the file unit -- confirm
+    with `mesh->SetScale(mm)` if units are ambiguous
+
+Acceptance criteria:
+
+- [ ] `#include "CADMesh.hh"` compiles cleanly alongside existing Geant4 headers.
+- [ ] `src/Geometry/data/` exists with a `README.md` template listing the STL
+  inventory (even if no `.stl` files are committed yet).
+- [ ] STL files placed in `src/Geometry/data/` are automatically copied into the
+  build directory by CMake so they are accessible at runtime relative to `./main`.
+- [ ] `.gitignore` excludes `*.stl` under `src/Geometry/data/`.
+
+Verification:
+
+- [ ] `cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX`
+- [ ] `cmake --build build-dspx`
+- [ ] Confirm build directory contains the expected STL files (or the copy step
+  is a no-op if the data directory is empty).
+
+Dependencies: Phase 5.
+
+Estimated scope: Small.
+
+---
+
+### Phase 7 -- STL Component Loading And Placement
+
+Description: Implement loading of individual STL mesh files via CADMesh into
+`G4TessellatedSolid` volumes, assign materials, and place them inside the
+appropriate parent logical volume returned by `CryostatBuilder`. Each loaded
+mesh is a distinct `G4LogicalVolume` and `G4VPhysicalVolume` placed with an
+explicit transform.
+
+Tasks:
+
+- [ ] For each DSPX component in `src/Geometry/data/`:
+  - Load the mesh:
+    ```cpp
+    #include "CADMesh.hh"
+    auto mesh = CADMesh::TessellatedMesh::Read("component_name.stl");
+    mesh->SetScale(mm);  // confirm unit matches FreeCAD export
+    auto solid = mesh->GetSolid();
+    ```
+  - Create logical volume:
+    ```cpp
+    auto lv = new G4LogicalVolume(
+        solid,
+        G4Material::GetMaterial("G4_Cu"),  // or appropriate material
+        "ComponentName_LV");
+    ```
+  - Place into the correct parent from `CryostatVolumes`:
+    ```cpp
+    new G4PVPlacement(
+        G4Transform3D(rotation, position),
+        lv, "ComponentName_PV",
+        volumes.ovcVacuumLogical,  // or plate10mKLogical etc.
+        false, 0, fCheckOverlaps);
+    ```
+- [ ] Encapsulate all mesh loading in a new method
+  `CryostatBuilder::BuildMeshComponents(const CryostatVolumes&)` called at the
+  end of `Build()`. If no STL files are present the method returns silently so
+  the CSG-only geometry still works.
+- [ ] Add a `SetMeshDataPath(const G4String& path)` setter on `CryostatBuilder`
+  so `DetectorConstruction_DSPX.cc` can provide an absolute path at runtime
+  (defaults to the build directory, i.e. `"."` or an empty string).
+- [ ] For each placed mesh component document in `src/Geometry/data/README.md`:
+  - STL filename
+  - Parent logical volume it is placed into
+  - Material assigned
+  - Position and rotation convention (relative to what origin)
+  - Whether overlap checking is expected to produce false positives (e.g.
+    touching surfaces)
+
+Acceptance criteria:
+
+- [ ] If `src/Geometry/data/` is empty, `Build()` completes and the CSG-only
+  DSPX geometry is unchanged. No runtime crash or Geant4 warning.
+- [ ] If STL files are present, each loads into a distinct named logical volume
+  with the correct material and parent.
+- [ ] `SetMeshDataPath` is exposed so the path can be overridden without
+  recompiling.
+- [ ] Overlap checks run without fatal errors for placed mesh volumes (minor
+  touching-surface warnings are acceptable and should be documented).
+
+Verification:
+
+- [ ] `cmake --build build-dspx`
+- [ ] Place one test STL (e.g. a simple box exported from FreeCAD) in
+  `src/Geometry/data/` and confirm it appears in the Geant4 visualization.
+- [ ] `cd build-dspx && ./main geometry_lab_proton_batch.mac` completes without
+  fatal overlap errors.
+- [ ] Inspect visualization with `geometry_lab_proton.mac` to confirm mesh
+  placement is sensible relative to the CSG cryostat.
+
+Dependencies: Phase 6.
+
+Estimated scope: Medium.
+
+---
+
 ### Parallelization Notes
 
 Safe to parallelize after Phase 1:
