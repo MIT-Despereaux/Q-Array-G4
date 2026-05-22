@@ -112,6 +112,18 @@ endif()
 include_directories(${MCMC_HEADER_ONLY_DIR})
 
 # ----------------------------------------------------------------------------
+# Include CADMesh
+set(CADMESH_SOURCE_DIR ${PROJECT_SOURCE_DIR}/submodules/cadmesh)
+set(CADMESH_INCLUDE_DIR ${CADMESH_SOURCE_DIR})
+if(NOT EXISTS ${CADMESH_INCLUDE_DIR}/CADMesh.hh)
+  set(CADMESH_INCLUDE_DIR ${CADMESH_SOURCE_DIR}/include)
+endif()
+if(NOT EXISTS ${CADMESH_INCLUDE_DIR}/CADMesh.hh)
+  message(FATAL_ERROR "CADMesh submodule is missing. Run: git submodule update --init --recursive")
+endif()
+include_directories(${CADMESH_INCLUDE_DIR})
+
+# ----------------------------------------------------------------------------
 # Locate sources and headers for this project
 # NB: headers are included so they will show up in IDEs
 #

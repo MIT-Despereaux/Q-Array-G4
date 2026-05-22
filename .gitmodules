@@ -4,3 +4,6 @@
 [submodule "submodules/mcmc"]
 	path = submodules/mcmc
 	url = https://github.com/kthohr/mcmc.git
+[submodule "cadmesh"]
+	path = submodules/cadmesh
+	url = https://github.com/christopherpoole/cadmesh
