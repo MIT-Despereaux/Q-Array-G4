@@ -367,8 +367,10 @@ namespace QArray::Geometry
   // ---------------------------------------------------------------------------
   void CryostatBuilder::BuildMeshComponents(const CryostatVolumes& volumes)
   {
-    // ovcVacuumLogical origin in the cryostat frame (z=0 at Plate10mK bottom).
-    constexpr G4double ovcVacOriginZ = -367.30 * mm;
+    // ovcVacuumLogical is a G4Tubs: local z=0 is at its GEOMETRIC CENTER.
+    // Center in cryostat frame = ovcInnerBottomZ + ovcHeight/2 = +143.55 mm.
+    // pos_in_parent = originInCryostatZ - ovcVacLocalCenterZ
+    constexpr G4double ovcVacLocalCenterZ = -367.30 * mm + 1021.70 * mm / 2.;  // +143.55 mm
 
     struct MeshSpec
     {
@@ -386,9 +388,11 @@ namespace QArray::Geometry
     // -------------------------------------------------------------------------
     // Mesh inventory -- matches src/Geometry/obj/README.md
     // -------------------------------------------------------------------------
-    // Experimental_Paddle: top face at Plate10mK bottom (z=0 in cryostat frame).
-    // Parent: ovcVacuumLogical (origin at ovcVacOriginZ = -367.3 mm).
-    // pos_in_parent_z = 0.0 mm - (-367.3 mm) = +367.3 mm
+    // Experimental_Paddle: top face nominally at Plate10mK bottom (z=0).
+    // Shifted 0.1mm below (z=-0.1mm) to avoid tessellation-precision overlap
+    // with the Plate10mK CSG solid which also sits at z=0.
+    // Parent: ovcVacuumLogical (G4Tubs center at +143.55mm in cryostat frame).
+    // pos_in_parent_z = -0.1mm - (+143.55mm) = -143.65mm
     const MeshSpec kMeshSpecs[] = {
       {
         "Experimental_Paddle.stl",
@@ -397,7 +401,7 @@ namespace QArray::Geometry
         "ExperimentalPaddle_PV",
         "G4_Cu",
         &CryostatVolumes::ovcVacuumLogical,
-        0.0 * mm   // top face at Plate10mK bottom in cryostat frame
+        -0.1 * mm   // 0.1mm below Plate10mK bottom to clear tessellation artifact
       },
     };
 
@@ -458,9 +462,8 @@ namespace QArray::Geometry
       }
 
       // Compute position inside parent:
-      //   pos_in_parent_z = originInCryostatZ - ovcVacOriginZ
-      // (generalise if other parents are added later)
-      const G4double posZ = spec.originInCryostatZ - ovcVacOriginZ;
+      //   pos_in_parent_z = originInCryostatZ - ovcVacLocalCenterZ
+      const G4double posZ = spec.originInCryostatZ - ovcVacLocalCenterZ;
 
       new G4PVPlacement(
           nullptr,

@@ -144,17 +144,17 @@ pos_in_parent = target_position_in_cryostat_frame
 
 ### DSPX parent volume origins (cryostat frame, z=0 at Plate10mK bottom face)
 
-| Parent logical volume   | Origin in cryostat frame        |
-|-------------------------|---------------------------------|
-| `ovcVacuumLogical`      | z = -367.3 mm (OVC inner bottom)|
-| `ovcLogical`            | z = -372.3 mm (OVC disk bottom) |
-| `plate10mKLogical`      | z =    0.0 mm (Plate10mK bot)   |
+| Parent logical volume   | Local z=0 in cryostat frame                     |
+|-------------------------|-------------------------------------------------|
+| `ovcVacuumLogical`      | +143.55 mm (G4Tubs center = inner_bot + h/2)    |
+| `ovcLogical`            | z = -372.3 mm (OVC disk bottom -- if used)      |
+| `plate10mKLogical`      | z =   +2.0 mm (plate center = 0 + e/2)          |
 
 Example: a bracket whose bottom face should sit at z = -200 mm in the
 cryostat frame, placed inside `ovcVacuumLogical`:
 
 ```
-pos_z = -200 mm - (-367.3 mm) = +167.3 mm
+pos_z = -200 mm - (+143.55 mm) = -343.55 mm
 ```
 
 ```cpp
