@@ -100,6 +100,8 @@ namespace QArray
   {
     Geometry::CryostatBuilder builder;
     builder.SetCheckOverlaps(true);
+    auto meta = Metadata::GetInstance();
+    builder.SetAddPb(meta->GetBool("/QR/geom/addPb"));
     auto volumes = builder.Build();
     mFridgeLogical = volumes.fridgeLogical;
     mStageOVCVacLogical = volumes.ovcVacuumLogical;

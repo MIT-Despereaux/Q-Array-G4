@@ -21,12 +21,14 @@ namespace QArray::Geometry
   public:
     void SetCheckOverlaps(G4bool value);
     void SetVerbose(G4int value);
+    void SetAddPb(G4bool value);
 
     CryostatVolumes Build();
 
   private:
     G4bool mCheckOverlaps = true;
     G4int mVerbose = 0;
+    G4bool mAddPb = false;
   };
 }
 

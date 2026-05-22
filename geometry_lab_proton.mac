@@ -11,8 +11,9 @@
 /tracking/verbose 0
 
 /QR/geom/globalOffset 0 0 0 m
-/QR/geom/constructLab true
+/QR/geom/constructLab false
 /QR/geom/constructFridge true
+/QR/geom/addPb true
 
 /QR/output/enable false
 
@@ -21,7 +22,7 @@
 /vis/open OGL 1200x1200-0+0
 /vis/viewer/set/autoRefresh false
 /vis/verbose errors
-/vis/viewer/set/background white
+/vis/viewer/set/background black
 /vis/viewer/set/globalLineWidthScale 2
 /vis/viewer/set/globalMarkerScale 2
 /vis/drawVolume
@@ -37,7 +38,7 @@
 /vis/viewer/set/style surface
 /vis/viewer/set/auxiliaryEdge false
 /vis/viewer/centreOn fridgePhysical
-/vis/viewer/zoom 3
+/vis/viewer/zoom 5
 /vis/viewer/addCutawayPlane 0 0 0 m 0 1 0
 /vis/geometry/set/colour stageOVCVacLogical 0 0 1 0 0.15
 /vis/geometry/set/colour BrideBoreVacLogical 0 0 1 0 0.15
