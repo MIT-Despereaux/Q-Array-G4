@@ -23,12 +23,19 @@ namespace QArray::Geometry
     void SetVerbose(G4int value);
     void SetAddPb(G4bool value);
 
+    // Path to directory containing STL mesh files (default: "." = build dir).
+    // Set before calling Build() if files live elsewhere.
+    void SetMeshDataPath(const G4String& path);
+
     CryostatVolumes Build();
 
   private:
-    G4bool mCheckOverlaps = true;
-    G4int mVerbose = 0;
-    G4bool mAddPb = false;
+    void BuildMeshComponents(const CryostatVolumes& volumes);
+
+    G4bool   mCheckOverlaps = true;
+    G4int    mVerbose       = 0;
+    G4bool   mAddPb         = false;
+    G4String mMeshDataPath  = ".";
   };
 }
 

@@ -172,6 +172,15 @@ foreach(_script ${EXTRA_SCRIPTS})
   )
 endforeach()
 
+# ----------------------------------------------------------------------------
+# Copy STL mesh files from src/Geometry/obj/ into the build directory so
+# ./main can find them at runtime. This is a no-op when the directory is empty.
+#
+file(GLOB DSPX_MESHES "${PROJECT_SOURCE_DIR}/src/Geometry/obj/*.stl")
+foreach(_mesh ${DSPX_MESHES})
+  configure_file(${_mesh} ${PROJECT_BINARY_DIR} COPYONLY)
+endforeach()
+
 add_test(
   NAME particle_gun_smoke
   COMMAND main tests/particle_gun_smoke.mac

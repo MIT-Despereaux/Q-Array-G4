@@ -1,6 +1,8 @@
 #include "Geometry/CryostatBuilder.hh"
 #include "Geometry/Shapes.hh"
 
+#include "CADMesh.hh"
+
 #include "G4Box.hh"
 #include "G4Colour.hh"
 #include "G4ios.hh"
@@ -11,10 +13,13 @@
 #include "G4PVPlacement.hh"
 #include "G4RotationMatrix.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4TessellatedSolid.hh"
 #include "G4Tubs.hh"
 #include "G4VisAttributes.hh"
+#include "G4VisExtent.hh"
 #include <array>
 #include <cmath>
+#include <filesystem>
 
 namespace QArray::Geometry
 {
@@ -65,6 +70,11 @@ namespace QArray::Geometry
   void CryostatBuilder::SetAddPb(G4bool value)
   {
     mAddPb = value;
+  }
+
+  void CryostatBuilder::SetMeshDataPath(const G4String& path)
+  {
+    mMeshDataPath = path;
   }
 
   CryostatVolumes CryostatBuilder::Build()
@@ -209,6 +219,8 @@ namespace QArray::Geometry
       G4cout << "Built DSPX cryostat geometry in fridgeLogical" << G4endl;
     }
 
+    BuildMeshComponents(volumes);
+
     // -----------------------------------------------------------------------
     // Lead bricks around the OVC
     // -----------------------------------------------------------------------
@@ -335,4 +347,137 @@ namespace QArray::Geometry
 
     return volumes;
   }
-}
+
+  // ---------------------------------------------------------------------------
+  // BuildMeshComponents
+  //
+  // Loads each STL file listed in kMeshSpecs from mMeshDataPath and places it
+  // as a G4TessellatedSolid inside the appropriate parent logical volume.
+  // If a file is not found it is skipped with a warning -- the CSG-only
+  // geometry is never broken by a missing mesh.
+  //
+  // Origin convention (per src/Geometry/obj/README.md):
+  //   All parts exported with Z-up, top face center at (0,0,0).
+  //   The part hangs downward into negative Z.
+  //
+  // Placement convention:
+  //   position in parent = (target z in cryostat frame) - (parent origin in
+  //   cryostat frame).  Plate10mK bottom is z=0 in the cryostat frame.
+  //   ovcVacuumLogical origin is at ovcInnerBottomZ = -367.3 mm.
+  // ---------------------------------------------------------------------------
+  void CryostatBuilder::BuildMeshComponents(const CryostatVolumes& volumes)
+  {
+    // ovcVacuumLogical origin in the cryostat frame (z=0 at Plate10mK bottom).
+    constexpr G4double ovcVacOriginZ = -367.30 * mm;
+
+    struct MeshSpec
+    {
+      const char*      filename;     // relative to mMeshDataPath
+      const char*      solidName;
+      const char*      lvName;
+      const char*      pvName;
+      const char*      material;     // NIST name
+      G4LogicalVolume* CryostatVolumes::* parentLV;
+      // Position of the part's own origin in the cryostat frame (z=0 at
+      // Plate10mK bottom face).  The part hangs into negative Z from here.
+      G4double         originInCryostatZ;
+    };
+
+    // -------------------------------------------------------------------------
+    // Mesh inventory -- matches src/Geometry/obj/README.md
+    // -------------------------------------------------------------------------
+    // Experimental_Paddle: top face at Plate10mK bottom (z=0 in cryostat frame).
+    // Parent: ovcVacuumLogical (origin at ovcVacOriginZ = -367.3 mm).
+    // pos_in_parent_z = 0.0 mm - (-367.3 mm) = +367.3 mm
+    const MeshSpec kMeshSpecs[] = {
+      {
+        "Experimental_Paddle.stl",
+        "ExperimentalPaddleSolid",
+        "ExperimentalPaddle_LV",
+        "ExperimentalPaddle_PV",
+        "G4_Cu",
+        &CryostatVolumes::ovcVacuumLogical,
+        0.0 * mm   // top face at Plate10mK bottom in cryostat frame
+      },
+    };
+
+    auto* nist = G4NistManager::Instance();
+    const G4Colour meshColour(184 / 255., 115 / 255., 51 / 255., 0.8);
+
+    for (const auto& spec : kMeshSpecs)
+    {
+      // Build full path
+      std::filesystem::path stlPath =
+          std::filesystem::path(std::string(mMeshDataPath)) / spec.filename;
+
+      if (!std::filesystem::exists(stlPath))
+      {
+        G4cerr << "[CryostatBuilder] WARNING: mesh file not found, skipping: "
+               << stlPath.string() << G4endl;
+        continue;
+      }
+
+      // Load mesh
+      auto mesh = CADMesh::TessellatedMesh::FromSTL(stlPath.string());
+      mesh->SetScale(mm);  // FreeCAD exports in mm; Geant4 mm unit = 1.0
+
+      auto* solid = mesh->GetSolid();
+      solid->SetName(spec.solidName);
+
+      // Print extent when verbose
+      if (mVerbose > 0)
+      {
+        G4VisExtent ext = solid->GetExtent();
+        G4cout << "[CryostatBuilder] " << spec.filename << " extent (mm):"
+               << " X[" << ext.GetXmin() / mm << "," << ext.GetXmax() / mm << "]"
+               << " Y[" << ext.GetYmin() / mm << "," << ext.GetYmax() / mm << "]"
+               << " Z[" << ext.GetZmin() / mm << "," << ext.GetZmax() / mm << "]"
+               << G4endl;
+      }
+
+      // Material
+      auto* material = nist->FindOrBuildMaterial(spec.material);
+      if (!material)
+      {
+        G4cerr << "[CryostatBuilder] WARNING: material not found: "
+               << spec.material << " -- skipping " << spec.filename << G4endl;
+        continue;
+      }
+
+      // Logical volume
+      auto* lv = new G4LogicalVolume(solid, material, spec.lvName);
+      lv->SetVisAttributes(new G4VisAttributes(meshColour));
+
+      // Parent logical volume
+      G4LogicalVolume* parentLV = volumes.*(spec.parentLV);
+      if (!parentLV)
+      {
+        G4cerr << "[CryostatBuilder] WARNING: parent LV is null for "
+               << spec.filename << " -- skipping" << G4endl;
+        continue;
+      }
+
+      // Compute position inside parent:
+      //   pos_in_parent_z = originInCryostatZ - ovcVacOriginZ
+      // (generalise if other parents are added later)
+      const G4double posZ = spec.originInCryostatZ - ovcVacOriginZ;
+
+      new G4PVPlacement(
+          nullptr,
+          G4ThreeVector(0., 0., posZ),
+          lv,
+          spec.pvName,
+          parentLV,
+          false, 0,
+          mCheckOverlaps);
+
+      if (mVerbose > 0)
+      {
+        G4cout << "[CryostatBuilder] Placed " << spec.pvName
+               << " in " << parentLV->GetName()
+               << " at z=" << posZ / mm << " mm (parent frame)" << G4endl;
+      }
+    }
+  }
+
+} // namespace QArray::Geometry

@@ -223,7 +223,7 @@ accurate.
 
 ```cpp
 // Load from file (STL, OBJ, PLY all supported)
-auto mesh = CADMesh::TessellatedMesh::Read("part.stl");
+auto mesh = CADMesh::TessellatedMesh::FromSTL("part.stl");
 
 // Scale: set if file units differ from Geant4 internal units
 mesh->SetScale(mm);    // FreeCAD mm export (most common)
