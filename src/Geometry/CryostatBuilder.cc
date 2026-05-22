@@ -263,7 +263,7 @@ namespace QArray::Geometry
         {
           const G4double angle = i * 90. * deg;
           auto* rot = new G4RotationMatrix();
-          rot->rotateZ(angle);  // rotate 5° to create gap from OVC wall
+          rot->rotateZ(angle);  // at cardinal angles ±rotation is equivalent (box symmetry)
           new G4PVPlacement(rot,
                             G4ThreeVector(pbRingR1 * std::cos(angle),
                                           pbRingR1 * std::sin(angle),
@@ -277,11 +277,14 @@ namespace QArray::Geometry
         }
 
         // Set 2: diagonal bricks at 45°, 135°, 225°, 315°
+        // rotateZ(θ) is an active clockwise rotation: local x̂ → (cosθ, −sinθ), ŷ → (sinθ, cosθ).
+        // At θ=45°, rotateZ(+45°): local ŷ (8") → (1/√2, 1/√2) = NE = radial → wrong.
+        // Using rotateZ(−45°): local ŷ (8") → (−1/√2, 1/√2) = tangential at 45° ✓.
         for (G4int i = 0; i < 4; ++i)
         {
           const G4double angle = (45. + i * 90.) * deg;
           auto* rot = new G4RotationMatrix();
-          rot->rotateZ(-angle);  // the object rotation is an "active" one
+          rot->rotateZ(-angle);
           new G4PVPlacement(rot,
                             G4ThreeVector(pbRingR2 * std::cos(angle),
                                           pbRingR2 * std::sin(angle),
