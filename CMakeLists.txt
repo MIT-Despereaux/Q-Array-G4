@@ -130,20 +130,35 @@ include_directories(${CADMESH_INCLUDE_DIR})
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 list(REMOVE_ITEM sources
-  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc
+  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_LEIDEN_II.cc
   ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc
   ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_DSPX.cc
+)
+list(REMOVE_ITEM headers
+  ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_LEIDEN_II.hh
+  ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_CURIE.hh
+  ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_DSPX.hh
 )
 
 if(QARRAY_DETECTOR_GEOMETRY STREQUAL "CURIE")
   message(FATAL_ERROR "QARRAY_DETECTOR_GEOMETRY=CURIE is reserved for src/DetectorConstruction_CURIE.cc, but CURIE is not wired into the current QArray application build yet")
 elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
-  list(APPEND sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc)
+  list(APPEND sources
+    ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_LEIDEN_II.cc
+  )
+  list(APPEND headers
+    ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_LEIDEN_II.hh
+  )
 elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
   list(APPEND sources
     ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_DSPX.cc
     ${PROJECT_SOURCE_DIR}/src/Geometry/CryostatBuilder.cc
     ${PROJECT_SOURCE_DIR}/src/Geometry/Shapes.cc
+  )
+  list(APPEND headers
+    ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_DSPX.hh
+    ${PROJECT_SOURCE_DIR}/include/Geometry/CryostatBuilder.hh
+    ${PROJECT_SOURCE_DIR}/include/Geometry/Shapes.hh
   )
 else()
   message(FATAL_ERROR "Unsupported QARRAY_DETECTOR_GEOMETRY=${QARRAY_DETECTOR_GEOMETRY}; expected CURIE, LEIDEN_II, or DSPX")

@@ -1,4 +1,4 @@
-#include "DetectorConstruction.hh"
+#include "DetectorConstruction_LEIDEN_II.hh"
 #include "SensitiveDetector.hh"
 #include "Metadata.hh"
 

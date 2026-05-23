@@ -1,4 +1,4 @@
-#include "DetectorConstruction.hh"
+#include "DetectorConstruction_DSPX.hh"
 #include "Geometry/CryostatBuilder.hh"
 #include "Metadata.hh"
 

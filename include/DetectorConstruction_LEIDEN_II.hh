@@ -1,5 +1,5 @@
-#ifndef QRDetectorConstruction_h
-#define QRDetectorConstruction_h 1
+#ifndef QRDetectorConstruction_LEIDEN_II_h
+#define QRDetectorConstruction_LEIDEN_II_h 1
 
 #include "G4VUserDetectorConstruction.hh"
 #include "G4GenericMessenger.hh"

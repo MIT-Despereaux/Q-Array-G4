@@ -31,7 +31,7 @@
 // -------------------------------------------------------------------
 // -------------------------------------------------------------------
 
-#include "DetectorConstruction.hh"
+#include "DetectorConstruction_CURIE.hh"
 #include "DetectorMessenger.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Region.hh"
