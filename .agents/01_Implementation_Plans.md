@@ -108,9 +108,16 @@ CMake. STL inventory and origin convention in `src/Geometry/obj/README.md`.
 
 ### Remaining Work
 
+- [x] Fix Experimental_Paddle STL format (ASCII `.ast` → `.stl`), rename file (commits `987244c`, `988b7a1`)
+- [x] Correct mesh placement z-position and G4Tubs center offset (commit `84b6a26`)
+- [x] Adjust visualization macro for DSPX geometry (commit `07f114c`)
+- [x] Add detector-box assembly mother LV + Sn crystal CSG (commit `82ecb21`)
 - [ ] Run `geometry_lab_proton.mac` (interactive vis) to visually verify the
-  full DSPX geometry including the Experimental_Paddle mesh placement.
-- [ ] Verify Experimental_Paddle overlap checks pass with `checkOverlaps=true`.
+  full DSPX geometry including the detector box assembly.
+- [ ] Verify overlap checks pass with `checkOverlaps=true` for all mesh components
+  (Experimental_Paddle, Ricochet_Box_Platform, Detector_Base, Sn crystal).
+- [ ] Complete detector-box CSG sub-parts (small copper/sapphire pieces, box cover
+  STL) per [[06_Detector_Box_CAD_Import_Plan]].
 - [ ] Update `CHANGELOG.md` when the feature branch lands on main.
 - [ ] Confirm inter-screen gap distances against actual DSPX drawings (currently
   using CROSS defaults: 19.5mm / 19.8mm / 20.0mm).
@@ -131,7 +138,11 @@ CMake. STL inventory and origin convention in `src/Geometry/obj/README.md`.
    <= 0.1mm. See [[05_STL_Placement_Workflow]].
 2. Copy `.stl` to `src/Geometry/obj/`.
 3. Add row to `src/Geometry/obj/README.md`.
-4. Add `MeshSpec` entry in `CryostatBuilder::BuildMeshComponents()`.
+4. Add `MeshSpec` entry in `CryostatBuilder::BuildMeshComponents()`. The struct
+   now uses `G4ThreeVector position` (offset in parent LV frame, not cryostat frame)
+   and `G4double rotationZ` (degrees around Z axis). See the inline comments in
+   `CryostatBuilder.cc` for the `ovcVacLocalCenterZ` constant used when placing
+   mesh components inside `ovcVacuumLogical`.
 5. Commit the `.stl` file (STL files are tracked in git).
 6. `cmake --build build-dspx` — CMake copies the file automatically.
 7. Verify with `builder.SetVerbose(1)` extent print + visualization.

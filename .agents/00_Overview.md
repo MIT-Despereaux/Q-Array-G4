@@ -19,6 +19,10 @@ Organized technical documentation for the q-array-g4 Geant4 simulation.
 
 - [[01_Implementation_Plans]] — Completed implementation plans (namespace rename, DSPX cryostat merge)
 
+## Active Plans
+
+- [[06_Detector_Box_CAD_Import_Plan]] — Mixed CAD+CSG detector-box assembly plan (draft)
+
 ## Quick Links
 
 - Repo: `~/GitProjects/q-array-g4`

@@ -1,3 +1,9 @@
+---
+date: 2026-05-22
+type: plan
+tags: [q-array-g4, dspx, detector-box, cad, mesh, plan]
+---
+
 # Detector Box CAD Import Plan
 
 > For Hermes: use this as the implementation reference for the detector-box assembly import in DSPX/q-array-g4.
