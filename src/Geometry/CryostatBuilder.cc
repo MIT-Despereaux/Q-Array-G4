@@ -356,14 +356,10 @@ namespace QArray::Geometry
   // If a file is not found it is skipped with a warning -- the CSG-only
   // geometry is never broken by a missing mesh.
   //
-  // Origin convention (per src/Geometry/obj/README.md):
-  //   All parts exported with Z-up, top face center at (0,0,0).
-  //   The part hangs downward into negative Z.
-  //
   // Placement convention:
-  //   position in parent = (target z in cryostat frame) - (parent origin in
-  //   cryostat frame).  Plate10mK bottom is z=0 in the cryostat frame.
-  //   ovcVacuumLogical origin is at ovcInnerBottomZ = -367.3 mm.
+  //   Plate10mK bottom is z=0 in the cryostat frame.
+  //   ovcVacuumLogical origin is at its geometric center, z=+143.55 mm in the
+  //   cryostat frame.
   // ---------------------------------------------------------------------------
   void CryostatBuilder::BuildMeshComponents(const CryostatVolumes& volumes)
   {
@@ -380,10 +376,65 @@ namespace QArray::Geometry
       const char*      pvName;
       const char*      material;     // NIST name
       G4LogicalVolume* CryostatVolumes::* parentLV;
-      // Position of the part's own origin in the cryostat frame (z=0 at
-      // Plate10mK bottom face).  The part hangs into negative Z from here.
-      G4double         originInCryostatZ;
+      // Position of the part's own origin in the parent LV frame.
+      G4ThreeVector    position;
+      // Rotation around Z axis applied to the mesh before placement.
+      // 0 = no rotation (default), 180*deg = flipped around Z.
+      G4double         rotationZ = 0.;
+      G4double         alpha = 0.8;
+      G4double         red = 184 / 255.;
+      G4double         green = 115 / 255.;
+      G4double         blue = 51 / 255.;
     };
+
+    auto* nist = G4NistManager::Instance();
+    auto* vacuum = nist->FindOrBuildMaterial("G4_Galactic");
+    auto* tin = nist->FindOrBuildMaterial("G4_Sn");
+    constexpr G4double detectorAssemblyHalfZ = 34.8 * mm;
+    auto* detectorAssemblySolid = new G4Box("DetectorBoxAssemblySolid",
+                                            35. * mm,
+                                            35. * mm,
+                                            detectorAssemblyHalfZ);
+    auto* detectorAssemblyLogical =
+        new G4LogicalVolume(detectorAssemblySolid, vacuum, "DetectorBoxAssemblyLogical");
+    detectorAssemblyLogical->SetVisAttributes(new G4VisAttributes(false));
+
+    // Detector origin = base mesh reference origin.  The screw-hole alignment
+    // offset is adjustable; the box origin is 2 x 12.7 mm in +X and
+    // 7 x 12.7 mm in -Z from that offset.
+    const G4ThreeVector detectorBoxFromAlignment(2. * 12.7 * mm, 0., -7. * 12.7 * mm);
+    const G4ThreeVector detectorAlignmentOffset(-12.3 * mm, -35.5 * mm, +12.15 * mm);
+    const G4ThreeVector detectorOriginInCryostat = detectorAlignmentOffset + detectorBoxFromAlignment;
+    new G4PVPlacement(nullptr,
+                      G4ThreeVector(detectorOriginInCryostat.x(),
+                                    detectorOriginInCryostat.y(),
+                                    detectorOriginInCryostat.z() - ovcVacLocalCenterZ),
+                      detectorAssemblyLogical,
+                      "DetectorBoxAssemblyPhysical",
+                      volumes.ovcVacuumLogical,
+                      false,
+                      0,
+                      mCheckOverlaps);
+
+    constexpr G4double detectorCoverOriginZ = 1.7 * mm;
+
+    auto* detectorCrystalSolid = new G4Box("DetectorSnCubeSolid",
+                                           19.3 * mm / 2.,
+                                           19.3 * mm / 2.,
+                                           15.4 * mm / 2.);
+    auto* detectorCrystalLogical =
+        new G4LogicalVolume(detectorCrystalSolid, tin, "DetectorSnCubeLogical");
+    detectorCrystalLogical->SetVisAttributes(new G4VisAttributes(G4Colour(0.10, 0.85, 0.95, 1.0)));
+    new G4PVPlacement(nullptr,
+                      G4ThreeVector(0.,
+                                    0.,
+                                    detectorCoverOriginZ + 3.0 * mm + 15.4 * mm / 2.),
+                      detectorCrystalLogical,
+                      "DetectorSnCubePhysical",
+                      detectorAssemblyLogical,
+                      false,
+                      0,
+                      mCheckOverlaps);
 
     // -------------------------------------------------------------------------
     // Mesh inventory -- matches src/Geometry/obj/README.md
@@ -401,12 +452,50 @@ namespace QArray::Geometry
         "ExperimentalPaddle_PV",
         "G4_Cu",
         &CryostatVolumes::ovcVacuumLogical,
-        -0.1 * mm   // 0.1mm below Plate10mK bottom to clear tessellation artifact
+        G4ThreeVector(0., 0., -0.1 * mm - ovcVacLocalCenterZ),
+        180. * deg,  // rotated 180° around Z to match DSPX orientation
+        0.25
+      },
+      {
+        "Ricochet_Box_Platform.stl",
+        "RicochetBoxPlatformSolid",
+        "RicochetBoxPlatform_LV",
+        "RicochetBoxPlatform_PV",
+        "G4_Cu",
+        nullptr,
+        G4ThreeVector(0., 0., -3.1 * mm),
+        0.,
+        0.8,
+        0.20,
+        0.75,
+        0.35
+      },
+      {
+        "Detector_Base.stl",
+        "DetectorBaseSolid",
+        "DetectorBase_LV",
+        "DetectorBase_PV",
+        "G4_Cu",
+        nullptr,
+        G4ThreeVector(0., 0., 0.),
+        0.,
+        0.8
+      },
+      {
+        "Detector_Cover.stl",
+        "DetectorCoverSolid",
+        "DetectorCover_LV",
+        "DetectorCover_PV",
+        "G4_Cu",
+        nullptr,
+        G4ThreeVector(0., 0., detectorCoverOriginZ),
+        180. * deg,
+        0.8,
+        0.55,
+        0.35,
+        0.95
       },
     };
-
-    auto* nist = G4NistManager::Instance();
-    const G4Colour meshColour(184 / 255., 115 / 255., 51 / 255., 0.8);
 
     for (const auto& spec : kMeshSpecs)
     {
@@ -450,10 +539,12 @@ namespace QArray::Geometry
 
       // Logical volume
       auto* lv = new G4LogicalVolume(solid, material, spec.lvName);
-      lv->SetVisAttributes(new G4VisAttributes(meshColour));
+      lv->SetVisAttributes(new G4VisAttributes(G4Colour(spec.red, spec.green, spec.blue, spec.alpha)));
 
-      // Parent logical volume
-      G4LogicalVolume* parentLV = volumes.*(spec.parentLV);
+      // Parent logical volume.  Detector box meshes live in their assembly
+      // mother; cryostat-level meshes reference CryostatVolumes explicitly.
+      G4LogicalVolume* parentLV =
+          spec.parentLV ? volumes.*(spec.parentLV) : detectorAssemblyLogical;
       if (!parentLV)
       {
         G4cerr << "[CryostatBuilder] WARNING: parent LV is null for "
@@ -461,13 +552,17 @@ namespace QArray::Geometry
         continue;
       }
 
-      // Compute position inside parent:
-      //   pos_in_parent_z = originInCryostatZ - ovcVacLocalCenterZ
-      const G4double posZ = spec.originInCryostatZ - ovcVacLocalCenterZ;
+      // Build rotation if needed
+      G4RotationMatrix* rot = nullptr;
+      if (spec.rotationZ != 0.)
+      {
+        rot = new G4RotationMatrix();
+        rot->rotateZ(spec.rotationZ);
+      }
 
       new G4PVPlacement(
-          nullptr,
-          G4ThreeVector(0., 0., posZ),
+          rot,
+          spec.position,
           lv,
           spec.pvName,
           parentLV,
@@ -478,7 +573,9 @@ namespace QArray::Geometry
       {
         G4cout << "[CryostatBuilder] Placed " << spec.pvName
                << " in " << parentLV->GetName()
-               << " at z=" << posZ / mm << " mm (parent frame)" << G4endl;
+               << " at (" << spec.position.x() / mm << ", "
+               << spec.position.y() / mm << ", "
+               << spec.position.z() / mm << ") mm (parent frame)" << G4endl;
       }
     }
   }
