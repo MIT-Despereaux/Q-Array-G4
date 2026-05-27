@@ -707,7 +707,7 @@ namespace QArray
                         true);             // overlaps checking
       // fNDet1++;
 
-      new G4PVPlacement(0,
+      new G4PVPlacement(new G4RotationMatrix(0, 0, 90 * degree),
                         detAPos,
                         det1FoilLogical,
                         "detAFoil",
