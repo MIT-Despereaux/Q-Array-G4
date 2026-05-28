@@ -14,6 +14,7 @@ Organized technical documentation for the q-array-g4 Geant4 simulation.
 - [[03_Geant4_Tutorial_Notes]] — Structured technical summary from Geant4 tutorial PDFs
 - [[04_Geometry_Module_Reference]] — Analysis of the Simulation-develop geometry module
 - [[05_STL_Placement_Workflow]] — FreeCAD → CADMesh → Geant4 STL placement guide
+- [[07_Lab_Space_Dimensions]] — User-provided rectangular lab envelope dimensions
 
 ## Completed Plans
 

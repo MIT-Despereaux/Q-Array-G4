@@ -11,7 +11,7 @@
 /tracking/verbose 0
 
 /QR/geom/globalOffset 0 0 0 m
-/QR/geom/constructLab false
+/QR/geom/constructLab true
 /QR/geom/constructFridge true
 /QR/geom/addPb true
 
@@ -32,6 +32,7 @@
 /vis/scene/add/scale 1 m
 /vis/scene/add/axes 0 0 0 1 m
 /vis/geometry/set/visibility worldLogical 0 false
+/vis/geometry/set/colour labLogical 0 0.5 0.5 0.5 0.18
 /vis/viewer/set/viewpointVector 0 -1 0.0
 /vis/viewer/set/upVector 0 0 1
 /vis/viewer/set/lightsVector 0.3 -1 0.85
@@ -39,8 +40,27 @@
 /vis/viewer/set/auxiliaryEdge false
 /vis/viewer/centreOn fridgePhysical
 /vis/viewer/zoom 8
-/vis/viewer/addCutawayPlane 0 -0.05 0 m 0 1 0
-#/vis/viewer/addCutawayPlane 0 0 0 m -1 0 0
+/vis/viewer/addCutawayPlane 2.525 1.10 1.7606 m 1 0 0
+/vis/viewer/addCutawayPlane 2.525 1.10 1.7606 m 0 1 0
+
+# Material colour key:
+# copper = orange, mu-metal = teal, aluminum = blue, stainless steel = grey,
+# lead = green, vacuum = transparent blue.
+/vis/geometry/set/colour Plate10mKLogical 0 0.72 0.45 0.20 1.0
+/vis/geometry/set/colour Plate100mKLogical 0 0.72 0.45 0.20 1.0
+/vis/geometry/set/colour Plate1KLogical 0 0.72 0.45 0.20 1.0
+/vis/geometry/set/colour Plate4KLogical 0 0.72 0.45 0.20 1.0
+/vis/geometry/set/colour Plate50KLogical 0 0.72 0.45 0.20 1.0
+/vis/geometry/set/colour Screen4KLogical 0 0.78 0.46 0.18 0.45
+/vis/geometry/set/colour Screen50KLogical 0 0.78 0.46 0.18 0.45
+/vis/geometry/set/colour Screen1KLogical 0 0.27 0.70 0.67 0.55
+/vis/geometry/set/colour Screen1KTopAlRingLogical 0 0.31 0.55 0.94 0.65
+/vis/geometry/set/colour Screen1KBottomAlRingLogical 0 0.31 0.55 0.94 0.65
+/vis/geometry/set/colour ScreenOVCLogical 0 0.54 0.58 0.60 0.35
+/vis/geometry/set/colour BrideLogical 0 0.54 0.58 0.60 0.45
+/vis/geometry/set/colour OVCTopRingLogical 0 0.54 0.58 0.60 0.45
+/vis/geometry/set/colour PbRingBrickLogical 0 0.20 0.61 0.14 1.0
+/vis/geometry/set/colour PbBaseBrickLogical 0 0.20 0.61 0.14 1.0
 /vis/geometry/set/colour stageOVCVacLogical 0 0 1 0 0.15
 /vis/geometry/set/colour BrideBoreVacLogical 0 0 1 0 0.15
 /vis/viewer/set/autoRefresh true

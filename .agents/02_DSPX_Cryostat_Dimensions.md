@@ -17,9 +17,9 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
 
 | Plate | Outer radius (mm) | Thickness (mm) | Z position (mm) |
 |-------|-------------------|----------------|------------------|
-| Plate1K | 152.0 | 9.0 | 290.0 |
-| Plate4K | 150.0 | 9.0 | 499.5 |
-| Plate50K | 170.0 | 9.0 | 689.0 |
+| Plate1K | 142.0 | 3.0 | 182.7 |
+| Plate4K | 161.5 | 6.0 | 316.2 |
+| Plate50K | 180.0 | 6.0 | 525.7 |
 
 > z=0 at Plate10mK bottom face. Z values = centre of each plate.
 
@@ -27,10 +27,10 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
 
 | Screen | h (mm) | Driven gap from plate below |
 |--------|--------|---------------------------|
-| Screen1K | 285.0 | — (bottom sits on Plate10mK) |
-| Screen4K | 502.5 | 19.5 mm below Plate1K |
-| Screen50K | 868.0 | 19.8 mm below Plate4K |
-| OVC | 1021.7 | 20.0 mm below Plate50K |
+| Screen1K | 483.0 | top flange aligned to Plate1K bottom |
+| Screen4K | 623.0 | top flange aligned to Plate4K bottom |
+| Screen50K | 840.0 | top flange aligned to Plate50K bottom |
+| OVC | 1030.0 | top rim aligned to bride mouth |
 
 ## ASCII Cross-Section
 
@@ -38,7 +38,8 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
 ==============================================================================
   DSPX Cryostat -- complete cross-section (corrected: OVC top = bride mouth)
   z=0 at Plate10mK bottom face.  +z up.  r scale: 1ch=10mm  z: 1row=10mm
-  Screens = Bucket (cup).  OVC = Bucket (top rim at bride mouth).  Bride = HexBride.
+  Screens = Bucket (cup); 1K, 4K, and 50K have top flanges. OVC =
+  stainless-steel Bucket (top rim at bride mouth). Bride = HexBride.
 ==============================================================================
 
   r(mm):  0   50  100 125 142 152 162 170 180 191 196 208
@@ -60,7 +61,7 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
     658    |                  ╙─╜                   <- Bride open mouth = OVC top rim  z=654.4mm
     648    |                  ║║
     638    |                  ║║
-    628    |                  ║║
+    628    |                  ║║                   <- OVC top ring bottom  z=627.4mm
     618    |                  ║║
     608    |                  ║║
     598    |                  ║║
@@ -71,7 +72,7 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
     548    |                  ║║
     538    |                  ║║
     528    |##################║║
-    518    |##################║║                    <- Screen50K top rim  h=868.0mm
+    518    |##################║║                    <- Screen50K top flange / Plate50K bottom
     508    |                │ ║║
     498    |                │ ║║
     488    |                │ ║║
@@ -91,7 +92,7 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
     348    |                │ ║║
     338    |                │ ║║
     328    |                │ ║║
-    318    |################│ ║║                    <- Screen4K top rim  h=636.7mm
+    318    |################│ ║║                    <- Screen4K top flange / Plate4K bottom
     308    |              │ │ ║║
     298    |              │ │ ║║
     288    |              │ │ ║║
@@ -105,7 +106,7 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
     208    |              │ │ ║║
     198    |              │ │ ║║
     188    |##############│ │ ║║
-    178    |##############│ │ ║║                    <- Screen1K top rim  h=483.2mm
+    178    |##############│ │ ║║                    <- Screen1K top flange / Plate1K bottom
     168    |            │ │ │ ║║
     158    |            │ │ │ ║║
     148    |            │ │ │ ║║
@@ -153,15 +154,15 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
    -272    |            │ │ │ ║║
    -282    |            │ │ │ ║║
    -292    |            │ │ │ ║║
-   -302    |════════════╝ │ │ ║║                    <- Screen1K disk bottom  z=-304.0mm
-   -312    |              │ │ ║║
-   -322    |══════════════╝ │ ║║                    <- Screen4K disk bottom  z=-325.5mm
+   -302    |════════════╝ │ │ ║║                    <- Screen1K disk bottom  z=-303.8mm
+   -312    |══════════════╝ │ ║║                    <- Screen4K disk bottom  z=-311.8mm
+   -322    |                │ ║║
    -332    |                │ ║║
    -342    |                │ ║║
    -352    |════════════════╝ ║║                    <- Screen50K disk bottom  z=-347.3mm
    -362    |                  ║║
-   -372    |══════════════════╚╝                    <- ScreenOVC disk bottom  z=-372.3mm
-   -382    |
+   -372    |                  ║║
+   -382    |══════════════════╚╝                    <- ScreenOVC disk bottom  z=-381.9mm
    -392    |
 
 ==============================================================================
@@ -174,7 +175,7 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
   ├─────────┼────────┼──────┼──────────────────────┼──────────┤
   │ 10mK    │  125.0 │    4 │  70.20 → bot 100mK   │     0.00 │
   │ 100mK   │  125.0 │    3 │ 104.00 → bot 1K      │    74.20 │
-  │ 1K      │  142.0 │    5 │ 127.00 → bot 4K      │   181.20 │
+  │ 1K      │  142.0 │    3 │ 129.00 → bot 4K      │   181.20 │
   │ 4K      │  161.5 │    6 │ 203.50 → bot 50K     │   313.20 │
   │ 50K     │  180.0 │    6 │ 125.70 → bride mouth │   522.70 │
   └─────────┴────────┴──────┴──────────────────────┴──────────┘
@@ -184,17 +185,76 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
   ┌──────────┬────────┬──────┬───────────┬──────────┬──────────┐
   │ Screen   │ ri(mm) │ e mm │ pos (mm)  │  h (mm)  │ disk bot │
   ├──────────┼────────┼──────┼───────────┼──────────┼──────────┤
-  │ 1K       │  130.5 │    2 │   -302.00 │   483.20 │  -304.00 │
-  │ 4K       │  151.5 │    2 │   -323.50 │   636.70 │  -325.50 │
-  │ 50K      │  170.0 │    2 │   -345.30 │   868.00 │  -347.30 │
-  │ OVC      │  190.5 │    5 │   -367.30 │  1021.70 │  -372.30 │
+  │ 1K       │  130.5 │ 1.02 │   -302.78 │   483.98 │  -303.80 │
+  │ 4K       │  150.0 │    2 │   -309.80 │   623.00 │  -311.80 │
+  │ 50K      │  167.5 │    2 │   -317.30 │   840.00 │  -319.30 │
+  │ OVC      │  185.5 │ 6.28 │   -375.60 │  1030.00 │  -381.88 │
   └──────────┴────────┴──────┴───────────┴──────────┴──────────┘
 
   Gap cascade:
-    Plate10mK bot → Screen1K  inner bot : 302.0 mm  (confirmed DSPX)
-    Screen1K  outer bot → Screen4K  inner bot :  19.5 mm  (CROSS default)
-    Screen4K  outer bot → Screen50K inner bot :  19.8 mm  (CROSS default)
-    Screen50K outer bot → OVC inner bot       :  20.0 mm  (CROSS default)
+    Plate10mK bot → Screen1K  inner bot : 302.8 mm  (from measured 1K height)
+    Screen1K  outer bot → Screen4K  inner bot :  -6.0 mm  (4K bottom is lower; larger-radius shell)
+    Screen4K  outer bot → Screen50K inner bot :   5.5 mm  (from measured 4K/50K heights)
+    Screen50K outer bot → OVC inner bot       :  56.3 mm  (from measured OVC/50K heights)
+
+  1K measured dimensions:
+    inner diameter                     = 261.0 mm
+    wall thickness                     = 0.04 in = 1.016 mm
+    tub outer diameter                 = 263.032 mm
+    flange outer diameter              = 282.0 mm
+    flange stack thickness             = 0.505 in = 12.827 mm
+    top aluminum ring thickness        = 0.09 in = 2.286 mm
+    mu-metal flange thickness          = 0.04 in = 1.016 mm
+    bottom aluminum ring thickness     = 0.375 in = 9.525 mm
+    top flange → bottom tub surface     = 485.0 mm
+    top flange → top tub bottom surface = 483.984 mm
+    top flange z                       = 181.20 mm (= Plate1K bottom)
+    inner bottom z                     = -302.784 mm
+    outer bottom z                     = -303.80 mm
+    material                           = MuMetal bucket + middle flange, aluminum top/bottom rings
+    visual colour                      = teal, distinct from copper, aluminum, and stainless steel
+    MuMetal composition                = 80% Ni, 5% Mo, 15% Fe by mass
+    MuMetal density used               = 8.7 g/cm^3
+    aluminum ring visual colour        = blue
+
+  4K measured dimensions:
+    inner diameter                     = 300.0 mm
+    wall thickness                     = 2.0 mm
+    tub outer diameter                 = 304.0 mm
+    flange outer diameter              = 325.0 mm
+    flange thickness                   = 8.0 mm
+    top flange → top tub bottom surface = 623.0 mm
+    top flange → bottom tub surface     = 625.0 mm
+    top flange z                       = 313.20 mm (= Plate4K bottom)
+    inner bottom z                     = -309.80 mm
+    outer bottom z                     = -311.80 mm
+
+  50K measured dimensions:
+    inner diameter                     = 335.0 mm
+    wall thickness                     = 2.0 mm
+    tub outer diameter                 = 339.0 mm
+    flange outer diameter              = 360.0 mm
+    flange thickness                   = 13.0 mm
+    top flange → top tub bottom surface = 840.0 mm
+    top flange → bottom tub surface     = 842.0 mm
+    top flange z                       = 522.70 mm (= Plate50K bottom)
+    inner bottom z                     = -317.30 mm
+    outer bottom z                     = -319.30 mm
+
+  OVC measured dimensions:
+    inner diameter       = 371.0 mm
+    outer circumference  = 1205.0 mm
+    outer radius         = 191.78 mm
+    wall thickness       = 6.28 mm
+    material             = stainless steel
+    top rim height       = 2100.0 mm above lab floor when globalOffset z = 0
+
+  OVC TOP RING  (separate stainless-steel annulus)
+    inner radius = 191.78 mm  (= OVC outer radius)
+    outer radius = 208.0 mm   (= 416.0 mm outer diameter / 2)
+    height       = 27.0 mm
+    z top        = 654.40 mm  (= OVC top rim / bride open mouth)
+    z bottom     = 627.40 mm
 
   BRIDE  (HexBride: G4Polyhedra, stainless steel)
     bore ri             = 187.0 mm
@@ -206,12 +266,14 @@ Confirmed DSPX cryostat geometry values and inter-screen gap cascade.
     circumradius           = 240.2 mm  <- G4Polyhedra rOuter
     z open mouth = 654.40 mm  (= OVC top rim)
     z closed top = 765.40 mm
+    rotation     = 60 deg around z-axis
 
   G4Polyhedra z-planes (origin = open mouth, +z toward closed top):
     zPlanes = [   0,    97,    97,   111 ]  mm
     rInner  = [ 187,   187,     0,     0 ]  mm
     rOuter  = [ 240.2, 240.2, 240.2, 240.2] mm
     phiStart=0, phiTotal=360deg, numSide=6
+    G4RotationMatrix bride_rot = rotateZ(60*deg)
     G4ThreeVector bride_pos = {0, 0, 654.40*mm}
 
 (Approximate ASCII; use canonical value table above for exact dimensions.)

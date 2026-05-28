@@ -15,8 +15,10 @@
 #include "G4SystemOfUnits.hh"
 #include "G4TessellatedSolid.hh"
 #include "G4Tubs.hh"
+#include "G4UnionSolid.hh"
 #include "G4VisAttributes.hh"
 #include "G4VisExtent.hh"
+#include "G4VSolid.hh"
 #include <array>
 #include <cmath>
 #include <filesystem>
@@ -55,6 +57,115 @@ namespace QArray::Geometry
     {
       new G4PVPlacement(nullptr, position, logical, name, mother, false, 0, checkOverlaps);
     }
+
+    G4Material* BuildMuMetal(G4NistManager* nist)
+    {
+      if (auto* existing = G4Material::GetMaterial("MuMetal", false))
+      {
+        return existing;
+      }
+
+      auto* muMetal = new G4Material("MuMetal", 8.7 * g / cm3, 3);
+      muMetal->AddElement(nist->FindOrBuildElement("Ni"), 0.80);
+      muMetal->AddElement(nist->FindOrBuildElement("Mo"), 0.05);
+      muMetal->AddElement(nist->FindOrBuildElement("Fe"), 0.15);
+      return muMetal;
+    }
+
+    constexpr G4double kOvcInnerRadius = 37.1 * cm / 2.;
+    constexpr G4double kOvcOuterCircumference = 120.5 * cm;
+    constexpr G4double kOvcOuterRadius = kOvcOuterCircumference / (2. * pi);
+    constexpr G4double kOvcWallThickness = kOvcOuterRadius - kOvcInnerRadius;
+    constexpr G4double kOvcHeight = 103. * cm;
+    constexpr G4double kOvcTopZ = 654.40 * mm;
+    constexpr G4double kOvcInnerBottomZ = kOvcTopZ - kOvcHeight;
+    constexpr G4double kOvcVacuumCenterZ = kOvcInnerBottomZ + kOvcHeight / 2.;
+    constexpr G4double kOvcTopRingOuterRadius = 41.6 * cm / 2.;
+    constexpr G4double kOvcTopRingHeight = 2.7 * cm;
+
+    constexpr G4double kScreen1KInnerRadius = 26.1 * cm / 2.;
+    constexpr G4double kInch = 25.4 * mm;
+    constexpr G4double kScreen1KWallThickness = 0.04 * kInch;
+    constexpr G4double kScreen1KTotalHeight = 48.5 * cm;
+    constexpr G4double kScreen1KHeight = kScreen1KTotalHeight - kScreen1KWallThickness;
+    constexpr G4double kScreen1KTopZ = 181.20 * mm;
+    constexpr G4double kScreen1KInnerBottomZ = kScreen1KTopZ - kScreen1KHeight;
+    constexpr G4double kScreen1KFlangeOuterRadius = 28.2 * cm / 2.;
+    constexpr G4double kScreen1KTopAlRingThickness = 0.09 * kInch;
+    constexpr G4double kScreen1KMuMetalFlangeThickness = kScreen1KWallThickness;
+    constexpr G4double kScreen1KBottomAlRingThickness = 0.375 * kInch;
+
+    constexpr G4double kScreen4KInnerRadius = 30.0 * cm / 2.;
+    constexpr G4double kScreen4KWallThickness = 2.0 * mm;
+    constexpr G4double kScreen4KHeight = 62.3 * cm;
+    constexpr G4double kScreen4KTopZ = 313.20 * mm;
+    constexpr G4double kScreen4KInnerBottomZ = kScreen4KTopZ - kScreen4KHeight;
+    constexpr G4double kScreen4KFlangeOuterRadius = 32.5 * cm / 2.;
+    constexpr G4double kScreen4KFlangeThickness = 8.0 * mm;
+
+    constexpr G4double kScreen50KInnerRadius = 33.5 * cm / 2.;
+    constexpr G4double kScreen50KWallThickness = 2.0 * mm;
+    constexpr G4double kScreen50KHeight = 84.0 * cm;
+    constexpr G4double kScreen50KTopZ = 522.70 * mm;
+    constexpr G4double kScreen50KInnerBottomZ = kScreen50KTopZ - kScreen50KHeight;
+    constexpr G4double kScreen50KFlangeOuterRadius = 36.0 * cm / 2.;
+    constexpr G4double kScreen50KFlangeThickness = 1.3 * cm;
+
+    G4VSolid* ConstructScreenSolid(const ScreenSpec& screen)
+    {
+      if (screen.name == G4String("Screen1K"))
+      {
+        auto* bucket = new Bucket("Screen1KBucket", screen.innerRadius, screen.thickness, screen.height);
+        auto* muMetalFlange = new G4Tubs("Screen1KMuMetalFlange",
+                                         screen.innerRadius,
+                                         kScreen1KFlangeOuterRadius,
+                                         kScreen1KMuMetalFlangeThickness / 2.,
+                                         0.,
+                                         twopi);
+        return new G4UnionSolid("Screen1K",
+                                bucket,
+                                muMetalFlange,
+                                nullptr,
+                                G4ThreeVector(0.,
+                                              0.,
+                                              screen.height - kScreen1KTopAlRingThickness -
+                                                  kScreen1KMuMetalFlangeThickness / 2.));
+      }
+
+      if (screen.name == G4String("Screen4K"))
+      {
+        auto* bucket = new Bucket("Screen4KBucket", screen.innerRadius, screen.thickness, screen.height);
+        auto* topFlange = new G4Tubs("Screen4KTopFlange",
+                                     screen.innerRadius,
+                                     kScreen4KFlangeOuterRadius,
+                                     kScreen4KFlangeThickness / 2.,
+                                     0.,
+                                     twopi);
+        return new G4UnionSolid("Screen4K",
+                                bucket,
+                                topFlange,
+                                nullptr,
+                                G4ThreeVector(0., 0., screen.height - kScreen4KFlangeThickness / 2.));
+      }
+
+      if (screen.name != G4String("Screen50K"))
+      {
+        return new Bucket(screen.name, screen.innerRadius, screen.thickness, screen.height);
+      }
+
+      auto* bucket = new Bucket("Screen50KBucket", screen.innerRadius, screen.thickness, screen.height);
+      auto* topFlange = new G4Tubs("Screen50KTopFlange",
+                                   screen.innerRadius,
+                                   kScreen50KFlangeOuterRadius,
+                                   kScreen50KFlangeThickness / 2.,
+                                   0.,
+                                   twopi);
+      return new G4UnionSolid("Screen50K",
+                              bucket,
+                              topFlange,
+                              nullptr,
+                              G4ThreeVector(0., 0., screen.height - kScreen50KFlangeThickness / 2.));
+    }
   }
 
   void CryostatBuilder::SetCheckOverlaps(G4bool value)
@@ -84,6 +195,8 @@ namespace QArray::Geometry
     auto* vacuum = nist->FindOrBuildMaterial("G4_Galactic");
     auto* copper = nist->FindOrBuildMaterial("G4_Cu");
     auto* steel = nist->FindOrBuildMaterial("G4_STAINLESS-STEEL");
+    auto* aluminum = nist->FindOrBuildMaterial("G4_Al");
+    auto* muMetal = BuildMuMetal(nist);
 
     constexpr G4double containerXY = 1.0 * m;
     constexpr G4double containerZ = 1.8 * m;  // extended to accommodate Pb base layers
@@ -100,25 +213,24 @@ namespace QArray::Geometry
     const G4Colour copperColour(184 / 255., 115 / 255., 51 / 255.);
     const G4Colour screenColour(180 / 255., 125 / 255., 70 / 255., 0.35);
     const G4Colour steelColour(137 / 255., 148 / 255., 153 / 255.);
+    const G4Colour aluminumColour(80 / 255., 140 / 255., 240 / 255., 0.45);
+    const G4Colour muMetalColour(70 / 255., 180 / 255., 170 / 255., 0.45);
     const G4Colour vacuumColour(0., 0., 1., 0.08);
 
     const PlateSpec plates[] = {
         {"Plate10mK", 125.0 * mm, 4.0 * mm, 0.0 * mm},
         {"Plate100mK", 125.0 * mm, 3.0 * mm, 74.20 * mm},
-        {"Plate1K", 142.0 * mm, 5.0 * mm, 181.20 * mm},
+        {"Plate1K", 142.0 * mm, 3.0 * mm, 181.20 * mm},
         {"Plate4K", 161.5 * mm, 6.0 * mm, 313.20 * mm},
         {"Plate50K", 180.0 * mm, 6.0 * mm, 522.70 * mm},
     };
 
-    constexpr G4double ovcInnerBottomZ = -367.30 * mm;
-    constexpr G4double ovcHeight = 1021.70 * mm;
     constexpr G4double ovcVacuumEpsilon = 0.001 * mm;
-    constexpr G4double ovcVacuumCenterZ = ovcInnerBottomZ + ovcHeight / 2.;
 
     auto* ovcVacuumSolid = new G4Tubs("ScreenOVCVacuum",
                                       0.,
-                                      190.5 * mm - ovcVacuumEpsilon,
-                                      ovcHeight / 2. - ovcVacuumEpsilon,
+                                      kOvcInnerRadius - ovcVacuumEpsilon,
+                                      kOvcHeight / 2. - ovcVacuumEpsilon,
                                       0.,
                                       twopi);
     auto* ovcVacuumLogical = new G4LogicalVolume(ovcVacuumSolid, vacuum, "stageOVCVacLogical");
@@ -126,19 +238,21 @@ namespace QArray::Geometry
     volumes.ovcVacuumLogical = ovcVacuumLogical;
 
     const ScreenSpec screens[] = {
-        {"Screen1K", 130.5 * mm, 2.0 * mm, 483.20 * mm, -302.00 * mm},
-        {"Screen4K", 151.5 * mm, 2.0 * mm, 636.70 * mm, -323.50 * mm},
-        {"Screen50K", 170.0 * mm, 2.0 * mm, 868.00 * mm, -345.30 * mm},
-        {"ScreenOVC", 190.5 * mm, 5.0 * mm, 1021.70 * mm, -367.30 * mm},
+        {"Screen1K", kScreen1KInnerRadius, kScreen1KWallThickness, kScreen1KHeight, kScreen1KInnerBottomZ},
+        {"Screen4K", kScreen4KInnerRadius, kScreen4KWallThickness, kScreen4KHeight, kScreen4KInnerBottomZ},
+        {"Screen50K", kScreen50KInnerRadius, kScreen50KWallThickness, kScreen50KHeight, kScreen50KInnerBottomZ},
+        {"ScreenOVC", kOvcInnerRadius, kOvcWallThickness, kOvcHeight, kOvcInnerBottomZ},
     };
 
     for (const auto& screen : screens)
     {
-      auto* solid = new Bucket(screen.name, screen.innerRadius, screen.thickness, screen.height);
+      auto* solid = ConstructScreenSolid(screen);
+      const G4bool useSteelMaterial = screen.name == G4String("ScreenOVC");
+      const G4bool useMuMetalMaterial = screen.name == G4String("Screen1K");
       auto* logical = new G4LogicalVolume(solid,
-                                          screen.name == G4String("ScreenOVC") ? steel : copper,
+                                          useMuMetalMaterial ? muMetal : (useSteelMaterial ? steel : copper),
                                           G4String(screen.name) + "Logical");
-      logical->SetVisAttributes(Vis(screen.name == G4String("ScreenOVC") ? steelColour : screenColour));
+      logical->SetVisAttributes(Vis(useMuMetalMaterial ? muMetalColour : (useSteelMaterial ? steelColour : screenColour)));
       Place(logical,
             G4String(screen.name) + "Physical",
             screen.name == G4String("ScreenOVC") ? fridgeLogical : ovcVacuumLogical,
@@ -146,7 +260,7 @@ namespace QArray::Geometry
                           0.,
                           screen.name == G4String("ScreenOVC")
                               ? screen.zInnerBottom - containerCenterZ
-                              : screen.zInnerBottom - ovcVacuumCenterZ),
+                              : screen.zInnerBottom - kOvcVacuumCenterZ),
             mCheckOverlaps);
 
       if (screen.name == G4String("ScreenOVC"))
@@ -155,10 +269,48 @@ namespace QArray::Geometry
       }
     }
 
+    auto* screen1KAlRingSolid = new G4Tubs("Screen1KAlRing",
+                                           kScreen1KInnerRadius + kScreen1KWallThickness,
+                                           kScreen1KFlangeOuterRadius,
+                                           kScreen1KTopAlRingThickness / 2.,
+                                           0.,
+                                           twopi);
+    auto* screen1KTopAlRingLogical = new G4LogicalVolume(screen1KAlRingSolid,
+                                                         aluminum,
+                                                         "Screen1KTopAlRingLogical");
+    screen1KTopAlRingLogical->SetVisAttributes(Vis(aluminumColour));
+    Place(screen1KTopAlRingLogical,
+          "Screen1KTopAlRingPhysical",
+          ovcVacuumLogical,
+          G4ThreeVector(0.,
+                        0.,
+                        kScreen1KTopZ - kScreen1KTopAlRingThickness / 2. - kOvcVacuumCenterZ),
+          mCheckOverlaps);
+
+    auto* screen1KBottomAlRingSolid = new G4Tubs("Screen1KBottomAlRing",
+                                                 kScreen1KInnerRadius + kScreen1KWallThickness,
+                                                 kScreen1KFlangeOuterRadius,
+                                                 kScreen1KBottomAlRingThickness / 2.,
+                                                 0.,
+                                                 twopi);
+    auto* screen1KBottomAlRingLogical = new G4LogicalVolume(screen1KBottomAlRingSolid,
+                                                            aluminum,
+                                                            "Screen1KBottomAlRingLogical");
+    screen1KBottomAlRingLogical->SetVisAttributes(Vis(aluminumColour));
+    Place(screen1KBottomAlRingLogical,
+          "Screen1KBottomAlRingPhysical",
+          ovcVacuumLogical,
+          G4ThreeVector(0.,
+                        0.,
+                        kScreen1KTopZ - kScreen1KTopAlRingThickness -
+                            kScreen1KMuMetalFlangeThickness -
+                            kScreen1KBottomAlRingThickness / 2. - kOvcVacuumCenterZ),
+          mCheckOverlaps);
+
     Place(ovcVacuumLogical,
           "stageOVCVacPhysical",
           fridgeLogical,
-          G4ThreeVector(0., 0., ovcVacuumCenterZ - containerCenterZ),
+          G4ThreeVector(0., 0., kOvcVacuumCenterZ - containerCenterZ),
           mCheckOverlaps);
 
     for (const auto& plate : plates)
@@ -169,7 +321,7 @@ namespace QArray::Geometry
       Place(logical,
             G4String(plate.name) + "Physical",
             ovcVacuumLogical,
-            G4ThreeVector(0., 0., plate.zBottom + plate.thickness / 2. - ovcVacuumCenterZ),
+            G4ThreeVector(0., 0., plate.zBottom + plate.thickness / 2. - kOvcVacuumCenterZ),
             mCheckOverlaps);
 
       if (plate.name == G4String("Plate10mK"))
@@ -182,7 +334,7 @@ namespace QArray::Geometry
     constexpr G4double brideCircumRadius = 240.2 * mm;
     constexpr G4double brideInnerHeight  = 97.0 * mm;
     constexpr G4double brideTopThickness = 14.0 * mm;
-    constexpr G4double brideBottomZ      = 654.40 * mm;
+    constexpr G4double brideBottomZ      = kOvcTopZ;
     constexpr G4double brideVacEpsilon   = 0.1 * mm;
 
     auto* brideSolid = new HexBride("Bride",
@@ -192,11 +344,16 @@ namespace QArray::Geometry
                                     brideTopThickness);
     auto* brideLogical = new G4LogicalVolume(brideSolid, steel, "BrideLogical");
     brideLogical->SetVisAttributes(Vis(steelColour));
-    Place(brideLogical,
-          "BridePhysical",
-          fridgeLogical,
-          G4ThreeVector(0., 0., brideBottomZ - containerCenterZ),
-          mCheckOverlaps);
+    auto* brideRotation = new G4RotationMatrix();
+    brideRotation->rotateZ(30. * deg);
+    new G4PVPlacement(brideRotation,
+                      G4ThreeVector(0., 0., brideBottomZ - containerCenterZ),
+                      brideLogical,
+                      "BridePhysical",
+                      fridgeLogical,
+                      false,
+                      0,
+                      mCheckOverlaps);
 
     // Vacuum plug filling the HexBride bore — sibling of BrideLogical in
     // fridgeLogical, mirroring the OVC / OVC-vacuum pattern.
@@ -212,6 +369,20 @@ namespace QArray::Geometry
           "BrideBoreVacPhysical",
           fridgeLogical,
           G4ThreeVector(0., 0., brideBottomZ + brideInnerHeight / 2. - containerCenterZ),
+          mCheckOverlaps);
+
+    auto* ovcTopRingSolid = new G4Tubs("OVCTopRing",
+                                       kOvcOuterRadius,
+                                       kOvcTopRingOuterRadius,
+                                       kOvcTopRingHeight / 2.,
+                                       0.,
+                                       twopi);
+    auto* ovcTopRingLogical = new G4LogicalVolume(ovcTopRingSolid, steel, "OVCTopRingLogical");
+    ovcTopRingLogical->SetVisAttributes(Vis(steelColour));
+    Place(ovcTopRingLogical,
+          "OVCTopRingPhysical",
+          fridgeLogical,
+          G4ThreeVector(0., 0., kOvcTopZ - kOvcTopRingHeight / 2. - containerCenterZ),
           mCheckOverlaps);
 
     if (mVerbose > 0)
@@ -236,28 +407,25 @@ namespace QArray::Geometry
       constexpr G4double pbShort = 2. * 25.4 * mm;  //  50.8 mm — vertical
 
       // OVC base in fridgeLogical coordinates.
-      // The ScreenOVC Bucket solid has a 5mm solid disc flange below z=0 (local),
-      // so the true bottom of the OVC including flange is at ovcInnerBottomZ - 5mm.
+      // The ScreenOVC Bucket solid has a bottom disk below z=0 (local),
+      // so the true bottom of the OVC is one wall thickness below the inner bottom.
       // Base bricks must start below this to avoid overlapping the flange.
-      constexpr G4double ovcFlange       = 5.0 * mm;  // ScreenOVC Bucket thickness at base
-      constexpr G4double ovcBaseZ_local  = ovcInnerBottomZ - containerCenterZ;         // -682.3 mm
-      constexpr G4double ovcTrueBot_local = ovcBaseZ_local - ovcFlange - 0.1 * mm;     // -687.4 mm
+      constexpr G4double ovcBaseZ_local   = kOvcInnerBottomZ - containerCenterZ;
+      constexpr G4double ovcTrueBot_local = ovcBaseZ_local - kOvcWallThickness - 0.1 * mm;
 
       // ---- Ring: 8 bricks × 8 layers around the OVC side ----
       // All bricks oriented with 8" tangential (local y) and 4" radial (local x).
       // G4Box(pbMid/2, pbLong/2, pbShort/2): local x = 4" radial, local y = 8" tangential.
       // rotateZ(θ) points local x radially at angle θ.
       //
-      // Set 1 — axial (0°, 90°, 180°, 270°): 5mm gap from OVC outer wall (195.5mm).
-      //   r1 = 195.5 + 5 + pbMid/2 = 251.3mm
+      // Set 1 — axial (0°, 90°, 180°, 270°): 5mm gap from OVC outer wall.
       //
       // Set 2 — diagonal (45°, 135°, 225°, 315°): placed as close as possible to Set 1.
       //   SAT separating axis (0,1) for 45° brick vs 0° brick:
       //     r2/√2 > pbLong/2 + (pbMid+pbLong)/(2√2) + gap = 101.6 + 107.8 + 5 = 214.4mm
       //     → r2 > 303.2mm  →  use 305mm  (gap = 305/√2 − 209.4 = 6.2mm)
 
-      constexpr G4double ovcOuterR = 195.5 * mm;   // ScreenOVC innerR(190.5) + wall(5.0)
-      constexpr G4double pbRingR1  = ovcOuterR + 5. * mm + pbMid / 2.;  // 251.3mm
+      constexpr G4double pbRingR1  = kOvcOuterRadius + 5. * mm + pbMid / 2.;
       constexpr G4double pbRingR2  = 305. * mm;
       constexpr G4int    pbNLayers = 8;
 
@@ -358,15 +526,15 @@ namespace QArray::Geometry
   //
   // Placement convention:
   //   Plate10mK bottom is z=0 in the cryostat frame.
-  //   ovcVacuumLogical origin is at its geometric center, z=+143.55 mm in the
+  //   ovcVacuumLogical origin is at its geometric center, z=+139.40 mm in the
   //   cryostat frame.
   // ---------------------------------------------------------------------------
   void CryostatBuilder::BuildMeshComponents(const CryostatVolumes& volumes)
   {
     // ovcVacuumLogical is a G4Tubs: local z=0 is at its GEOMETRIC CENTER.
-    // Center in cryostat frame = ovcInnerBottomZ + ovcHeight/2 = +143.55 mm.
+    // Center in cryostat frame = kOvcInnerBottomZ + kOvcHeight/2 = +139.40 mm.
     // pos_in_parent = originInCryostatZ - ovcVacLocalCenterZ
-    constexpr G4double ovcVacLocalCenterZ = -367.30 * mm + 1021.70 * mm / 2.;  // +143.55 mm
+    constexpr G4double ovcVacLocalCenterZ = kOvcVacuumCenterZ;
 
     struct MeshSpec
     {

@@ -15,7 +15,7 @@
 /process/em/verbose 0
 
 /QR/geom/globalOffset 0 0 0 m
-/QR/geom/constructLab false
+/QR/geom/constructLab true
 /QR/geom/constructFridge true
 /QR/geom/addPb true
 

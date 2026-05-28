@@ -19,6 +19,26 @@ namespace QArray
 {
   namespace
   {
+    constexpr G4double kLabInteriorHeight = 3.5 * m;
+    constexpr G4double kLabInteriorWidth = 8.25 * m;
+    constexpr G4double kLabInteriorLength = 7.4 * m;
+    constexpr G4double kLabWallThickness = 5.0 * 2.54 * cm;
+    constexpr G4double kFridgeRightWallDistance = 160. * cm;
+    constexpr G4double kFridgeBottomWallDistance = 480. * cm;
+    constexpr G4double kFridgeCenterHeight = 1760.6 * mm;
+
+    G4ThreeVector LabCenter()
+    {
+      return G4ThreeVector(0., 0., kLabInteriorHeight / 2.);
+    }
+
+    G4ThreeVector FridgeCenterInLab()
+    {
+      const auto x = kLabInteriorWidth / 2. - kFridgeRightWallDistance;
+      const auto y = -kLabInteriorLength / 2. + kFridgeBottomWallDistance;
+      return G4ThreeVector(x, y, kFridgeCenterHeight);
+    }
+
     G4LogicalVolume* ConstructHollowBox(const G4String& name,
                                         G4Material* material,
                                         G4VisAttributes* vis,
@@ -34,6 +54,37 @@ namespace QArray
                               dz / 2. - thickness);
       auto* solid = new G4SubtractionSolid(name, outer, inner);
       auto* logical = new G4LogicalVolume(solid, material, name + "Logical");
+      logical->SetVisAttributes(vis);
+      return logical;
+    }
+
+    G4LogicalVolume* ConstructLabWithOpening(G4Material* material, G4VisAttributes* vis)
+    {
+      constexpr G4double labX = kLabInteriorWidth + 2. * kLabWallThickness;
+      constexpr G4double labY = kLabInteriorLength + 2. * kLabWallThickness;
+      constexpr G4double labZ = kLabInteriorHeight + 2. * kLabWallThickness;
+
+      auto* outer = new G4Box("labOuter", labX / 2., labY / 2., labZ / 2.);
+      auto* inner = new G4Box("labInner",
+                              kLabInteriorWidth / 2.,
+                              kLabInteriorLength / 2.,
+                              kLabInteriorHeight / 2.);
+      auto* shell = new G4SubtractionSolid("labShell", outer, inner);
+
+      constexpr G4double openingYLength = 4.3 * m;
+      constexpr G4double openingZHeight = 2.17 * m;
+      constexpr G4double openingXThickness = 2. * kLabWallThickness;
+      const G4double openingXCenter = kLabInteriorWidth / 2. + kLabWallThickness / 2.;
+      const G4double openingYCenter = kLabInteriorLength / 2. - 0.9 * m - openingYLength / 2.;
+      const G4double openingZCenter = -kLabInteriorHeight / 2. + openingZHeight / 2.;
+
+      auto* opening = new G4Box("labOpening",
+                                openingXThickness / 2.,
+                                openingYLength / 2.,
+                                openingZHeight / 2.);
+      auto* labSolid =
+          new G4SubtractionSolid("lab", shell, opening, nullptr, G4ThreeVector(openingXCenter, openingYCenter, openingZCenter));
+      auto* logical = new G4LogicalVolume(labSolid, material, "labLogical");
       logical->SetVisAttributes(vis);
       return logical;
     }
@@ -80,7 +131,7 @@ namespace QArray
     {
       ConstructFridge();
       new G4PVPlacement(nullptr,
-                        meta->GetThreeVector("/QR/geom/globalOffset") + G4ThreeVector(0., 0., 1.0 * m),
+                        meta->GetThreeVector("/QR/geom/globalOffset") + FridgeCenterInLab(),
                         mFridgeLogical,
                         "fridgePhysical",
                         mWorldLogical,
@@ -113,22 +164,10 @@ namespace QArray
   {
     auto meta = Metadata::GetInstance();
     auto* concrete = mNistManager->FindOrBuildMaterial("G4_CONCRETE");
-    constexpr G4double labX = 7.8 * m;
-    constexpr G4double labY = 6.63 * m;
-    constexpr G4double labZ = 4.0 * m;
-    constexpr G4double labT = 0.5 * m;
-
-    auto* labLogical = ConstructHollowBox("lab",
-                                          concrete,
-                                          new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 1.0)),
-                                          labX,
-                                          labY,
-                                          labZ,
-                                          labT);
+    auto* labLogical = ConstructLabWithOpening(concrete, new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.35)));
 
     new G4PVPlacement(nullptr,
-                      meta->GetThreeVector("/QR/geom/globalOffset") +
-                          G4ThreeVector(0., 0., (labZ - 2. * labT) / 2.),
+                      meta->GetThreeVector("/QR/geom/globalOffset") + LabCenter(),
                       labLogical,
                       "labPhysical",
                       mWorldLogical,
