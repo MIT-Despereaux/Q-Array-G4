@@ -186,6 +186,7 @@ set(EXTRA_SCRIPTS
   geometry_lab_proton.mac
   geometry_lab_proton_batch.mac
   run_test.mac
+  tests/run_test_no_vis.mac
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
@@ -216,7 +217,11 @@ add_test(
   NAME mt_single_thread_no_vis
   COMMAND main tests/mt_single_thread_no_vis.mac
 )
-set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis)
+add_test(
+  NAME run_test_no_vis
+  COMMAND main tests/run_test_no_vis.mac
+)
+set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis run_test_no_vis)
 
 if(NOT WITH_CRY)
   add_test(
@@ -267,6 +272,11 @@ if(TEST_ENVIRONMENT)
     PROPERTIES ENVIRONMENT "${TEST_ENVIRONMENT}"
   )
 endif()
+
+set_tests_properties(
+  ${SMOKE_TESTS}
+  PROPERTIES FAIL_REGULAR_EXPRESSION "GeomVol1002|Overlap is detected"
+)
 
 # ----------------------------------------------------------------------------
 # Copy all scripts in the mac folder into the build directory.
