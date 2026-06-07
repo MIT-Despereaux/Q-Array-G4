@@ -42,7 +42,7 @@ bottom face 3.0 mm above the detector-cover origin.
 
 `DetectorBoxAssemblyLogical` is a vacuum mother volume sized to the current
 children with symmetric Z about the detector baseplate reference point:
-half-lengths `(35,35,34.8) mm`.
+half-lengths `(35,35,35) mm`.
 
 Detector-box alignment: the box origin is offset from the screw-hole alignment
 point by `(+25.4,0,-88.9) mm`. The current alignment offset is

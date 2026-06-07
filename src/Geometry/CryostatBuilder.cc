@@ -558,7 +558,7 @@ namespace QArray::Geometry
     auto* nist = G4NistManager::Instance();
     auto* vacuum = nist->FindOrBuildMaterial("G4_Galactic");
     auto* tin = nist->FindOrBuildMaterial("G4_Sn");
-    constexpr G4double detectorAssemblyHalfZ = 34.8 * mm;
+    constexpr G4double detectorAssemblyHalfZ = 35. * mm;
     auto* detectorAssemblySolid = new G4Box("DetectorBoxAssemblySolid",
                                             35. * mm,
                                             35. * mm,
