@@ -251,7 +251,13 @@ namespace QArray
       std::replace(fileName.begin() + start, fileName.end(), '.', '-');
     }
 
-    AMan->OpenFile(fileName + "." + filetype);
+    if (!AMan->OpenFile(fileName + "." + filetype))
+    {
+      G4ExceptionDescription msg;
+      msg << "Failed to open output file " << fileName << "." << filetype;
+      G4Exception("DataWriter::RunStart", "QRCode002", FatalException, msg);
+      return;
+    }
     // Prints out the file name
     G4cout << "DataWriter::RunStart opening file " << fileName << G4endl;
     // G4cout << "DataWriter::RunStart creating ntuples" << G4endl;
@@ -289,9 +295,17 @@ namespace QArray
              << G4endl;
       if (bWriteSteps || !det->IsReducible())
       {
+        const auto ntupleCount = AMan->GetNofNtuples();
         ntupleid = AMan->CreateNtuple(basename,
                                       "Step-by-step energy deposition");
         HitData::DefineNtuple(AMan, ntupleid, HitData::kFull);
+        if (ntupleid < 0 || AMan->GetNofNtuples() != ntupleCount + 1)
+        {
+          G4ExceptionDescription msg;
+          msg << "Failed to create output ntuple " << basename;
+          G4Exception("DataWriter::RunStart", "QRCode003", FatalException, msg);
+          return;
+        }
         // G4cout << "Current NtupleID: " << ntupleid << G4endl;
       }
 
@@ -302,8 +316,16 @@ namespace QArray
       {
         const G4String &name = name_reducer.first;
         const DataReducer &reducer = name_reducer.second;
+        const auto ntupleCount = AMan->GetNofNtuples();
         ntupleid = AMan->CreateNtuple(basename + "_" + name, name);
         HitData::DefineNtuple(AMan, ntupleid, reducer.reducelvl);
+        if (ntupleid < 0 || AMan->GetNofNtuples() != ntupleCount + 1)
+        {
+          G4ExceptionDescription msg;
+          msg << "Failed to create output ntuple " << basename << "_" << name;
+          G4Exception("DataWriter::RunStart", "QRCode003", FatalException, msg);
+          return;
+        }
         // G4cout << "Current NtupleID: " << ntupleid << G4endl;
       }
     }
