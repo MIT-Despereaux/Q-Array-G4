@@ -243,8 +243,13 @@ namespace QArray
       AMan->SetNtupleRowWise(true);
 #endif
     }
-    // analysis manager won't append .root if the filename has a period in it
-    std::replace(fileName.begin(), fileName.end(), '.', '-');
+    // analysis manager won't append extension if the filename has a period in it;
+    // only sanitize the basename part, not the directory path (preserve '..')
+    {
+      auto pos = fileName.find_last_of("/\\");
+      auto start = (pos != G4String::npos) ? pos + 1 : 0;
+      std::replace(fileName.begin() + start, fileName.end(), '.', '-');
+    }
 
     AMan->OpenFile(fileName + "." + filetype);
     // Prints out the file name
@@ -375,22 +380,22 @@ namespace QArray
     for (auto *det : vecDetectors)
     {
       QRHitsCollection *hc = det->GetHitCollection();
-      if (!hc)
-        continue;
 
       if (bWriteSteps || !det->IsReducible())
       {
-        // G4cout << "Current Writing Ntuple ID: " << ntupleid << G4endl;
-        mAllStepsWriter.Write(AMan, ntupleid, hc, bSort);
+        if (hc)
+          mAllStepsWriter.Write(AMan, ntupleid, hc, bSort);
         ntupleid++;
       }
       if (!det->IsReducible())
         continue;
       for (auto &name_reducer : mReducers)
       {
-        // G4cout << "Current Writing Ntuple ID: " << ntupleid << G4endl;
-        DataReducer &reducer = name_reducer.second;
-        reducer.Write(AMan, ntupleid, hc, bSort);
+        if (hc)
+        {
+          DataReducer &reducer = name_reducer.second;
+          reducer.Write(AMan, ntupleid, hc, bSort);
+        }
         ntupleid++;
       }
     }
