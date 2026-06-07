@@ -2,6 +2,8 @@
 date: 2026-05-22
 type: reference
 tags: [dspx, cryostat, dimensions, geometry]
+status: active
+branch: feature/dspx-cryostat-geometry
 ---
 
 # DSPX Cryostat — Canonical Dimensions

@@ -2,6 +2,8 @@
 date: 2026-05-22
 type: plan
 tags: [q-array-g4, dspx, detector-box, cad, mesh, plan]
+status: draft
+branch: feature/dspx-cryostat-geometry
 ---
 
 # Detector Box CAD Import Plan

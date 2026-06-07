@@ -2,6 +2,8 @@
 date: 2026-05-22
 type: reference
 tags: [cadmesh, stl, freecad, dspx, geometry, workflow]
+status: active
+branch: feature/dspx-cryostat-geometry
 ---
 
 # STL Mesh Placement Workflow (CADMesh + Geant4)
