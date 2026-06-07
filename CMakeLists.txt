@@ -190,6 +190,10 @@ set(EXTRA_SCRIPTS
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
+  tests/energy_deposition_dspx.mac
+  tests/energy_deposition_leiden_ii.mac
+  tests/check_energy_deposition.sh
+  tests/dspx_scoring_manifest.txt
 )
 
 foreach(_script ${EXTRA_SCRIPTS})
@@ -222,6 +226,29 @@ add_test(
   COMMAND main tests/run_test_no_vis.mac
 )
 set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis run_test_no_vis)
+
+if(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
+  add_test(
+    NAME energy_deposition_leiden_ii
+    COMMAND bash tests/check_energy_deposition.sh
+            $<TARGET_FILE:main>
+            ${PROJECT_BINARY_DIR}/tests/energy_deposition_leiden_ii.mac
+            energy_deposition_leiden_ii
+            scint_II
+  )
+  list(APPEND SMOKE_TESTS energy_deposition_leiden_ii)
+elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
+  add_test(
+    NAME energy_deposition_dspx
+    COMMAND bash tests/check_energy_deposition.sh
+            $<TARGET_FILE:main>
+            ${PROJECT_BINARY_DIR}/tests/energy_deposition_dspx.mac
+            energy_deposition_dspx
+            ${PROJECT_BINARY_DIR}/tests/dspx_scoring_manifest.txt
+            manifest
+  )
+  list(APPEND SMOKE_TESTS energy_deposition_dspx)
+endif()
 
 if(NOT WITH_CRY)
   add_test(

@@ -35,8 +35,6 @@ namespace QArray
     G4GenericMessenger *mMessenger = nullptr;
     G4NistManager *mNistManager = nullptr;
 
-    G4LogicalVolume *mChipLogical = nullptr;
-
     // Useful logical volumes
     G4LogicalVolume *mFridgeLogical = nullptr;
     G4LogicalVolume *mStageOVCVacLogical = nullptr;

@@ -1,10 +1,12 @@
 #include "DetectorConstruction_DSPX.hh"
 #include "Geometry/CryostatBuilder.hh"
 #include "Metadata.hh"
+#include "SensitiveDetector.hh"
 
 #include "G4Box.hh"
 #include "G4Colour.hh"
 #include "G4LogicalVolume.hh"
+#include "G4LogicalVolumeStore.hh"
 #include "G4Material.hh"
 #include "G4NistManager.hh"
 #include "G4PVPlacement.hh"
@@ -14,6 +16,8 @@
 #include "G4UIcmdWithABool.hh"
 #include "G4UIcmdWithAnInteger.hh"
 #include "G4VisAttributes.hh"
+
+#include <cctype>
 
 namespace QArray
 {
@@ -88,6 +92,16 @@ namespace QArray
       logical->SetVisAttributes(vis);
       return logical;
     }
+
+    G4String ScoringDetectorName(const G4String& logicalName)
+    {
+      G4String name = "dspx_";
+      for (const char ch : logicalName)
+      {
+        name += std::isalnum(static_cast<unsigned char>(ch)) ? ch : '_';
+      }
+      return name;
+    }
   }
 
   DetectorConstruction::DetectorConstruction()
@@ -145,6 +159,21 @@ namespace QArray
 
   void DetectorConstruction::ConstructSDandField()
   {
+    for (auto* logical : *G4LogicalVolumeStore::GetInstance())
+    {
+      const auto& logicalName = logical->GetName();
+      const auto& materialName = logical->GetMaterial()->GetName();
+      const auto detectorName = ScoringDetectorName(logicalName);
+      const G4bool registrationOnly =
+          materialName == "G4_AIR" || materialName == "G4_Galactic";
+
+      logical->SetSensitiveDetector(new SensitiveDetector(detectorName));
+      G4cout << "DSPX_SCORING logical=" << logicalName
+             << " detector=" << detectorName
+             << " material=" << materialName
+             << " requirement=" << (registrationOnly ? "registration" : "positive")
+             << G4endl;
+    }
   }
 
   void DetectorConstruction::ConstructFridge()
@@ -156,7 +185,6 @@ namespace QArray
     auto volumes = builder.Build();
     mFridgeLogical = volumes.fridgeLogical;
     mStageOVCVacLogical = volumes.ovcVacuumLogical;
-    mChipLogical = volumes.mixingChamberLogical;
     fMXCStageZ = volumes.plate10mKCenter.z();
   }
 

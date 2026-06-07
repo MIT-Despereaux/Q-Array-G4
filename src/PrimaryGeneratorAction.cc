@@ -4,6 +4,7 @@
 
 #include "G4LogicalVolumeStore.hh"
 #include "G4LogicalVolume.hh"
+#include "G4VSensitiveDetector.hh"
 #include "G4Box.hh"
 #include "G4VSolid.hh"
 #include "G4RunManager.hh"
@@ -15,6 +16,8 @@
 #include "G4VPhysicalVolume.hh"
 #include "G4PhysicalVolumesSearchScene.hh"
 #include "G4TransportationManager.hh"
+#include "G4Navigator.hh"
+#include "G4Transform3D.hh"
 #include "G4UIcmdWith3VectorAndUnit.hh"
 #include "G4UIcmdWithAString.hh"
 #include "G4UIcmdWithADoubleAndUnit.hh"
@@ -28,6 +31,11 @@
 #endif
 
 #include <sstream>
+#include <algorithm>
+#include <functional>
+#include <map>
+#include <random>
+#include <set>
 
 const std::string CRYCONFIGKEY = "/QR/generator/CRYconfig";
 
@@ -106,6 +114,9 @@ namespace QArray
                   FatalException,
                   "CRY support was not compiled. Rebuild with -DWITH_CRY=ON.");
 #endif
+      break;
+    case kVolumeScan:
+      GenerateVolumeScanEvent(anEvent);
       break;
     }
   }
@@ -214,6 +225,17 @@ namespace QArray
     }
     else if (mode == "particleGun")
       mMode = kParticleGun;
+    else if (mode == "volumeScan")
+    {
+#ifdef QARRAY_DETECTOR_GEOMETRY_DSPX
+      mMode = kVolumeScan;
+      InitVolumeScan();
+#else
+      G4Exception("PrimaryGeneratorAction::BeginOfRunAction", "VolumeScanGeometry",
+                  FatalException,
+                  "The volumeScan generator is only available with DSPX geometry.");
+#endif
+    }
     else
     {
       G4ExceptionDescription msg;
@@ -298,6 +320,122 @@ namespace QArray
       mCRYGen = 0;
     }
 #endif
+  }
+
+  void PrimaryGeneratorAction::InitVolumeScan()
+  {
+    struct Target
+    {
+      G4String name;
+      G4LogicalVolume* logical;
+    };
+
+    std::vector<Target> targets;
+    for (auto* logical : *G4LogicalVolumeStore::GetInstance())
+    {
+      auto* detector = logical->GetSensitiveDetector();
+      if (!detector || detector->GetName().find("dspx_") != 0)
+        continue;
+
+      const auto& materialName = logical->GetMaterial()->GetName();
+      if (materialName == "G4_AIR" || materialName == "G4_Galactic")
+        continue;
+
+      targets.push_back({logical->GetName(), logical});
+    }
+    std::sort(targets.begin(), targets.end(),
+              [](const Target& left, const Target& right) { return left.name < right.name; });
+
+    std::map<G4LogicalVolume*, G4Transform3D> firstTransforms;
+    std::set<G4LogicalVolume*> targetVolumes;
+    for (const auto& target : targets)
+      targetVolumes.insert(target.logical);
+
+    auto* transportation = G4TransportationManager::GetTransportationManager();
+    auto* world = transportation->GetNavigatorForTracking()->GetWorldVolume();
+    std::function<void(G4VPhysicalVolume*, const G4Transform3D&)> visit;
+    visit = [&](G4VPhysicalVolume* physical, const G4Transform3D& transform)
+    {
+      auto* logical = physical->GetLogicalVolume();
+      if (targetVolumes.count(logical) && !firstTransforms.count(logical))
+        firstTransforms.emplace(logical, transform);
+
+      for (G4int index = 0; index < logical->GetNoDaughters(); ++index)
+      {
+        auto* daughter = logical->GetDaughter(index);
+        const G4Transform3D local(daughter->GetObjectRotationValue(),
+                                  daughter->GetObjectTranslation());
+        visit(daughter, transform * local);
+      }
+    };
+    visit(world, G4Transform3D());
+
+    std::mt19937 engine(148854u);
+    auto* navigator = transportation->GetNavigatorForTracking();
+    mVolumeScanPositions.clear();
+    for (const auto& target : targets)
+    {
+      const auto transformIt = firstTransforms.find(target.logical);
+      if (transformIt == firstTransforms.end())
+      {
+        G4ExceptionDescription msg;
+        msg << "No physical placement found for DSPX logical volume " << target.name;
+        G4Exception("PrimaryGeneratorAction::InitVolumeScan", "VolumeScanPlacement",
+                    FatalException, msg);
+      }
+
+      G4ThreeVector minimum;
+      G4ThreeVector maximum;
+      target.logical->GetSolid()->BoundingLimits(minimum, maximum);
+      std::uniform_real_distribution<G4double> x(minimum.x(), maximum.x());
+      std::uniform_real_distribution<G4double> y(minimum.y(), maximum.y());
+      std::uniform_real_distribution<G4double> z(minimum.z(), maximum.z());
+
+      G4bool found = false;
+      for (G4int attempt = 0; attempt < 1000000; ++attempt)
+      {
+        const G4ThreeVector localPoint(x(engine), y(engine), z(engine));
+        if (target.logical->GetSolid()->Inside(localPoint) != kInside)
+          continue;
+
+        const G4ThreeVector worldPoint =
+            transformIt->second.getRotation() * localPoint +
+            transformIt->second.getTranslation();
+        auto* located = navigator->LocateGlobalPointAndSetup(worldPoint, nullptr, false);
+        if (located && located->GetLogicalVolume() == target.logical)
+        {
+          mVolumeScanPositions.push_back(worldPoint);
+          found = true;
+          G4cout << "DSPX_VOLUME_SCAN logical=" << target.name
+                 << " x_mm=" << worldPoint.x() / mm
+                 << " y_mm=" << worldPoint.y() / mm
+                 << " z_mm=" << worldPoint.z() / mm << G4endl;
+          break;
+        }
+      }
+
+      if (!found)
+      {
+        G4ExceptionDescription msg;
+        msg << "Could not find an interior point for DSPX logical volume " << target.name;
+        G4Exception("PrimaryGeneratorAction::InitVolumeScan", "VolumeScanInterior",
+                    FatalException, msg);
+      }
+    }
+  }
+
+  void PrimaryGeneratorAction::GenerateVolumeScanEvent(G4Event* event)
+  {
+    auto* electron = G4ParticleTable::GetParticleTable()->FindParticle("e-");
+    mParticleGun->SetParticleDefinition(electron);
+    mParticleGun->SetParticleEnergy(100. * keV);
+    mParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
+    mParticleGun->SetParticleCharge(-1.);
+    for (const auto& position : mVolumeScanPositions)
+    {
+      mParticleGun->SetParticlePosition(position);
+      mParticleGun->GeneratePrimaryVertex(event);
+    }
   }
 
 #ifdef QR_WITH_CRY
@@ -508,10 +646,10 @@ namespace QArray
     auto *genModeCmd = meta->AddParamCommand<G4UIcmdWithAString>(
         "/QR/generator/mode", "Generator mode.");
 #ifdef QR_WITH_CRY
-    genModeCmd->SetCandidates("particleGun gps cry");
+    genModeCmd->SetCandidates("particleGun gps cry volumeScan");
     meta->Set("/QR/generator/mode", "cry");
 #else
-    genModeCmd->SetCandidates("particleGun gps");
+    genModeCmd->SetCandidates("particleGun gps volumeScan");
     meta->Set("/QR/generator/mode", "particleGun");
 #endif
 

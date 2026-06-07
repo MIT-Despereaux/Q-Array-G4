@@ -1,0 +1,24 @@
+# Deterministic LEIDEN_II scoring check: start an electron inside scintillator D.
+/run/numberOfThreads 1
+
+/QR/geom/globalOffset 0 0 0 m
+/QR/geom/constructLab false
+/QR/geom/constructFridge false
+/QR/geom/addPb false
+/QR/geom/tableVer 20230601
+
+/QR/output/filetype csv
+/QR/output/writeSteps true
+/QR/output/filename energy_deposition_leiden_ii
+
+/run/initialize
+
+/QR/generator/mode gps
+/gps/particle e-
+/gps/energy 100 keV
+/gps/pos/type Point
+/gps/pos/centre -2604.71 794.55 951.8 mm
+/gps/direction 0 0 1
+
+/random/setSeeds 148854 4824
+/run/beamOn 1

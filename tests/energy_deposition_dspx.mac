@@ -1,0 +1,18 @@
+# Score one deterministic 100 keV electron in every material DSPX logical type.
+/run/numberOfThreads 1
+
+/QR/geom/globalOffset 0 0 0 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/output/filetype csv
+/QR/output/writeSteps true
+/QR/output/filename energy_deposition_dspx
+
+/run/initialize
+
+/QR/generator/mode volumeScan
+
+/random/setSeeds 148854 4824
+/run/beamOn 1
