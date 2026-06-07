@@ -11,7 +11,7 @@
 /process/em/verbose 0
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
-/QR/geom/globalOffset -2.5381 -1.0645 -1.38125 m
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38175 m
 /QR/geom/constructLab true
 /QR/geom/constructFridge true
 /QR/geom/addPb true
@@ -27,6 +27,6 @@
 /QR/generator/sideL 4 cm
 
 /random/setSeeds 148854 4824
-/control/echo Starting centered DSPX cosmic-ray batch run with 10000 events.
-/run/beamOn 10000
+/control/echo Starting centered DSPX cosmic-ray batch run with 500 events.
+/run/beamOn 500
 /control/echo Completed centered DSPX cosmic-ray batch run.

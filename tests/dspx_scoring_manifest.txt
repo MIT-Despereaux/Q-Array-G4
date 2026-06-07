@@ -2,8 +2,7 @@
 positive BrideLogical G4_STAINLESS-STEEL
 registration BrideBoreVacLogical G4_Galactic
 registration DetectorBoxAssemblyLogical G4_Galactic
-positive DetectorBase_LV G4_Cu
-positive DetectorCover_LV G4_Cu
+positive DetectorBox_LV G4_Cu
 positive DetectorSnCubeLogical G4_Sn
 positive ExperimentalPaddle_LV G4_Cu
 positive OVCTopRingLogical G4_STAINLESS-STEEL

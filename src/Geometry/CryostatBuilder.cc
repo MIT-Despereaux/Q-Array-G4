@@ -584,7 +584,8 @@ namespace QArray::Geometry
                       0,
                       mCheckOverlaps);
 
-    constexpr G4double detectorCoverOriginZ = 1.7 * mm;
+    constexpr G4double detectorBoxFloorZ = 3.5 * mm;
+    constexpr G4double detectorCrystalClearance = 1.7 * mm;
 
     auto* detectorCrystalSolid = new G4Box("DetectorSnCubeSolid",
                                            19.3 * mm / 2.,
@@ -596,7 +597,7 @@ namespace QArray::Geometry
     new G4PVPlacement(nullptr,
                       G4ThreeVector(0.,
                                     0.,
-                                    detectorCoverOriginZ + 3.0 * mm + 15.4 * mm / 2.),
+                                    detectorBoxFloorZ + detectorCrystalClearance + 15.4 * mm / 2.),
                       detectorCrystalLogical,
                       "DetectorSnCubePhysical",
                       detectorAssemblyLogical,
@@ -639,25 +640,14 @@ namespace QArray::Geometry
         0.35
       },
       {
-        "Detector_Base.stl",
-        "DetectorBaseSolid",
-        "DetectorBase_LV",
-        "DetectorBase_PV",
+        "Detector_Box.stl",
+        "DetectorBoxSolid",
+        "DetectorBox_LV",
+        "DetectorBox_PV",
         "G4_Cu",
         nullptr,
         G4ThreeVector(0., 0., 0.),
         0.,
-        0.8
-      },
-      {
-        "Detector_Cover.stl",
-        "DetectorCoverSolid",
-        "DetectorCover_LV",
-        "DetectorCover_PV",
-        "G4_Cu",
-        nullptr,
-        G4ThreeVector(0., 0., detectorCoverOriginZ),
-        180. * deg,
         0.8,
         0.55,
         0.35,
