@@ -647,7 +647,7 @@ namespace QArray::Geometry
         "G4_Cu",
         nullptr,
         G4ThreeVector(0., 0., 0.),
-        0.,
+        180. * deg,  // rotated 180° around Z to match DSPX orientation
         0.8,
         0.55,
         0.35,
