@@ -185,6 +185,8 @@ set(EXTRA_SCRIPTS
   vis_2.mac
   geometry_lab_proton.mac
   geometry_lab_proton_batch.mac
+  dspx_cosmic_visual.mac
+  dspx_cosmic_batch.mac
   run_test.mac
   tests/run_test_no_vis.mac
   tests/particle_gun_smoke.mac
