@@ -24,9 +24,9 @@
 /run/initialize
 
 /QR/generator/mode particleGun
-/QR/generator/sideL 4 cm
+/QR/generator/sideL 10 cm
 
 /random/setSeeds 148854 4824
-/control/echo Starting centered DSPX cosmic-ray batch run with 500 events.
-/run/beamOn 500
+/control/echo Starting centered DSPX cosmic-ray batch run with 10000 events.
+/run/beamOn 10000
 /control/echo Completed centered DSPX cosmic-ray batch run.
