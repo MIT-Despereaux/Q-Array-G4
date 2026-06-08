@@ -1,0 +1,23 @@
+[project]
+name = "q-array-g4-analysis"
+version = "0.1.0"
+description = "Python analysis notebooks for q-array-g4 simulation outputs"
+requires-python = ">=3.10"
+dependencies = [
+    "marimo",
+    "matplotlib",
+    "pandas",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "ty",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

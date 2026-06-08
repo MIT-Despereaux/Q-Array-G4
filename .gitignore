@@ -52,6 +52,7 @@ Thumbs.db
 *.wmv
 
 # Folders and cache files
+.venv/
 build/
 build-*/
 ext/
@@ -65,3 +66,7 @@ examples
 examples/
 .plans
 
+# Analysis notebook outputs
+notebook/image/*.png
+!notebook/image/.gitkeep
+__marimo__
