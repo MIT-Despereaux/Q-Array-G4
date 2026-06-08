@@ -1,0 +1,20 @@
+# Verify production DSPX scoring inventory without relying on random hits.
+/run/numberOfThreads 1
+
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38175 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/output/enable true
+/QR/output/filetype csv
+/QR/output/writeSteps true
+/QR/output/filename dspx_sn_only_scoring
+
+/run/initialize
+
+/QR/generator/mode particleGun
+/QR/generator/sideL 5 cm
+
+/random/setSeeds 148854 4824
+/run/beamOn 1

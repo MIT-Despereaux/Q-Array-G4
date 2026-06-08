@@ -193,8 +193,10 @@ set(EXTRA_SCRIPTS
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
   tests/energy_deposition_dspx.mac
+  tests/dspx_sn_only_scoring.mac
   tests/energy_deposition_leiden_ii.mac
   tests/check_energy_deposition.sh
+  tests/check_dspx_sn_only_scoring.sh
   tests/dspx_scoring_manifest.txt
 )
 
@@ -240,6 +242,14 @@ if(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
   )
   list(APPEND SMOKE_TESTS energy_deposition_leiden_ii)
 elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
+  add_test(
+    NAME dspx_sn_only_scoring
+    COMMAND bash tests/check_dspx_sn_only_scoring.sh
+            $<TARGET_FILE:main>
+            ${PROJECT_BINARY_DIR}/tests/dspx_sn_only_scoring.mac
+  )
+  list(APPEND SMOKE_TESTS dspx_sn_only_scoring)
+
   add_test(
     NAME energy_deposition_dspx
     COMMAND bash tests/check_energy_deposition.sh
