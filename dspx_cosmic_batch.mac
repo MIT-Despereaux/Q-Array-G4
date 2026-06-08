@@ -1,7 +1,7 @@
 # Centered DSPX cosmic-ray batch run. Run with an executable configured using:
 #   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
 
-/run/numberOfThreads 1
+/run/numberOfThreads 8
 
 /control/verbose 1
 /run/verbose 0
@@ -24,9 +24,9 @@
 /run/initialize
 
 /QR/generator/mode particleGun
-/QR/generator/sideL 10 cm
+/QR/generator/sideL 5 cm
 
 /random/setSeeds 148854 4824
-/control/echo Starting centered DSPX cosmic-ray batch run with 10000 events.
-/run/beamOn 10000
+/control/echo Starting centered DSPX cosmic-ray batch run with 1000000 events.
+/run/beamOn 1000000
 /control/echo Completed centered DSPX cosmic-ray batch run.

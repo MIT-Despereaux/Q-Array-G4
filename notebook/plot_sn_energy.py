@@ -201,7 +201,7 @@ def _(mo, summary):
 def _(mo):
     default_plot_settings = {
         "bins": 100,
-        "x_max_mev": 10.0,
+        "x_max_mev": 15.0,
         "log_y": False,
     }
     plot_settings_form = (
