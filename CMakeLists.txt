@@ -112,22 +112,54 @@ endif()
 include_directories(${MCMC_HEADER_ONLY_DIR})
 
 # ----------------------------------------------------------------------------
+# Include CADMesh
+set(CADMESH_SOURCE_DIR ${PROJECT_SOURCE_DIR}/submodules/cadmesh)
+set(CADMESH_INCLUDE_DIR ${CADMESH_SOURCE_DIR})
+if(NOT EXISTS ${CADMESH_INCLUDE_DIR}/CADMesh.hh)
+  set(CADMESH_INCLUDE_DIR ${CADMESH_SOURCE_DIR}/include)
+endif()
+if(NOT EXISTS ${CADMESH_INCLUDE_DIR}/CADMesh.hh)
+  message(FATAL_ERROR "CADMesh submodule is missing. Run: git submodule update --init --recursive")
+endif()
+include_directories(${CADMESH_INCLUDE_DIR})
+
+# ----------------------------------------------------------------------------
 # Locate sources and headers for this project
 # NB: headers are included so they will show up in IDEs
 #
 file(GLOB sources ${PROJECT_SOURCE_DIR}/src/*.cc)
 file(GLOB headers ${PROJECT_SOURCE_DIR}/include/*.hh)
 list(REMOVE_ITEM sources
-  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc
+  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_LEIDEN_II.cc
   ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc
+  ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_DSPX.cc
+)
+list(REMOVE_ITEM headers
+  ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_LEIDEN_II.hh
+  ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_CURIE.hh
+  ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_DSPX.hh
 )
 
 if(QARRAY_DETECTOR_GEOMETRY STREQUAL "CURIE")
   message(FATAL_ERROR "QARRAY_DETECTOR_GEOMETRY=CURIE is reserved for src/DetectorConstruction_CURIE.cc, but CURIE is not wired into the current QArray application build yet")
 elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
-  list(APPEND sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc)
+  list(APPEND sources
+    ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_LEIDEN_II.cc
+  )
+  list(APPEND headers
+    ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_LEIDEN_II.hh
+  )
 elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
-  message(FATAL_ERROR "QARRAY_DETECTOR_GEOMETRY=DSPX is reserved for the translated cache geometry, but DSPX detector construction is not implemented yet")
+  list(APPEND sources
+    ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_DSPX.cc
+    ${PROJECT_SOURCE_DIR}/src/Geometry/CryostatBuilder.cc
+    ${PROJECT_SOURCE_DIR}/src/Geometry/Shapes.cc
+  )
+  list(APPEND headers
+    ${PROJECT_SOURCE_DIR}/include/DetectorConstruction_DSPX.hh
+    ${PROJECT_SOURCE_DIR}/include/Geometry/CryostatBuilder.hh
+    ${PROJECT_SOURCE_DIR}/include/Geometry/Shapes.hh
+  )
 else()
   message(FATAL_ERROR "Unsupported QARRAY_DETECTOR_GEOMETRY=${QARRAY_DETECTOR_GEOMETRY}; expected CURIE, LEIDEN_II, or DSPX")
 endif()
@@ -151,11 +183,21 @@ set(EXTRA_SCRIPTS
   init_vis.mac
   vis_1.mac
   vis_2.mac
+  geometry_lab_proton.mac
+  geometry_lab_proton_batch.mac
+  dspx_cosmic_visual.mac
+  dspx_cosmic_batch.mac
   run_test.mac
   tests/run_test_no_vis.mac
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
+  tests/energy_deposition_dspx.mac
+  tests/dspx_sn_only_scoring.mac
+  tests/energy_deposition_leiden_ii.mac
+  tests/check_energy_deposition.sh
+  tests/check_dspx_sn_only_scoring.sh
+  tests/dspx_scoring_manifest.txt
 )
 
 foreach(_script ${EXTRA_SCRIPTS})
@@ -164,6 +206,15 @@ foreach(_script ${EXTRA_SCRIPTS})
     ${PROJECT_BINARY_DIR}/${_script}
     COPYONLY
   )
+endforeach()
+
+# ----------------------------------------------------------------------------
+# Copy STL mesh files from src/Geometry/obj/ into the build directory so
+# ./main can find them at runtime. This is a no-op when the directory is empty.
+#
+file(GLOB DSPX_MESHES "${PROJECT_SOURCE_DIR}/src/Geometry/obj/*.stl")
+foreach(_mesh ${DSPX_MESHES})
+  configure_file(${_mesh} ${PROJECT_BINARY_DIR} COPYONLY)
 endforeach()
 
 add_test(
@@ -179,6 +230,37 @@ add_test(
   COMMAND main tests/run_test_no_vis.mac
 )
 set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis run_test_no_vis)
+
+if(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
+  add_test(
+    NAME energy_deposition_leiden_ii
+    COMMAND bash tests/check_energy_deposition.sh
+            $<TARGET_FILE:main>
+            ${PROJECT_BINARY_DIR}/tests/energy_deposition_leiden_ii.mac
+            energy_deposition_leiden_ii
+            scint_II
+  )
+  list(APPEND SMOKE_TESTS energy_deposition_leiden_ii)
+elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
+  add_test(
+    NAME dspx_sn_only_scoring
+    COMMAND bash tests/check_dspx_sn_only_scoring.sh
+            $<TARGET_FILE:main>
+            ${PROJECT_BINARY_DIR}/tests/dspx_sn_only_scoring.mac
+  )
+  list(APPEND SMOKE_TESTS dspx_sn_only_scoring)
+
+  add_test(
+    NAME energy_deposition_dspx
+    COMMAND bash tests/check_energy_deposition.sh
+            $<TARGET_FILE:main>
+            ${PROJECT_BINARY_DIR}/tests/energy_deposition_dspx.mac
+            energy_deposition_dspx
+            ${PROJECT_BINARY_DIR}/tests/dspx_scoring_manifest.txt
+            manifest
+  )
+  list(APPEND SMOKE_TESTS energy_deposition_dspx)
+endif()
 
 if(NOT WITH_CRY)
   add_test(

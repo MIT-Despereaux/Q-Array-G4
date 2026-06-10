@@ -1,0 +1,32 @@
+# Centered DSPX cosmic-ray batch run. Run with an executable configured using:
+#   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
+
+/run/numberOfThreads 8
+
+/control/verbose 1
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/process/verbose 0
+/process/em/verbose 0
+
+# Shift the complete lab/fridge assembly so the Sn cube is at world origin.
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38175 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/output/enable true
+/QR/output/filetype csv
+/QR/output/writeSteps true
+/QR/output/filename ../output/g4sim/v02x/dspx_cosmic_batch
+
+/run/initialize
+
+/QR/generator/mode particleGun
+/QR/generator/sideL 5 cm
+
+/random/setSeeds 148854 4824
+/control/echo Starting centered DSPX cosmic-ray batch run with 1000000 events.
+/run/beamOn 1000000
+/control/echo Completed centered DSPX cosmic-ray batch run.

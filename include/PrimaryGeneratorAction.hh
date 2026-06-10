@@ -31,12 +31,14 @@ namespace QArray
     {
       kParticleGun = 0,
       kGPS,
-      kCRY
+      kCRY,
+      kVolumeScan
     };
 
     std::unordered_map<std::string, MODE> mModeMap = {
         {"particleGun", kParticleGun},
         {"gps", kGPS},
+        {"volumeScan", kVolumeScan},
 #ifdef QR_WITH_CRY
         {"cry", kCRY}
 #endif
@@ -79,11 +81,14 @@ namespace QArray
     // Generate the direction and position of the particle on a hemisphere
     // for the particle gun
     void InitCosmicParticleGun();
+    void InitVolumeScan();
+    void GenerateVolumeScanEvent(G4Event*);
 
     G4GenericMessenger *mMessenger = nullptr;
 
     G4GeneralParticleSource *mGeneralParticleSource = nullptr;
     G4ParticleGun *mParticleGun = nullptr;
+    std::vector<G4ThreeVector> mVolumeScanPositions;
     G4RandGeneral *mRandGeneral = nullptr;
 
     std::default_random_engine mEngineC;

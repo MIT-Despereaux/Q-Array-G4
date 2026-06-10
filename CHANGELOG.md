@@ -19,6 +19,11 @@ This file is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Improves compatibility with Geant4 10.7 headers used by the local smoke-test environment.
 - Renames the internal C++ namespace from `QR` to `QArray` while retaining the
   `/QR/...` Geant4 UI command prefix for compatibility.
+- Splits the shared `DetectorConstruction.hh` into per-geometry headers:
+  `DetectorConstruction_LEIDEN_II.hh` and `DetectorConstruction_DSPX.hh`.
+  Each geometry variant now has its own fully independent header that only
+  declares the members it actually uses. Correspondingly renames
+  `DetectorConstruction.cc` to `DetectorConstruction_LEIDEN_II.cc`.
 
 ## [Qurad-G4-Simulation_v0.1.3] 2023-12-13
 ### Added

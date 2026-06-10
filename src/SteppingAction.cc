@@ -1,6 +1,12 @@
 #include "SteppingAction.hh"
 #include "EventAction.hh"
-#include "DetectorConstruction.hh"
+#if defined(QARRAY_DETECTOR_GEOMETRY_LEIDEN_II)
+#include "DetectorConstruction_LEIDEN_II.hh"
+#elif defined(QARRAY_DETECTOR_GEOMETRY_DSPX)
+#include "DetectorConstruction_DSPX.hh"
+#else
+#include "DetectorConstruction_LEIDEN_II.hh"
+#endif
 
 #include "G4Step.hh"
 #include "G4Event.hh"

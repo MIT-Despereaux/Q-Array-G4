@@ -1,0 +1,26 @@
+# requirement logical-volume material
+positive BrideLogical G4_STAINLESS-STEEL
+registration BrideBoreVacLogical G4_Galactic
+registration DetectorBoxAssemblyLogical G4_Galactic
+positive DetectorBox_LV G4_Cu
+positive DetectorSnCubeLogical G4_Sn
+positive ExperimentalPaddle_LV G4_Cu
+positive OVCTopRingLogical G4_STAINLESS-STEEL
+positive PbBaseBrickLogical G4_Pb
+positive PbRingBrickLogical G4_Pb
+positive Plate100mKLogical G4_Cu
+positive Plate10mKLogical G4_Cu
+positive Plate1KLogical G4_Cu
+positive Plate4KLogical G4_Cu
+positive Plate50KLogical G4_Cu
+positive RicochetBoxPlatform_LV G4_Cu
+positive Screen1KBottomAlRingLogical G4_Al
+positive Screen1KLogical MuMetal
+positive Screen1KTopAlRingLogical G4_Al
+positive Screen4KLogical G4_Cu
+positive Screen50KLogical G4_Cu
+positive ScreenOVCLogical G4_STAINLESS-STEEL
+registration fridgeLogical G4_AIR
+positive labLogical G4_CONCRETE
+registration stageOVCVacLogical G4_Galactic
+registration worldLogical G4_AIR

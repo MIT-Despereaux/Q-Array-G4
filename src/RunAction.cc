@@ -1,5 +1,6 @@
 #include "RunAction.hh"
 #include "Metadata.hh"
+#include "SensitiveDetector.hh"
 
 #include "G4RunManager.hh"
 #include "G4Run.hh"
@@ -11,6 +12,38 @@
 
 namespace QArray
 {
+  namespace
+  {
+#ifdef QARRAY_DETECTOR_GEOMETRY_DSPX
+    constexpr const char* kSnScoringLogicalName = "DetectorSnCubeLogical";
+
+    void ConfigureDSPXScoring()
+    {
+      auto meta = Metadata::GetInstance();
+      const auto mode = meta->GetString("/QR/generator/mode");
+      const G4bool scoreAllDSPXVolumes = (mode == "volumeScan");
+
+      for (auto* logical : *G4LogicalVolumeStore::GetInstance())
+      {
+        auto* detector =
+            dynamic_cast<SensitiveDetector*>(logical->GetSensitiveDetector());
+        if (!detector || detector->GetName().find("dspx_") != 0)
+          continue;
+
+        const auto& logicalName = logical->GetName();
+        const G4bool active =
+            scoreAllDSPXVolumes || logicalName == kSnScoringLogicalName;
+        detector->Activate(active);
+
+        G4cout << "DSPX_SCORING_ACTIVE logical=" << logicalName
+               << " detector=" << detector->GetName()
+               << " active=" << (active ? "true" : "false")
+               << " mode=" << mode << G4endl;
+      }
+    }
+#endif
+  }
+
   RunAction::RunAction() : G4UserRunAction(),
                            mPGen(nullptr), mWriter(new DataWriter())
   {
@@ -45,6 +78,10 @@ namespace QArray
     // initialize primary generator
     if (mPGen)
       mPGen->BeginOfRunAction();
+
+#ifdef QARRAY_DETECTOR_GEOMETRY_DSPX
+    ConfigureDSPXScoring();
+#endif
 
     // set up output data
     mWriter->RunStart(run, isMaster);

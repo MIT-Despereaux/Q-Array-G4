@@ -1,3 +1,10 @@
+---
+date: 2026-05-21
+type: reference
+tags: [geant4, tutorial, geometry, materials, kernel, scoring]
+status: reference
+---
+
 # Geant4 Tutorial PDFs - Structured Technical Summary
 
 Extracted from: Vienna Workshop on Simulations (VIEWS24), April 2024

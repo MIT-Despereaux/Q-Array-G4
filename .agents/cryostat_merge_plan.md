@@ -1,379 +1,116 @@
-# Cryostat Merge Plan
+# Cryostat Merge Plan — COMPLETED
 
-## Decision
+## Summary
 
-Use `QArray::Geometry` for imported cryostat geometry code.
+Created `QArray::Geometry::CryostatBuilder` in this code base using geometry
+logic mined from `cache/Simulation-develop/Geometry/`, without importing ROOT
+serialization, messenger infrastructure, SimuOutput, or the full Ricochet
+builder framework. Implemented on branch `feature/dspx-cryostat-geometry`.
 
-The current repository uses `QArray` as its real namespace. The extracted
-simulation in `cache/Simulation-develop/Geometry` uses `Geometry`, but we do
-not want to import that whole framework. The cryostat code should become part
-of this project, under a geometry sub-namespace owned by QArray:
+The DSPX geometry is a configure-time variant selected via
+`-DQARRAY_DETECTOR_GEOMETRY=DSPX`. `LEIDEN_II` remains the default.
 
-```cpp
-namespace QArray::Geometry
-{
-  class CryostatBuilder;
-}
+## What Was Built
+
+### Architecture
+```
+QARRAY_DETECTOR_GEOMETRY=DSPX compiles:
+  src/DetectorConstruction_DSPX.cc   -- world/lab/fridge placement
+  src/Geometry/CryostatBuilder.cc    -- cryostat internals
+  src/Geometry/Shapes.cc             -- FilledTube, Bucket, HexBride helpers
 ```
 
-This keeps the application namespace coherent while leaving room for future
-geometry builders if more extracted components are merged later.
-
-## Goal
-
-Create a stripped-down cryostat builder in this code base using useful geometry
-logic from the cached simulation, without importing ROOT serialization,
-messenger infrastructure, SimuOutput, or the full Ricochet builder framework.
-
-The current `QArray::DetectorConstruction` should remain the owner of world,
-lab, table, fridge placement, and run-time geometry options. The imported
-cryostat code should only build cryostat geometry into a provided mother
-logical volume.
-
-## Current Code Base
-
-Current implementation:
-
-- Namespace: `QArray`
-- Main geometry owner: `QArray::DetectorConstruction`
-- Current cryostat entry point: `DetectorConstruction::ConstructFridge()`
-- Style: direct Geant4 construction with `G4Box`, `G4Tubs`,
-  `G4Polycone`, `G4SubtractionSolid`, `G4LogicalVolume`, and
-  `G4PVPlacement`
-- Configuration: current metadata / messenger style under QArray code
-- Sensitive detector/output: current local QArray classes
-
-This should remain the controlling framework.
-
-## Cache Code To Mine
-
-Relevant cached files:
-
-- `cache/Simulation-develop/Geometry/include/Geometry/Cryostat.hh`
-- `cache/Simulation-develop/Geometry/src/Cryostat.cc`
-- `cache/Simulation-develop/Geometry/include/Geometry/GenericCryostatBuilder.hh`
-- `cache/Simulation-develop/Geometry/src/GenericCryostatBuilder.cc`
-- `cache/Simulation-develop/Geometry/include/Geometry/GeometryConfiguration.hh`
-
-`Geometry::Cryostat` is simpler and more standalone, but appears older and
-Lyon-style.
-
-`Geometry::GenericCryostatBuilder` has the more relevant final/run geometry
-configuration logic, but it depends on the extracted framework. Prefer mining
-its geometry constants and construction logic, not copying its framework shape
-as-is.
-
-## Proposed Local API
-
-Create:
-
-- `include/CryostatBuilder.hh`
-- `src/CryostatBuilder.cc`
-
-Initial API:
-
-```cpp
-namespace QArray::Geometry
-{
-  struct CryostatVolumes
-  {
-    G4LogicalVolume* ovcLogical = nullptr;
-    G4LogicalVolume* ovcVacuumLogical = nullptr;
-    G4LogicalVolume* mixingChamberLogical = nullptr;
-  };
-
-  class CryostatBuilder
-  {
-  public:
-    explicit CryostatBuilder(G4LogicalVolume& mother);
-
-    void SetCheckOverlaps(G4bool value);
-    void SetVerbose(G4int level);
-
-    CryostatVolumes Build(const G4ThreeVector& position);
-  };
-}
-```
-
-Return key logical volumes only if current detector/chip placement needs them.
-If no downstream code needs these pointers, `Build(...)` can return `void`.
-
-## What To Strip
-
-Do not import:
-
-- ROOT headers such as `TDirectory.h`, `TTree.h`, `TString.h`
-- `Write(TDirectory&)` methods
-- `ObjectSerialiser`
-- `SimuOutput::*`
-- `G4Helpers::*`
-- `Utility::*`
-- `ActiveBuilder`
-- `SensitiveBuilder`
-- `OwningBuilderMessenger`
-- `/geometry/...` Geant4 UI command framework
-- `MiniCryoCubeBuilder` coupling unless explicitly needed later
-- Generated build files from the cache tree
-
-## Shape Helpers To Keep
-
-Keep a small local version of the cache shape wrappers because they improve
-readability and reduce repeated Geant4 boilerplate.
-
-Recommended local files:
-
-- `include/Geometry/Shapes.hh`
-- `src/Geometry/Shapes.cc`
-- optionally `include/Geometry/VolumePlacement.hh`
-- optionally `src/Geometry/VolumePlacement.cc`
-
-Use namespace `QArray::Geometry`, not the cache namespace:
-
-```cpp
-namespace QArray::Geometry
-{
-  struct FilledTube;
-  struct Bucket;
-  struct ReversedBucket;
-  struct HexBride;      // new: hexagonal prism lid for DSPX
-}
-```
-
-For the cryostat merge, start with only the shapes needed by the cryostat:
-
-- `FilledTube`
-- `Bucket`
-- `ReversedBucket`  (kept for reference but NOT used for DSPX bride -- see below)
-- `HexBride`        (new, replaces ReversedBucket for DSPX)
-
-Do not import the whole volume-builder framework just to get these wrappers.
-In particular, avoid bringing over `VolumeBuilder`, `VolumeParser`,
-`VolumeBuilderMessenger`, and the `/geometry/volumes/...` command layer.
-
-It is acceptable to add a small local placement helper so construction calls can
-stay compact, for example:
-
-```cpp
-template <class Solid, class... Args>
-G4LogicalVolume* PlaceVolume(
-    G4LogicalVolume& mother,
-    const G4String& name,
-    G4Material& material,
-    const G4ThreeVector& position,
-    G4bool checkOverlaps,
-    Args&&... args);
-```
-
-This gives us most of the readability benefit of cache calls such as:
-
-```cpp
-factory.Add<FilledTube>("Plate10mK", "CopperPlate", position, radius, height);
-```
-
-without adopting cache dependencies such as `MaterialColour`, `VolumePack`,
-`ColouredVolumeAdder`, `G4Helpers`, or command parsing.
-
-### HexBride shape (DSPX-specific)
-
-The DSPX bride is a hexagonal prism lid, not a cylinder. The cached
-`ReversedBucket` (G4Polycone) cannot represent a hexagonal outer wall.
-
-Use `G4Polyhedra` directly in `CryostatBuilder.cc` or wrap it in a
-`HexBride` struct in `Shapes.hh`:
-
-```cpp
-namespace QArray::Geometry
-{
-  // Inverted hexagonal cup (lid). Origin = open mouth center (bottom).
-  // Wall section: ri=innerRadius, ro=circumRadius, height=Bride_h
-  // Lid disk:     ri=0, ro=circumRadius, thickness=Bride_e
-  // Total height: Bride_h + Bride_e
-  //
-  // G4Polyhedra parameters:
-  //   phiStart = 0, phiTotal = 360*deg, numSide = 6
-  //   z-planes (4): [0, Bride_h, Bride_h, Bride_h + Bride_e]
-  //   rInner:       [innerRadius, innerRadius, 0, 0]
-  //   rOuter:       [circumRadius, circumRadius, circumRadius, circumRadius]
-  struct HexBride : G4Polyhedra
-  {
-    HexBride(const G4String& name,
-             double innerRadius,   // bore radius = 187 mm for DSPX
-             double circumRadius,  // hex vertex-to-center = 240.2 mm for DSPX
-             double Bride_h,       // inner cavity height = 97 mm
-             double Bride_e);      // top disk thickness  = 14 mm
-  };
-}
-```
-
-DSPX confirmed values:
-  innerRadius   = 187 mm
-  flat-to-flat  = 416 mm  ->  inradius = 208 mm
-  circumRadius  = 208 / cos(30 deg) = 240.2 mm
-  Bride_h       = 97 mm
-  Bride_e       = 14 mm   (= 111 mm total - 97 mm inner height)
-  Total height  = 111 mm
-
-## Output Dependency Clarification
-
-The output dependencies in the cached geometry module are not needed just to
-build the cryostat geometry.
-
-In the cache framework, `SimuOutput` and ROOT are used for extra bookkeeping:
-
-- writing activated builder metadata into ROOT output files
-- hashing physical volume names into stable volume IDs
-- storing hit/event data with volume IDs
-- serializing builder settings through `InfoHeaderWriter`
-
-That is useful for the original Ricochet simulation workflow, but it is not a
-geometry-construction requirement. For this merge, keep output ownership in the
-current QArray data/output classes and avoid importing cached output contracts.
-
-If later we need volume-name metadata, add a small QArray-native hook after the
-geometry is constructed instead of adopting `SimuOutput`.
-
-## Implementation Approach
-
-1. Add `QArray::Geometry::CryostatBuilder`.
-2. Move reusable cryostat helpers out of `DetectorConstruction::ConstructFridge`
-   where appropriate, such as can/screen construction helpers.
-3. Add a small `QArray::Geometry` shape-helper layer inspired by cache
-   `Shapes.hh`, especially `FilledTube`, `Bucket`, `ReversedBucket` (retained for
-   reference / non-DSPX configs only), and `HexBride` (new, DSPX bride).
-4. Mine dimensions and final-design construction logic from
-   `GenericCryostatBuilder`, translating framework calls into local helper calls.
-   **Primary dimension source for DSPX: `.agents/diagram_cryostat_dspx.txt`.**
-   All plate, screen, OVC, and bride values are fully locked there; do not rely
-   on the cached config setters for DSPX numbers.
-5. Keep material setup local and minimal. Prefer NIST materials already used in
-   this project. Define custom cryostat materials only when the geometry needs
-   names not available through NIST.
-6. Update `QArray::DetectorConstruction::ConstructFridge()` to delegate to
-   `QArray::Geometry::CryostatBuilder`.
-7. Preserve existing current-code behavior for lab/table/global offset/fridge
-   placement unless deliberately changing it.
-8. Build and run the project smoke macro after implementation.
-
-## CMake Geometry Selection
-
-Add a CMake cache option to choose the detector geometry implementation at
-configure time:
-
-```cmake
-set(QARRAY_DETECTOR_GEOMETRY "LEIDEN_II" CACHE STRING "Detector geometry implementation: CURIE, LEIDEN_II, or DSPX")
-set_property(CACHE QARRAY_DETECTOR_GEOMETRY PROPERTY STRINGS CURIE LEIDEN_II DSPX)
-```
-
-Intended meanings:
-
-- `CURIE`: `src/DetectorConstruction_CURIE.cc`.
-- `LEIDEN_II`: current `src/DetectorConstruction.cc` implementation with lab,
-  table, and the existing non-DSPX fridge geometry.
-- `DSPX`: future imported/translated cryostat geometry mined from
-  `cache/Simulation-develop`.
-
-Implementation notes:
-
-- Avoid compiling multiple `DetectorConstruction` implementations that define
-  the same class.
-- Replace the current ad hoc source exclusion:
-  `list(REMOVE_ITEM sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc)`
-  with explicit selection.
-- Keep common helpers such as `QArray::Geometry::Shapes` available to DSPX
-  without requiring ROOT, SimuOutput, or cache libraries.
-- Add a compile definition such as `QARRAY_DETECTOR_GEOMETRY_DSPX` only if
-  needed by shared source files. Prefer source selection where practical.
-
-Possible CMake shape:
-
-```cmake
-set(QARRAY_DETECTOR_GEOMETRY "LEIDEN_II" CACHE STRING "Detector geometry implementation: CURIE, LEIDEN_II, or DSPX")
-set_property(CACHE QARRAY_DETECTOR_GEOMETRY PROPERTY STRINGS CURIE LEIDEN_II DSPX)
-
-if(QARRAY_DETECTOR_GEOMETRY STREQUAL "CURIE")
-  list(APPEND sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_CURIE.cc)
-elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
-  list(APPEND sources ${PROJECT_SOURCE_DIR}/src/DetectorConstruction.cc)
-elseif(QARRAY_DETECTOR_GEOMETRY STREQUAL "DSPX")
-  list(APPEND sources
-    ${PROJECT_SOURCE_DIR}/src/DetectorConstruction_DSPX.cc
-    ${PROJECT_SOURCE_DIR}/src/Geometry/CryostatBuilder.cc
-    ${PROJECT_SOURCE_DIR}/src/Geometry/Shapes.cc
-  )
-else()
-  message(FATAL_ERROR "Unsupported QARRAY_DETECTOR_GEOMETRY=${QARRAY_DETECTOR_GEOMETRY}; expected CURIE, LEIDEN_II, or DSPX")
-endif()
-```
-
-The important technical choice is to make detector geometry a configure-time
-selection, not a run-time switch between separately compiled
-`DetectorConstruction` classes with the same symbols. `LEIDEN_II` should remain
-the default until DSPX is implemented and validated.
-
-## Design Constraints
-
-- Keep the public integration point small.
-- Keep `DetectorConstruction` in charge of application-level geometry choices.
-- Avoid importing a second command framework.
-- Avoid importing a second output framework.
-- Avoid namespace aliases that hide ownership.
-- Do not rename the whole cached `Geometry` module into QArray. Translate only
-  the cryostat subset we actually need.
-- Do keep small local geometry primitives when they reduce repeated Geant4
-  boilerplate and do not pull in framework dependencies.
-
-## Open Questions Before Coding
-
-- Which cached cryostat configuration is the target: `RicochetFinalDesign`,
-  `RicochetRUN013`, `RicochetRUN014`, `RicochetRUN015`, or `RicochetRUN016`?
-  **(resolved -- see Resolved Decisions below)**
-- Does current chip/detector placement need access to the OVC vacuum logical
-  volume or another internal cryostat logical volume?
-  **(resolved -- see Resolved Decisions below)**
-- Should the new cryostat replace the current `ConstructFridge()` geometry in
-  one step, or should it be gated behind a metadata option for comparison?
-  **(resolved -- see Resolved Decisions below)**
-
-## Resolved Decisions
-
-**Q1 -- Target configuration: CryoConcept2020 plate dimensions + Bucket screen construction**
-
-DSPX screens have no bolt flanges, so the `BuildScreen()` flanged-cylinder path
-(RicochetFinalDesign) does not match the hardware. Use `Bucket` G4Polycone
-shapes for all screens and the OVC instead.
-
-Plate dimensions: `CryoConcept2020` (updated inter-plate gaps from CROSS baseline).
-Screen construction: `Bucket(innerRadius, thickness, height)` for Screen1K,
-Screen4K, Screen50K, and OVC. No Screen10mK. No floating plate.
-Bride: `HexBride` (G4Polyhedra, hexagonal outer, NOT ReversedBucket -- see HexBride
-section below).
-Position cascade: CryoConcept/CROSS-style gap chain (not the single absolute
-`DisPlate10mK_InnerBottomOVC` anchor used by RicochetFinalDesign).
-
-Screen heights are fully DERIVED from the gap cascade -- not free parameters.
-Only two genuinely unknown DSPX values remain:
-  - `DisPlate10mK_BottomScreen1K`: how far below Plate10mK bottom the Screen1K
-    inner bottom center sits (replaces the Screen10mK cascade since there is none).
-  - `OVC_h`: total height of the OVC Bucket wall.
-All inter-screen gap distances default to CROSS values (1.95 cm, 1.98 cm, 2.0 cm)
-until DSPX drawings confirm otherwise.
-
-See `.agents/diagram_cryostat_bucket.txt` for the full annotated diagram.
-
-**Q2 -- Downstream logical volume access: required**
-
-`DetectorConstruction` needs logical volume pointers back from `CryostatBuilder`.
-`CryostatVolumes` must be populated. At minimum populate:
-- `ovcLogical` -- OVC shell logical volume
-- `ovcVacuumLogical` -- vacuum interior of the OVC (detector array lives here)
-- `mixingChamberLogical` -- region around the 10mK plate
-
-Add `plate10mKCenter` as a `G4ThreeVector` convenience field if chip placement
-is expressed relative to the 10mK plate origin rather than the cryostat Build()
-position.
-
-**Q3 -- Replacement strategy: CMake configure-time selection**
-
-Gate the new builder behind `QARRAY_DETECTOR_GEOMETRY=DSPX`. `LEIDEN_II` remains
-the default and is untouched during development. Do not use run-time switching
-between separately compiled `DetectorConstruction` classes with the same symbols.
+`CryostatBuilder::Build()` returns `CryostatVolumes` with logical volume
+pointers (`fridgeLogical`, `ovcLogical`, `ovcVacuumLogical`,
+`mixingChamberLogical`, `plate10mKCenter`) for downstream detector placement.
+
+### Key Design Decisions
+
+**Namespace:** `QArray::Geometry` — not the extracted `Geometry` namespace.
+
+**Shapes kept:** `FilledTube`, `Bucket`, `HexBride` (DSPX-specific hexagonal
+prism bride via `G4Polyhedra`). `ReversedBucket` retained for reference but
+NOT used for DSPX.
+
+**What was stripped:** ROOT headers, `Write(TDirectory&)`, `ObjectSerialiser`,
+`SimuOutput::*`, `G4Helpers::*`, `Utility::*`, `ActiveBuilder`,
+`SensitiveBuilder`, `OwningBuilderMessenger`, `/geometry/...` UI commands,
+`MiniCryoCubeBuilder` coupling, generated build files.
+
+**Target configuration:** CryoConcept2020 plate dimensions + Bucket screen
+construction. No Screen10mK, no floating plate. Bride = `HexBride` (not
+`ReversedBucket`). Position cascade uses CryoConcept/CROSS-style gap chain.
+
+**CMake:** Configure-time selection, not run-time switching. `LEIDEN_II` is
+default until DSPX is validated.
+
+### Geometry Decisions
+
+**Plates:** CryoConcept2020 dimensions. See `02_DSPX_Cryostat_Dimensions.md`.
+
+**Screens:** `Bucket` (G4Polycone cup, flangeless). Screen1K, Screen4K,
+Screen50K, OVC. Inter-screen gaps use CROSS defaults (19.5mm, 19.8mm, 20.0mm)
+until DSPX drawings confirm.
+
+**Bride:** `HexBride` (G4Polyhedra, 6-sided). ri=187mm, flat-to-flat=416mm,
+circumR=240.2mm, h=97mm, top disk e=14mm.
+
+**CADMesh:** submodule at `submodules/cadmesh` (v2.0.3). STL inventory and
+origin convention in `src/Geometry/obj/README.md`.
+
+### Phase Status
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 0 | Source audit, lock geometry inputs | ✅ done |
+| 1 | CMake geometry selector (`QARRAY_DETECTOR_GEOMETRY`) | ✅ done |
+| 2 | Shape helpers (`FilledTube`, `Bucket`, `HexBride`) | ✅ done |
+| 3 | `CryostatBuilder` — plates, screens, OVC, bride | ✅ done |
+| 4 | `DetectorConstruction_DSPX.cc` integration | ✅ done |
+| 5 | Batch validation, overlap checks | ✅ done |
+| 6 | CADMesh submodule + `src/Geometry/obj/` setup | ✅ done |
+| 7 | `BuildMeshComponents()` — STL loading + placement | ✅ done |
+
+### Key Implementation Files
+
+| File | Purpose |
+|------|---------|
+| `include/Geometry/CryostatBuilder.hh` | Builder API + `CryostatVolumes` struct |
+| `src/Geometry/CryostatBuilder.cc` | CSG cryostat + `BuildMeshComponents()` |
+| `include/Geometry/Shapes.hh` | `FilledTube`, `Bucket`, `HexBride` |
+| `src/Geometry/Shapes.cc` | Shape implementations |
+| `src/DetectorConstruction_DSPX.cc` | World/lab/fridge + delegates to builder |
+
+### Adding a New STL Component
+
+1. Export from FreeCAD: top face center at `(0,0,0)`, Z-up, mm, deviation
+   <= 0.1mm. See `05_STL_Placement_Workflow.md`.
+2. Copy `.stl` to `src/Geometry/obj/`.
+3. Add row to `src/Geometry/obj/README.md`.
+4. Add `MeshSpec` entry in `CryostatBuilder::BuildMeshComponents()`. The struct
+   uses `G4ThreeVector position` (offset in parent LV frame) and `G4double
+   rotationZ` (degrees around Z axis). See inline comments in
+   `CryostatBuilder.cc` for the `ovcVacLocalCenterZ` constant.
+5. Commit the `.stl` file (tracked in git).
+6. `cmake --build build-dspx` — CMake copies the file automatically.
+7. Verify with `builder.SetVerbose(1)` extent print + visualization.
+
+---
+
+## Remaining Work
+
+- [ ] Run `geometry_lab_proton.mac` (interactive vis) to visually verify the
+  full DSPX geometry including the detector box assembly.
+- [ ] Verify overlap checks pass with `checkOverlaps=true` for all mesh components
+  (Experimental_Paddle, Ricochet_Box_Platform, Detector_Base, Sn crystal).
+- [ ] Complete detector-box CSG sub-parts (small copper/sapphire pieces, box cover
+  STL) per `06_Detector_Box_CAD_Import_Plan.md`.
+- [ ] Update `CHANGELOG.md` when the feature branch lands on main.
+- [ ] Confirm inter-screen gap distances against actual DSPX drawings (currently
+  using CROSS defaults: 19.5mm / 19.8mm / 20.0mm).
+
+### Previous fixes
+- [x] Fix Experimental_Paddle STL format (ASCII `.ast` → `.stl`), rename file (commits `987244c`, `988b7a1`)
+- [x] Correct mesh placement z-position and G4Tubs center offset (commit `84b6a26`)
+- [x] Adjust visualization macro for DSPX geometry (commit `07f114c`)
+- [x] Add detector-box assembly mother LV + Sn crystal CSG (commit `82ecb21`)

@@ -243,10 +243,21 @@ namespace QArray
       AMan->SetNtupleRowWise(true);
 #endif
     }
-    // analysis manager won't append .root if the filename has a period in it
-    std::replace(fileName.begin(), fileName.end(), '.', '-');
+    // analysis manager won't append extension if the filename has a period in it;
+    // only sanitize the basename part, not the directory path (preserve '..')
+    {
+      auto pos = fileName.find_last_of("/\\");
+      auto start = (pos != G4String::npos) ? pos + 1 : 0;
+      std::replace(fileName.begin() + start, fileName.end(), '.', '-');
+    }
 
-    AMan->OpenFile(fileName + "." + filetype);
+    if (!AMan->OpenFile(fileName + "." + filetype))
+    {
+      G4ExceptionDescription msg;
+      msg << "Failed to open output file " << fileName << "." << filetype;
+      G4Exception("DataWriter::RunStart", "QRCode002", FatalException, msg);
+      return;
+    }
     // Prints out the file name
     G4cout << "DataWriter::RunStart opening file " << fileName << G4endl;
     // G4cout << "DataWriter::RunStart creating ntuples" << G4endl;
@@ -284,9 +295,17 @@ namespace QArray
              << G4endl;
       if (bWriteSteps || !det->IsReducible())
       {
+        const auto ntupleCount = AMan->GetNofNtuples();
         ntupleid = AMan->CreateNtuple(basename,
                                       "Step-by-step energy deposition");
         HitData::DefineNtuple(AMan, ntupleid, HitData::kFull);
+        if (ntupleid < 0 || AMan->GetNofNtuples() != ntupleCount + 1)
+        {
+          G4ExceptionDescription msg;
+          msg << "Failed to create output ntuple " << basename;
+          G4Exception("DataWriter::RunStart", "QRCode003", FatalException, msg);
+          return;
+        }
         // G4cout << "Current NtupleID: " << ntupleid << G4endl;
       }
 
@@ -297,8 +316,16 @@ namespace QArray
       {
         const G4String &name = name_reducer.first;
         const DataReducer &reducer = name_reducer.second;
+        const auto ntupleCount = AMan->GetNofNtuples();
         ntupleid = AMan->CreateNtuple(basename + "_" + name, name);
         HitData::DefineNtuple(AMan, ntupleid, reducer.reducelvl);
+        if (ntupleid < 0 || AMan->GetNofNtuples() != ntupleCount + 1)
+        {
+          G4ExceptionDescription msg;
+          msg << "Failed to create output ntuple " << basename << "_" << name;
+          G4Exception("DataWriter::RunStart", "QRCode003", FatalException, msg);
+          return;
+        }
         // G4cout << "Current NtupleID: " << ntupleid << G4endl;
       }
     }
@@ -375,22 +402,22 @@ namespace QArray
     for (auto *det : vecDetectors)
     {
       QRHitsCollection *hc = det->GetHitCollection();
-      if (!hc)
-        continue;
 
       if (bWriteSteps || !det->IsReducible())
       {
-        // G4cout << "Current Writing Ntuple ID: " << ntupleid << G4endl;
-        mAllStepsWriter.Write(AMan, ntupleid, hc, bSort);
+        if (hc)
+          mAllStepsWriter.Write(AMan, ntupleid, hc, bSort);
         ntupleid++;
       }
       if (!det->IsReducible())
         continue;
       for (auto &name_reducer : mReducers)
       {
-        // G4cout << "Current Writing Ntuple ID: " << ntupleid << G4endl;
-        DataReducer &reducer = name_reducer.second;
-        reducer.Write(AMan, ntupleid, hc, bSort);
+        if (hc)
+        {
+          DataReducer &reducer = name_reducer.second;
+          reducer.Write(AMan, ntupleid, hc, bSort);
+        }
         ntupleid++;
       }
     }

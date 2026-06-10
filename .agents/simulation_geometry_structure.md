@@ -1,3 +1,10 @@
+---
+date: 2026-05-20
+type: reference
+tags: [geant4, simulation-develop, geometry, architecture, integration]
+status: reference
+---
+
 # Simulation-develop Geometry Structure
 
 Source archive: `Simulation-develop.zip`

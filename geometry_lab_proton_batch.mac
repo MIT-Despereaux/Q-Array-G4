@@ -1,0 +1,36 @@
+# Batch DSPX version of geometry_lab_proton.mac. Run with an executable
+# configured using:
+#   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
+#
+# Builds the lab/fridge geometry and fires one 10 MeV proton from the top
+# centre of the 30 m world volume without opening a visualization window.
+
+/run/numberOfThreads 1
+
+/control/verbose 1
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/process/verbose 0
+/process/em/verbose 0
+
+/QR/geom/globalOffset 0 0 0 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/output/enable false
+
+/run/initialize
+
+/QR/generator/mode gps
+/gps/particle proton
+/gps/energy 10 MeV
+/gps/pos/type Point
+/gps/pos/centre 0 0 14.999 m
+/gps/direction 0 0 -1
+
+/random/setSeeds 148854 4824
+/control/echo Starting DSPX geometry batch check: one 10 MeV proton from (0,0,14.999 m) toward -z.
+/run/beamOn 1
+/control/echo Completed DSPX geometry batch check: processed 1 requested event.
