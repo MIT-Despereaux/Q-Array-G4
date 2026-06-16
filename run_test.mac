@@ -30,9 +30,10 @@
 /QR/geom/tableVer 20230601
 
 /run/initialize
-# Visualization setting
+# Visualization setting.
+# Keep this batch smoke macro headless-safe; run ./main interactively for vis.
 #/control/execute vis_1.mac
-/control/execute vis_2.mac
+#/control/execute vis_2.mac
 
 # Particle Gun
 /QR/generator/mode particleGun
@@ -74,5 +75,5 @@
 #/random/setSeeds 124 2342
 #/run/beamOn 50
 
-/vis/viewer/rebuild
+#/vis/viewer/rebuild
 #/vis/ogl/export
