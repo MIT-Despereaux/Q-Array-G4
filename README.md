@@ -50,7 +50,7 @@ Note, you might need to use `export QT_QPA_PLATFORM=xcb` to force an X11 session
 Run a batch macro:
 
 ```sh
-cd build && ./main run_test.mac
+cd build && ./main leiden_cosmic_batch.mac
 ```
 
 # Testing
@@ -62,5 +62,6 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-The default test suite runs a particle-gun event and verifies that selecting
-CRY fails clearly when `WITH_CRY=OFF`.
+The default Leiden II test suite runs a short cosmic batch macro, a
+particle-gun event, and verifies that selecting CRY fails clearly when
+`WITH_CRY=OFF`. DSPX builds use the DSPX-specific scoring checks.

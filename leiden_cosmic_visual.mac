@@ -1,0 +1,58 @@
+# Centered Leiden II cosmic-ray visualization. Run with an executable configured using:
+#   cmake -S . -B build-leiden -DQARRAY_DETECTOR_GEOMETRY=LEIDEN_II
+
+/run/numberOfThreads 1
+
+/control/verbose 1
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+# Shift the complete lab/fridge assembly to the measured Leiden placement.
+/QR/geom/globalOffset 2.64 -0.77 -1.509 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+/QR/geom/tableVer 20230601
+
+/QR/output/enable false
+
+/run/initialize
+
+/vis/open OGL 1200x1200-0+0
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+/vis/viewer/set/background white
+/vis/viewer/set/globalLineWidthScale 2
+/vis/viewer/set/globalMarkerScale 2
+/vis/drawVolume
+/vis/scene/add/trajectories smooth
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/default/setDrawStepPts true
+/vis/scene/add/scale 10 cm
+/vis/geometry/set/visibility worldLogical 0 false
+/vis/geometry/set/visibility tableSpaceLogical 0 false
+/vis/geometry/set/visibility frameLogical 0 false
+/vis/geometry/set/visibility catwalkLogical 0 false
+/vis/geometry/set/visibility labLogical 0 false
+/vis/viewer/set/viewpointVector 0.3 -1 0.7
+/vis/viewer/set/upVector 0 0 1
+/vis/viewer/set/lightsVector 0.3 0 0.85
+/vis/viewer/set/style surface
+/vis/viewer/set/auxiliaryEdge false
+/vis/viewer/centreOn detQPhysical
+/vis/viewer/zoom 10
+/vis/viewer/addCutawayPlane 0 -0.12 0 m -1 1 0
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+/vis/scene/endOfEventAction accumulate
+
+/QR/generator/mode particleGun
+/QR/generator/sideL 5 cm
+
+/random/setSeeds 148854 4824
+/run/beamOn 10
+
+/vis/viewer/rebuild
+/vis/viewer/refresh
+/vis/viewer/flush

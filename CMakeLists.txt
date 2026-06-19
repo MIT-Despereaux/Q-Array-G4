@@ -181,14 +181,12 @@ endif()
 #
 set(EXTRA_SCRIPTS
   init_vis.mac
-  vis_1.mac
-  vis_2.mac
   geometry_lab_proton.mac
   geometry_lab_proton_batch.mac
   dspx_cosmic_visual.mac
   dspx_cosmic_batch.mac
-  run_test.mac
-  tests/run_test_no_vis.mac
+  leiden_cosmic_visual.mac
+  leiden_cosmic_batch.mac
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
@@ -208,6 +206,14 @@ foreach(_script ${EXTRA_SCRIPTS})
   )
 endforeach()
 
+foreach(_obsolete_script
+    run_test.mac
+    vis_1.mac
+    vis_2.mac
+    tests/run_test_no_vis.mac)
+  file(REMOVE ${PROJECT_BINARY_DIR}/${_obsolete_script})
+endforeach()
+
 # ----------------------------------------------------------------------------
 # Copy STL mesh files from src/Geometry/obj/ into the build directory so
 # ./main can find them at runtime. This is a no-op when the directory is empty.
@@ -225,13 +231,15 @@ add_test(
   NAME mt_single_thread_no_vis
   COMMAND main tests/mt_single_thread_no_vis.mac
 )
-add_test(
-  NAME run_test_no_vis
-  COMMAND main tests/run_test_no_vis.mac
-)
-set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis run_test_no_vis)
+set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis)
 
 if(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
+  add_test(
+    NAME leiden_cosmic_batch
+    COMMAND main leiden_cosmic_batch.mac
+  )
+  list(APPEND SMOKE_TESTS leiden_cosmic_batch)
+
   add_test(
     NAME energy_deposition_leiden_ii
     COMMAND bash tests/check_energy_deposition.sh

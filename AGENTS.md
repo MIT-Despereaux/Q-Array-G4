@@ -4,10 +4,11 @@
 
 This is a Geant4 C++17 simulation. `main.cc` is the executable entry point,
 with implementation files in `src/` and public headers in `include/`. Runtime
-macros such as `init_vis.mac`, `vis_1.mac`, `vis_2.mac`, and `run_test.mac`
-live at the repo root and are copied into the build directory. Utility and
-batch scripts are in `scripts/`; pinned Eigen and MCMC submodules are under
-`submodules/`.
+macros such as `init_vis.mac`, `leiden_cosmic_batch.mac`,
+`leiden_cosmic_visual.mac`, `dspx_cosmic_batch.mac`, and
+`dspx_cosmic_visual.mac` live at the repo root and are copied into the build
+directory. Utility and batch scripts are in `scripts/`; pinned Eigen and MCMC
+submodules are under `submodules/`.
 
 ## Build, Test, and Development Commands
 
@@ -36,7 +37,7 @@ cd build && ./main
 Run a batch macro:
 
 ```sh
-cd build && ./main run_test.mac
+cd build && ./main leiden_cosmic_batch.mac
 ```
 
 Run smoke tests after building:
@@ -70,7 +71,7 @@ plus a short macro run as the required smoke test before submitting changes:
 ```sh
 cmake -S . -B build
 cmake --build build
-cd build && ./main run_test.mac
+cd build && ./main leiden_cosmic_batch.mac
 ```
 
 For changes to geometry, physics lists, sensitive detectors, or output formats,
