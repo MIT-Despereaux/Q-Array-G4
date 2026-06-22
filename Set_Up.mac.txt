@@ -5,13 +5,13 @@
 /vis/viewer/set/viewpointThetaPhi 70 30
 /vis/scene/add/trajectories smooth
 /vis/scene/endOfEventAction accumulate
-/gps/particle geantino 
-/gps/ene/type User 
+/gps/particle geantino
+/gps/ene/type User
 /gps/hist/type energy
 /control/execute /Users/tclassen23/q-array-g4/spectrum.mac.txt
 /gps/pos/type Volume
 /gps/pos/shape Sphere
 /gps/pos/centre 0. 0. 10. cm
 /gps/pos/radius 5. cm
-/gps/ang/type iso 
+/gps/ang/type iso
 /run/beamOn 50
