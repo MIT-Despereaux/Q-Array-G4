@@ -50,17 +50,26 @@ elif [ "$2" == "double" ]; then
         rm -f init_vis.mac
     fi
 
-# ToDo multiple source creation and specification beyond just simple 2 particle type/number of sources.
-# elif [ "$2" == "multi" ]; then
-#     echo "Multiple particle sources initiated"
-#     [ -f init_vis.mac ] && cp init_vis.mac init_vis.mac.bak
-#     echo "/control/execute ./MULTIPLE_FUTURE_IMPLEMENTATION_FEATURE.mac.txt" >> init_vis.mac
-#     ./build/main
-#     if [ -f init_vis.mac.bak ]; then
-#         mv init_vis.mac.bak init_vis.mac
-#     else
-#         rm -f init_vis.mac
-#     fi
+#ToDo multiple source creation and specification beyond just simple 2 particle type/number of sources.
+elif [ "$2" == "multi" ]; then
+    echo "Multiple particle sources initiated"
+    [ -f init_vis.mac ] && cp init_vis.mac init_vis.mac.bak
+    ./Multi_Source_Set_Up.sh
+    echo "Multi Source creation finished."
+    ./build/main
+    
+    # clean up step
+    if [ -f template_multi_source.mac.bak ]; then
+        mv template_multi_source.mac.bak template_multi_source.mac
+    else
+        rm -f template_multi_source.mac
+    fi
+    # clean up
+    if [ -f init_vis.mac.bak ]; then
+        mv init_vis.mac.bak init_vis.mac
+    else
+        rm -f init_vis.mac
+    fi
 
 else
     echo "Invalid mode selection: '$2'"
