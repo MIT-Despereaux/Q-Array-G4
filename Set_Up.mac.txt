@@ -21,7 +21,7 @@
 /gps/particle neutron
 /gps/ene/type User
 /gps/hist/type energy
-/control/execute /Users/tclassen23/q-array-g4/spectrum.mac.txt
+/control/execute ./spectrum.mac.txt
 /gps/pos/type Volume
 /gps/pos/shape Sphere
 /gps/pos/centre -240. 60. 150. cm

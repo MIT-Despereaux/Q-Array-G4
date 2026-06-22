@@ -18,7 +18,7 @@ echo "=========================================="
 
 # 2. Run your compiled Geant4 simulation binary using the macro file
 ./build/main << EOF
-/control/execute /Users/tclassen23/q-array-g4/Set_Up.mac.txt
+/control/execute ./Set_Up.mac.txt
 EOF
 
 echo "=========================================="
