@@ -71,7 +71,7 @@ echo "=========================================="
 echo "Simulation Finished. Starting File Sorter..."
 echo "=========================================="
 
-# 3. Execute python sorting routine passing down the environment logic token
+# python to get json and csv to correct location
 python3 sort_sim_data.py "$DIST_TYPE"
 
 echo "=========================================="
