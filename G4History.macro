@@ -1,5 +1,5 @@
 /run/verbose 2
-/control/execute ./Proto_Full_Set_Up.mac.txt
+/control/execute ./template_multi_source.mac
 /run/initialize
 /QR/output/writeSteps true
 /QR/output/writeAllEvents true
@@ -20,43 +20,3 @@
 /tracking/storeTrajectory 2
 /vis/scene/notifyHandlers
 /vis/scene/endOfEventAction accumulate
-/gps/particle neutron
-/gps/ene/type User
-/gps/hist/type energy
-/control/execute ./spectrum.mac.txt
-/gps/hist/point 0.0 0.0
-/gps/hist/point 0.1 1.0
-/gps/hist/point 1.0 2.5
-/gps/hist/point 2.0 5.0
-/gps/hist/point 14.0 0.0
-/control/execute ./source_position.mac
-/gps/pos/type Volume
-/gps/pos/shape Sphere
-/gps/pos/centre -240. 60. 150. cm
-/gps/pos/radius 5. cm
-/gps/ang/type iso
-/gps/source/add 1.0
-/gps/particle gamma
-/gps/ene/type User
-/gps/hist/type energy
-/control/execute ./spectrum_gamma.mac.txt
-/gps/hist/point 0.999 0.0
-/gps/hist/point 1 1.0
-/gps/hist/point 1.001 0
-/control/execute ./source_position.mac
-/gps/pos/type Volume
-/gps/pos/shape Sphere
-/gps/pos/centre -240. 60. 150. cm
-/gps/pos/radius 5. cm
-/gps/ang/type iso
-/gps/source/multiplevertex true
-/run/beamOn 5000
-/vis/scene/notifyHandlers scene-0
-/analysis/h1/getVector
-/analysis/h2/getVector
-/gps/source/list
-/vis/set/touchable worldPhysical 0 fridgePhysical 0 stageOVCVacPhysical 0 chipBoxPhysical 0
-/vis/touchable/centreOn
-/vis/viewer/refresh
-/vis/viewer/zoom 10
-/vis/viewer/refresh

@@ -56,6 +56,9 @@ elif [ "$2" == "multi" ]; then
     echo "Multiple particle sources initiated"
     [ -f init_vis.mac ] && cp init_vis.mac init_vis.mac.bak
     
+    #remove prior directory so that we don't double generate /run/initiate
+    rm -f G4History.macro
+
     # FIX 1: Explicitly pass your required variables down to the script!
     # For example, 10000 events and your data source file data.csv
     NUM_EVENTS=$3
