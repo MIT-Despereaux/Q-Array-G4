@@ -1,0 +1,32 @@
+/run/initialize
+/vis/open OGL 600x600-0+0
+/vis/drawVolume
+/vis/viewer/zoom 10
+/vis/viewer/set/viewpointThetaPhi 70 30
+/vis/scene/add/trajectories smooth
+/vis/scene/endOfEventAction accumulate
+/gps/particle geantino
+/gps/ene/type User
+/gps/hist/type energy
+/control/execute /Users/tclassen23/q-array-g4/spectrum_neutron.mac.txt
+/gps/pos/type Volume
+/gps/pos/shape Sphere
+/gps/pos/centre 0. 0. 10. cm
+/gps/pos/radius 5. cm
+/gps/ang/type iso
+#intesntiy shows comparative strength between sources, fiddle with that also...
+/gps/source/add 1.0
+/gps/particle gamma
+/gps/ene/type User
+/gps/hist/type energy
+/control/execute /Users/tclassen23/q-array-g4/spectrum_gamma.mac.txt
+/gps/pos/type Volume
+/gps/pos/shape Sphere
+/gps/pos/centre 0. 0. 10. cm
+/gps/pos/radius 5. cm
+/gps/ang/type iso
+/gps/source/multiplevertex true
+
+
+
+/run/beamOn 50
