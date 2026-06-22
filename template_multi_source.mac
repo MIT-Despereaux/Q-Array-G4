@@ -16,9 +16,4 @@
 /vis/scene/add/trajectories smooth
 /vis/scene/endOfEventAction accumulate
 #
-#Below add augmented data... I might need to append
-#
-#Run it! Allow multiple sources also:
-#
-/gps/source/multiplevertex true
-/run/beamOn 5000
+#Below add augmented data

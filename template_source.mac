@@ -3,6 +3,7 @@
 #
 #Editing following will specify each individual source.
 #
+/gps/source/add 1.0
 /gps/particle geantino
 /gps/ene/type User
 /gps/hist/type energy
