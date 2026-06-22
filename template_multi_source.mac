@@ -14,6 +14,6 @@
 /vis/viewer/zoom 10
 /vis/viewer/set/viewpointThetaPhi 70 30
 /vis/scene/add/trajectories smooth
-/vis/scene/endOfEventAction accumulate
+/vis/scene/endOfEventAction accumulate 10
 #
 #Below add augmented data

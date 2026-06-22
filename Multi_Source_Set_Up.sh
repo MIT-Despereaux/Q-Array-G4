@@ -7,21 +7,30 @@ if [[ -z "$1" || -z "$2" ]]; then
     exit 1
 fi
 
-# TWEAK HERE: Backup your clean template first!
+# backup
 [ -f template_multi_source.mac ] && cp template_multi_source.mac template_multi_source.mac.orig
 
 Event_Number=$1
 csv_file=$2
 first_source=true
+row_index=0
 
-# Keep a clean original copy before entering the loop so it doesn't get overwritten with row data
-[ -f template_source.mac ] && cp template_source.mac template_source.mac.orig
+while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
+    # clean from Excel/Sheets exports
+    col1=$(echo "$col1" | tr -d '\r\n[:space:]')
+    col2=$(echo "$col2" | tr -d '\r\n[:space:]')
+    col3=$(echo "$col3" | tr -d '\r\n[:space:]')
+    col4=$(echo "$col4" | tr -d '\r\n[:space:]')
 
-while IFS=',' read -r col1 col2 col3 col4; do
+    ((row_index++))
+
     # ignore header to csv
-    if [[ "$col1" == "type" ]]; then
+    if [ $row_index -eq 1 ]; then
         continue
     fi
+
+    
+    if [[ -z "$col1" ]]; then continue; fi
 
     # variables Imma use go here:
     particletype="$col1"
@@ -37,41 +46,45 @@ while IFS=',' read -r col1 col2 col3 col4; do
     echo "Intensity: $intensity"
     echo "--------------------------"
 
-    # edit copy of the template
-    sed -i \
+    # modify the files here per each source
+    source_block=$(sed \
       -e "s|/gps/particle.*|/gps/particle $particletype|" \
       -e "s|/control/execute.*|/control/execute $spectrum|" \
-      template_source.mac
+      template_source.mac)
 
     #if else here to make it so first added source is just added otherwise sourceadd used instead.
     
     if [ "$first_source" = true ]; then
         
         echo "/gps/source/intensity $intensity" >> template_multi_source.mac
-        echo "/control/execute template_source.mac" >> template_multi_source.mac
+        echo "$source_block" >> template_multi_source.mac
 
         if [ "$num" -gt 1 ]; then
             run_num=$((num-1))
-            seq $run_num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute template_source.mac\n" >> template_multi_source.mac
+            for i in $(seq $run_num); do
+                echo "/gps/source/add $intensity" >> template_multi_source.mac
+                echo "$source_block" >> template_multi_source.mac
+            done
         fi
         first_source=false
     else
-        seq $num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute template_source.mac\n" >> template_multi_source.mac
+        for i in $(seq $num); do
+            echo "/gps/source/add $intensity" >> template_multi_source.mac
+            echo "$source_block" >> template_multi_source.mac
+        done
     fi
 
-    # clean up the copy to reset for the next loop, pulled over from other file.
-    cp template_source.mac.orig template_source.mac
 done < "$csv_file"
 
-rm -f template_source.mac.orig
+echo "" >> template_multi_source.mac
 
 echo "/gps/source/multiplevertex true" >> template_multi_source.mac
 echo "/run/beamOn $Event_Number" >> template_multi_source.mac
 
-#now slide it into init_vis.mac in similiar manner.
+# slide it into init_vis.mac in similiar manner.
 echo "/control/execute ./template_multi_source.mac" >> init_vis.mac
 
-# TWEAK HERE: Restore the multi_source template back to its pristine state for your next execution block
+# restoring here
 mv template_multi_source.mac.orig template_multi_source.mac
 
 echo "Finished subscript!"
