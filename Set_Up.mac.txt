@@ -1,30 +1,18 @@
-# 1. Initialize the geometry and physics
 /run/initialize
-
-# 2. Setup visualization and scene plotting
+/analysis/setFileName ./output/test
 /vis/open OGL 600x600-0+0
 /vis/drawVolume
 /vis/viewer/zoom 10
 /vis/viewer/set/viewpointThetaPhi 70 30
 /vis/scene/add/trajectories smooth
 /vis/scene/endOfEventAction accumulate
-
-# 3. Define the Neutron Source BEFORE calling /run/beamOn
 /gps/particle neutron 
-
-# Define a custom energy spectrum from an external macro file
 /gps/ene/type User 
 /gps/hist/type energy
 /control/execute /Users/tclassen23/q-array-g4/spectrum.mac.txt
-
-# Define spatial distribution (A filled 5cm sphere centered at z = 10cm)
 /gps/pos/type Volume
 /gps/pos/shape Sphere
 /gps/pos/centre 0. 0. 10. cm
 /gps/pos/radius 5. cm
-
-# Define angular distribution (Isotropic)
 /gps/ang/type iso 
-
-# 4. Now fire the beam!
 /run/beamOn 50
