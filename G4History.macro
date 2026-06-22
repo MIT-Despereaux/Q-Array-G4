@@ -1,5 +1,5 @@
 /run/verbose 2
-/control/execute /Users/tclassen23/q-array-g4/Set_Up.mac.txt
+/control/execute ./Proto_Full_Set_Up.mac.txt
 /run/initialize
 /QR/output/writeSteps true
 /QR/output/writeAllEvents true
@@ -23,18 +23,35 @@
 /gps/particle neutron
 /gps/ene/type User
 /gps/hist/type energy
-/control/execute /Users/tclassen23/q-array-g4/spectrum.mac.txt
+/control/execute ./spectrum.mac.txt
 /gps/hist/point 0.0 0.0
 /gps/hist/point 0.1 1.0
 /gps/hist/point 1.0 2.5
 /gps/hist/point 2.0 5.0
 /gps/hist/point 14.0 0.0
+/control/execute ./source_position.mac
 /gps/pos/type Volume
 /gps/pos/shape Sphere
 /gps/pos/centre -240. 60. 150. cm
 /gps/pos/radius 5. cm
 /gps/ang/type iso
+/gps/source/add 1.0
+/gps/particle gamma
+/gps/ene/type User
+/gps/hist/type energy
+/control/execute ./spectrum_gamma.mac.txt
+/gps/hist/point 0.999 0.0
+/gps/hist/point 1 1.0
+/gps/hist/point 1.001 0
+/control/execute ./source_position.mac
+/gps/pos/type Volume
+/gps/pos/shape Sphere
+/gps/pos/centre -240. 60. 150. cm
+/gps/pos/radius 5. cm
+/gps/ang/type iso
+/gps/source/multiplevertex true
 /run/beamOn 5000
 /vis/scene/notifyHandlers scene-0
 /analysis/h1/getVector
 /analysis/h2/getVector
+/gps/source/list

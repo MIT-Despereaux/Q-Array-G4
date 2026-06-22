@@ -22,7 +22,7 @@
 /gps/ene/type User
 /gps/hist/type energy
 /control/execute ./spectrum.mac.txt
-/control/execute ./source_position.mac.txt
+/control/execute ./source_position.mac
 #
 #Second Source! gamma rays chosen:
 #
@@ -32,7 +32,7 @@
 /gps/ene/type User
 /gps/hist/type energy
 /control/execute ./spectrum_gamma.mac.txt
-/control/execute ./source_position.mac.txt
+/control/execute ./source_position.mac
 #
 #Run it! Allow multiple sources also:
 #
