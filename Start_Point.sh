@@ -17,7 +17,9 @@ echo "Starting Geant4 Simulation Engine..."
 echo "=========================================="
 
 # 2. Run your compiled Geant4 simulation binary using the macro file
-./build/main Set_Up.mac.txt
+./build/main << EOF
+/control/execute /Users/tclassen23/q-array-g4/Set_Up.mac.txt
+EOF
 
 echo "=========================================="
 echo "Simulation Finished. Starting File Sorter..."

@@ -8,7 +8,7 @@
 #
 #Draw Visual
 #
-/vis/open OGL 600x600-0+0
+/vis/open OGLSQt 600x600-0+0
 /vis/drawVolume
 /vis/viewer/zoom 10
 /vis/viewer/set/viewpointThetaPhi 70 30
