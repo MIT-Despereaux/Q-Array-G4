@@ -1,0 +1,53 @@
+#class tools::wcsv::ntuple
+#title full
+#separator 44
+#vector_separator 59
+#column int eventID
+#column int trackID
+#column int stepNum
+#column int parentTrackID
+#column int hashID
+#column int ancestorID
+#column int boundary
+#column double ke
+#column double edep
+#column double edepER
+#column double edepNR
+#column double t0
+#column double t1
+#column int copyno
+#column int nHits
+#column int particleCode
+#column string particleName
+#column string incidentParticle
+#column string creatorProcess
+#column string stepProcess
+#column double vx0
+#column double vy0
+#column double vz0
+#column double vpx0
+#column double vpy0
+#column double vpz0
+#column string primaryVertexParticle
+#column double x1
+#column double y1
+#column double z1
+#column double px0
+#column double py0
+#column double pz0
+#column double px1
+#column double py1
+#column double pz1
+#column double dx
+#column string volname
+#column string volnameNext
+1190,-1,-1,-1,-762322171,-1,0,-1,0.439338,0,0.439338,138.116,483.002,1,16,-1,,neutron,,,-2401.53,607.504,1500.43,-18.2051,9.98585,-15.2722,neutron,-2556.49,889.351,944.757,3.78303,-3.56545,10.0319,-2.36507,-3.75729,4.83995,77.0777,detDPhysical,detDPhysical
+1840,-1,-1,-1,-856709433,-1,0,-1,1.17187,0,1.17187,38.0179,89.5111,-1,10,-1,,neutron,,,-2437.55,588.597,1513.39,-2.81105,20.1059,-42.1643,neutron,-2663.44,779.918,1024.74,-10.4751,-12.3707,12.3001,-1.83483,-1.82557,1.10955,102.068,,
+1888,-1,1,1,-1206205736,0,0,-1,1.00688,0,1.00688,35.1086,37.1857,0,2,-1,,C12,hadElastic,,-2397.21,561,1511.94,-12.7746,25.0236,-43.6601,neutron,-2535.25,840.453,1040.84,4.30312,0.991239,-21.0154,0,0,0,0.0119931,detCPhysical,detCPhysical
+2325,-1,-1,-1,1557867088,-1,0,-1,0.316659,0,0.316659,455.136,7464.82,1,19,-1,,neutron,,,-2418.95,607.717,1460.66,-5.74987,8.16091,42.8413,neutron,-2780.71,573.004,960.5,8.69828,4.06336,3.35098,4.23165,2.8037,1.45214,106.026,detDPhysical,detDPhysical
+2973,-1,-1,-1,1120781866,-1,0,-1,0.136077,0,0.136077,139.632,2100.93,0,21,-1,,neutron,,,-2385.7,629.817,1486.37,-2.76197,5.33797,-9.52471,neutron,-2515.67,880.644,1044.98,-4.83671,3.5378,-5.74032,-1.89984,3.42595,-1.33296,139.506,detCPhysical,detCPhysical
+2996,-1,-1,-1,63357152,-1,0,-1,0.115606,0,0.115606,120.127,2741.36,0,18,-1,,neutron,,,-2428.22,582.043,1486.38,-2.18996,7.15654,-11.6028,neutron,-2512.81,856.839,1041.04,1.19193,4.33945,-8.75624,-0.265093,0.161526,-0.487857,124.233,detCPhysical,detCPhysical
+3510,-1,-1,-1,-489279283,-1,0,-1,0.830185,0,0.830185,65.6581,102.783,-1,10,-1,,neutron,,,-2398.68,580.703,1491.04,8.71724,13.9382,-32.6738,neutron,-2460.55,916.892,1003.8,-1.71655,3.88243,8.59279,-2.14536,1.69633,3.70179,104.721,,
+4080,-1,-1,-1,73302203,-1,0,-1,1.99055,0,1.99055,30.9342,86.9757,0,12,-1,,neutron,,,-2398.16,649.331,1505.55,-40.4578,6.35565,-44.5513,neutron,-2714.25,726.085,1048.72,3.61175,-3.65544,-39.4366,0.912979,-0.637196,-4.85702,75.0526,detCPhysical,detCPhysical
+4087,-1,-1,-1,1965716109,-1,0,-1,1.41825,0,1.41825,34.227,1740.28,0,18,-1,,proton,,,-2442.3,597.185,1503.8,-3.51388,27.6783,-41.9579,neutron,-2475.37,905.674,1036.64,-1.40492,22.0473,-11.6741,0.102364,1.45403,-0.788509,98.3043,detCPhysical,detCPhysical
+4681,-1,-1,-1,856384089,-1,0,-1,0.0683387,0,0.0683387,47.0029,5032.11,0,25,-1,,neutron,,,-2434.25,572.912,1486.6,-0.139356,31.8625,-31.2834,neutron,-2419.37,995.3,1043.89,3.03905,-0.160489,-5.06501,2.40157,0.0845701,-2.04538,150.742,detCPhysical,detCPhysical

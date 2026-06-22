@@ -1,0 +1,45 @@
+#class tools::wcsv::ntuple
+#title Step-by-step energy deposition
+#separator 44
+#vector_separator 59
+#column int eventID
+#column int trackID
+#column int stepNum
+#column int parentTrackID
+#column int hashID
+#column int ancestorID
+#column int boundary
+#column double ke
+#column double edep
+#column double edepER
+#column double edepNR
+#column double t0
+#column double t1
+#column int copyno
+#column int nHits
+#column int particleCode
+#column string particleName
+#column string incidentParticle
+#column string creatorProcess
+#column string stepProcess
+#column double vx0
+#column double vy0
+#column double vz0
+#column double vpx0
+#column double vpy0
+#column double vpz0
+#column string primaryVertexParticle
+#column double x1
+#column double y1
+#column double z1
+#column double px0
+#column double py0
+#column double pz0
+#column double px1
+#column double py1
+#column double pz1
+#column double dx
+#column string volname
+#column string volnameNext
+543,1,8,0,540102166,0,1,0.0160138,0.0120889,0,0.0120889,397.475,407.695,0,1,2112,neutron,neutron,Primary,hadElastic,-2418.02,632.447,1506.61,1.76669,1.72793,-4.89748,neutron,-2188.21,857.222,869.529,1.76669,1.72793,-4.89748,-0.699952,-0.470497,-4.24528,17.8888,detAPhysical,detAPhysical
+1687,2,1,1,-2037791326,0,0,0.229869,0.229869,0,0.229869,25.6887,25.6891,1,1,2212,proton,proton,hadElastic,hIoni,-2361.19,615.204,1476.39,-26.8358,22.9676,-49.2768,neutron,-2580.7,803.072,1073.33,-13.7552,14.5562,5.5066,-0,0,0,0.00286976,detBPhysical,detBPhysical
