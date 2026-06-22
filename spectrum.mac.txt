@@ -1,0 +1,5 @@
+# This is all incorrect but I need a test for now…
+/gps/hist/point 0.1 MeV 0.0 
+/gps/hist/point 0.9 MeV 0.12 
+/gps/hist/point 1.8 MeV 0.35 
+/gps/hist/point 2.7 MeV 0.68
