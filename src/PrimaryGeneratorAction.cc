@@ -215,7 +215,7 @@ namespace QArray
     G4String mode = "gps";
 
 
-    G4String mode = meta->GetString("/QR/generator/mode");
+    //G4String mode = meta->GetString("/QR/generator/mode"); //removed for now for diagnostics
     if (mode == "gps")
       mMode = kGPS;
     else if (mode == "cry")
