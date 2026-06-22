@@ -21,16 +21,14 @@ echo "=========================================="
 if [ "$2" == "single" ]; then
     echo "Single particle source initiated"
     
-    # 1. Back up your original init_vis.mac if it exists so we don't destroy it
+    # copy over
     [ -f init_vis.mac ] && cp init_vis.mac init_vis.mac.bak
     
-    # 2. Append your macro execution command to the end of init_vis.mac
+    # slide into end of init_vis.mac
     echo "/control/execute ./Set_Up.mac.txt" >> init_vis.mac
-    
-    # 3. Launch with zero arguments. Geant4 stays in GUI mode and naturally reads init_vis.mac
     ./build/main
     
-    # 4. Restore your original init_vis.mac file to keep your folder clean
+    # Restore your original 
     if [ -f init_vis.mac.bak ]; then
         mv init_vis.mac.bak init_vis.mac
     else
@@ -49,21 +47,26 @@ elif [ "$2" == "double" ]; then
     else
         rm -f init_vis.mac
     fi
-
-#ToDo multiple source creation and specification beyond just simple 2 particle type/number of sources.
 elif [ "$2" == "multi" ]; then
+    if [[ -z "$3" || -z "$4" ]]; then
+        echo "Error: You must supply number of events (int) and CSV file."
+        echo "Usage: ./Multi_Source_Set_Up.sh <int> <.csv>"
+        exit 1
+    fi
     echo "Multiple particle sources initiated"
     [ -f init_vis.mac ] && cp init_vis.mac init_vis.mac.bak
-    ./Multi_Source_Set_Up.sh
-    echo "Multi Source creation finished."
-    ./build/main
     
-    # clean up step
-    if [ -f template_multi_source.mac.bak ]; then
-        mv template_multi_source.mac.bak template_multi_source.mac
-    else
-        rm -f template_multi_source.mac
-    fi
+    # FIX 1: Explicitly pass your required variables down to the script!
+    # For example, 10000 events and your data source file data.csv
+    NUM_EVENTS=$3
+    CSV_FILE=$4
+    
+    ./Multi_Source_Set_Up.sh "$NUM_EVENTS" "$CSV_FILE"
+    echo "Multi Source creation finished."
+    
+    ./build/main
+    rm -f template_multi_source.mac.orig
+    
     # clean up
     if [ -f init_vis.mac.bak ]; then
         mv init_vis.mac.bak init_vis.mac
