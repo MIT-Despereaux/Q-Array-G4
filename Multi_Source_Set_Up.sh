@@ -51,19 +51,21 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
       -e "s|/gps/particle.*|/gps/particle $particletype|" \
       -e "s|/control/execute.*|/control/execute $spectrum|" \
       template_source.mac)
-
+    
     #if else here to make it so first added source is just added otherwise sourceadd used instead.
     
     if [ "$first_source" = true ]; then
         
         echo "/gps/source/intensity $intensity" >> template_multi_source.mac
         echo "$source_block" >> template_multi_source.mac
+        echo "" >> template_multi_source.mac  # refreshing
 
         if [ "$num" -gt 1 ]; then
             run_num=$((num-1))
             for i in $(seq $run_num); do
                 echo "/gps/source/add $intensity" >> template_multi_source.mac
                 echo "$source_block" >> template_multi_source.mac
+                echo "" >> template_multi_source.mac  
             done
         fi
         first_source=false
@@ -71,20 +73,23 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
         for i in $(seq $num); do
             echo "/gps/source/add $intensity" >> template_multi_source.mac
             echo "$source_block" >> template_multi_source.mac
+            echo "" >> template_multi_source.mac  
         done
     fi
 
 done < "$csv_file"
 
 echo "" >> template_multi_source.mac
-
 echo "/gps/source/multiplevertex true" >> template_multi_source.mac
-echo "/run/beamOn $Event_Number" >> template_multi_source.mac
 
-# slide it into init_vis.mac in similiar manner.
+# --- MODIFIED: Only auto-fire if we aren't trying to inspect the GUI ---
+# Comment out or remove the forced beamOn command to keep the GUI open:
+# echo "/run/beamOn $Event_Number" >> template_multi_source.mac
+
+#now slide it into init_vis.mac in similiar manner.
 echo "/control/execute ./template_multi_source.mac" >> init_vis.mac
 
-# restoring here
+# restore
 mv template_multi_source.mac.orig template_multi_source.mac
 
 echo "Finished subscript!"

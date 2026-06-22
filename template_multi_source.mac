@@ -15,5 +15,8 @@
 /vis/viewer/set/viewpointThetaPhi 70 30
 /vis/scene/add/trajectories smooth
 /vis/scene/endOfEventAction accumulate 10
+# FORCE THE GRAPHICS CORE TO KEEP AND REFRESH TRACKS
+/vis/viewer/set/autoRefresh true
+/vis/scene/notifyHandlers
 #
 #Below add augmented data

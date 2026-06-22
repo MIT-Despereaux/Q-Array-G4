@@ -6,3 +6,8 @@
 /control/saveHistory
 /run/verbose 2
 #
+# Create a standard drawing model for your trajectories
+/vis/modeling/trajectories/create/drawByCharge
+/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
+/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
+#
