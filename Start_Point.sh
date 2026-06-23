@@ -104,5 +104,5 @@ echo "=========================================="
 python3 sort_sim_data.py "$DIST_TYPE"
 
 echo "=========================================="
-echo "Pipeline complete!"
+echo "Pipeline complete! :)"
 echo "=========================================="
