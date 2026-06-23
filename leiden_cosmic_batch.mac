@@ -1,0 +1,34 @@
+# Centered Leiden II cosmic-ray batch run. Run with an executable configured using:
+#   cmake -S . -B build-leiden -DQARRAY_DETECTOR_GEOMETRY=LEIDEN_II
+
+/run/numberOfThreads 2
+
+/control/verbose 1
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/process/verbose 0
+/process/em/verbose 0
+
+# Shift the complete lab/fridge assembly to the measured Leiden placement.
+/QR/geom/globalOffset 2.64 -0.77 -1.509 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+/QR/geom/tableVer 20230601
+
+/QR/output/enable true
+/QR/output/filetype csv
+/QR/output/writeSteps true
+/QR/output/addNtuple copyNo copyno ancestor
+/QR/output/filename leiden_cosmic_batch
+
+/run/initialize
+
+/QR/generator/mode particleGun
+/QR/generator/sideL 5 cm
+
+/random/setSeeds 148854 4824
+/control/echo Starting centered Leiden II cosmic-ray batch run with 10 events.
+/run/beamOn 10
+/control/echo Completed centered Leiden II cosmic-ray batch run.

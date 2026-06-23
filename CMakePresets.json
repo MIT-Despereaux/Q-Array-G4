@@ -1,0 +1,64 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "dspx",
+      "displayName": "DSPX geometry",
+      "description": "Configure the QArray simulation with DSPX detector geometry.",
+      "binaryDir": "${sourceDir}/build-dspx",
+      "cacheVariables": {
+        "QARRAY_DETECTOR_GEOMETRY": "DSPX"
+      }
+    },
+    {
+      "name": "leiden",
+      "displayName": "Leiden II geometry",
+      "description": "Configure the QArray simulation with Leiden II detector geometry.",
+      "binaryDir": "${sourceDir}/build-leiden",
+      "cacheVariables": {
+        "QARRAY_DETECTOR_GEOMETRY": "LEIDEN_II"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-dspx",
+      "displayName": "Build DSPX",
+      "configurePreset": "dspx",
+      "targets": [
+        "main"
+      ]
+    },
+    {
+      "name": "build-leiden",
+      "displayName": "Build Leiden II",
+      "configurePreset": "leiden",
+      "targets": [
+        "main"
+      ]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test-dspx",
+      "displayName": "Test DSPX",
+      "configurePreset": "dspx",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "test-leiden",
+      "displayName": "Test Leiden II",
+      "configurePreset": "leiden",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}

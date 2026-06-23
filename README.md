@@ -52,7 +52,7 @@ Note, you might need to use `export QT_QPA_PLATFORM=xcb` to force an X11 session
 Run a batch macro:
 
 ```sh
-cd build && ./main run_test.mac
+cd build && ./main leiden_cosmic_batch.mac
 ```
 
 For running single/multiple particle sources instead return to root folder and run. test_hist, ISO_spectrum, and mono are solely used to label your output folders for ease of working with. single creates one particle source, dual two, and multi N particle sources, however it requires a CSV to be fed in. The CSV format must have type,number,intensity,spectrum as its header column. number must be an integer, spectrum must be relative path to spectrum.mac files to be read for that source.
@@ -70,5 +70,6 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-The default test suite runs a particle-gun event and verifies that selecting
-CRY fails clearly when `WITH_CRY=OFF`.
+The default Leiden II test suite runs a short cosmic batch macro, a
+particle-gun event, and verifies that selecting CRY fails clearly when
+`WITH_CRY=OFF`. DSPX builds use the DSPX-specific scoring checks.
