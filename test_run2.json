@@ -71,14 +71,20 @@
     "/vis/viewer/set/autoRefresh true",
     "/vis/viewer/refresh",
     "/vis/scene/notifyHandlers",
-    "/run/beamOn 1",
-    "/vis/scene/notifyHandlers scene-0"
+    "/run/beamOn 10",
+    "/vis/scene/notifyHandlers scene-0",
+    "/analysis/h1/getVector",
+    "/analysis/h2/getVector",
+    "/run/beamOn 10",
+    "/analysis/h1/getVector",
+    "/analysis/h2/getVector",
+    "/run/beamOn 10"
   ],
-  "end_time": 1782172336,
-  "end_time_string": "2026-06-22 19:52:16 EDT",
-  "nevents": 1,
-  "runid": 0,
+  "end_time": 1782172206,
+  "end_time_string": "2026-06-22 19:50:06 EDT",
+  "nevents": 10,
+  "runid": 2,
   "runtime_wall": 0,
-  "start_time": 1782172336,
-  "start_time_string": "2026-06-22 19:52:16 EDT"
+  "start_time": 1782172206,
+  "start_time_string": "2026-06-22 19:50:06 EDT"
 }
