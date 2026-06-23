@@ -1,11 +1,15 @@
 #!/bin/bash
 
-# Stop execution immediately if any step throws an error
-set -e
-
-# --- CLEANUP FUNCTION FOR FORCED EXITS ---
+# --- SINGLE MASTER CLEANUP TRAP ---
 cleanup() {
-    echo -e "\n[Trap] Script interrupted! Cleaning up macro files..."
+    # Temporarily turn off 'set -e' so the cleanup commands don't crash the trap itself
+    set +e
+    echo -e "\n[Trap] Script interrupted or exiting! Cleaning up macro files..."
+    
+    # Clean out any leftover dynamically numbered step macros
+    rm -f template_source_*.mac
+    rm -f template_source.mac.orig
+    rm -f G4History.macro
     
     # Restore init_vis.mac if a backup exists
     if [ -f init_vis.mac.bak ]; then
@@ -16,13 +20,18 @@ cleanup() {
     if [ -f template_multi_source.mac.bak_multi ]; then
         mv template_multi_source.mac.bak_multi template_multi_source.mac
     fi
-    
-    exit 1
+
+    if [ -f template_multi_source.mac.orig ]; then
+        mv template_multi_source.mac.orig template_multi_source.mac
+    fi
 }
 
-# Assign the cleanup function to intercept SIGINT (Ctrl+C) and SIGTERM
-trap cleanup SIGINT SIGTERM
+# Catch Ctrl+C (SIGINT), process termination (SIGTERM), and natural script endings (EXIT)
+# This single trap guarantees cleanup happens NO MATTER HOW the script ends.
+trap cleanup SIGINT SIGTERM EXIT
 
+# Stop execution immediately if any command throws a fatal error
+set -e
 
 # --- 1. Check for inputs ---
 if [[ -z "$1" || -z "$2" ]]; then
@@ -45,33 +54,21 @@ if [ "$2" == "single" ]; then
     # 1. Back up your original init_vis.mac if it exists so we don't destroy it
     [ -f init_vis.mac ] && cp init_vis.mac init_vis.mac.bak
     
-    # 2. Append your macro execution command to the end of init_vis.mac
-    echo "/control/execute ./Set_Up.mac.txt" >> init_vis.mac
+    # 2. Append your macro execution command to the end of init_vis.mac (Fixed .txt extension)
+    echo "/control/execute ./Set_Up.mac" >> init_vis.mac
     
     # 3. Launch with zero arguments. Geant4 stays in GUI mode and naturally reads init_vis.mac
     ./build/main
     
-    # 4. Restore your original init_vis.mac file to keep your folder clean
-    if [ -f init_vis.mac.bak ]; then
-        mv init_vis.mac.bak init_vis.mac
-    else
-        rm -f init_vis.mac
-    fi
-
 elif [ "$2" == "double" ]; then
     echo "Two particle sources initiated"
     
     [ -f init_vis.mac ] && cp init_vis.mac init_vis.mac.bak
-    echo "/control/execute ./Proto_Full_Set_Up.mac.txt" >> init_vis.mac
+    # (Fixed .txt extension here as well)
+    echo "/control/execute ./Proto_Full_Set_Up.mac" >> init_vis.mac
     ./build/main
-    
-    if [ -f init_vis.mac.bak ]; then
-        mv init_vis.mac.bak init_vis.mac
-    else
-        rm -f init_vis.mac
-    fi
 
-#ToDo multiple source creation and specification beyond just simple 2 particle type/number of sources.
+# multiple source creation and specification beyond just simple 2 particle type/number of sources.
 elif [ "$2" == "multi" ]; then
     if [[ -z "$3" || -z "$4" ]]; then
         echo "Error: Multi-source mode requires event number and CSV file path."
@@ -85,8 +82,6 @@ elif [ "$2" == "multi" ]; then
     # Securely backup your template_multi_source base macro here before appending data
     [ -f template_multi_source.mac ] && cp template_multi_source.mac template_multi_source.mac.bak_multi
     
-    rm -f G4History.macro
-    
     NUM_EVENTS=$3
     # Handles filenames with unquoted spaces automatically by pulling all trailing elements
     CSV_FILE="${@:4}"
@@ -95,18 +90,6 @@ elif [ "$2" == "multi" ]; then
     echo "Multi Source creation finished."
     
     ./build/main
-    
-    # Restore the multi_source template back to its pristine state now that Geant4 execution is complete
-    if [ -f template_multi_source.mac.bak_multi ]; then
-        mv template_multi_source.mac.bak_multi template_multi_source.mac
-    fi
-    
-    # clean up
-    if [ -f init_vis.mac.bak ]; then
-        mv init_vis.mac.bak init_vis.mac
-    else
-        rm -f init_vis.mac
-    fi
 
 else
     echo "Invalid mode selection: '$2'"

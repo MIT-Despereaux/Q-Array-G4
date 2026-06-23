@@ -42,7 +42,6 @@
   "commandhistory": [
     "/control/execute init_vis.mac",
     "/control/verbose 2",
-    "/control/saveHistory",
     "/run/verbose 2",
     "/vis/modeling/trajectories/create/drawByCharge",
     "/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true",
@@ -71,14 +70,15 @@
     "/vis/viewer/set/autoRefresh true",
     "/vis/viewer/refresh",
     "/vis/scene/notifyHandlers",
-    "/run/beamOn 1",
+    "/gps/source/multiplevertex true",
+    "/run/beamOn 100",
     "/vis/scene/notifyHandlers scene-0"
   ],
-  "end_time": 1782172336,
-  "end_time_string": "2026-06-22 19:52:16 EDT",
-  "nevents": 1,
+  "end_time": 1782176610,
+  "end_time_string": "2026-06-22 21:03:30 EDT",
+  "nevents": 100,
   "runid": 0,
   "runtime_wall": 0,
-  "start_time": 1782172336,
-  "start_time_string": "2026-06-22 19:52:16 EDT"
+  "start_time": 1782176610,
+  "start_time_string": "2026-06-22 21:03:30 EDT"
 }

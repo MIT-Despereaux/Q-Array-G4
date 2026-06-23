@@ -20,3 +20,26 @@
 /vis/scene/notifyHandlers
 #
 #Below add augmented data
+
+/gps/source/multiplevertex true
+/run/beamOn 100
+
+/gps/source/intensity 1
+/control/execute ./template_source_1.mac
+
+/gps/source/add 1
+/control/execute ./template_source_1.mac
+
+/gps/source/add 1
+/control/execute ./template_source_2.mac
+
+/gps/source/add 1
+/control/execute ./template_source_3.mac
+
+/gps/source/add 1
+/control/execute ./template_source_3.mac
+
+
+/gps/source/multiplevertex true
+/run/beamOn 100
+

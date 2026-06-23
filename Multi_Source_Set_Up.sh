@@ -7,12 +7,21 @@ if [[ -z "$1" || -z "$2" ]]; then
     exit 1
 fi
 
+Event_Number=$1
+csv_file=$2
+
+# --- ADD THIS CHECK HERE ---
+if [ ! -f "$csv_file" ]; then
+    echo "Error: The CSV file could not be found at: $csv_file"
+    echo "Please double-check the path and try again."
+    exit 1
+fi
+
 # TWEAK HERE: Backup your clean template first!
 [ -f template_multi_source.mac ] && cp template_multi_source.mac template_multi_source.mac.orig
 
-Event_Number=$1
-csv_file=$2
 first_source=true
+source_counter=0   # NEW: Track a unique ID for every source file created
 
 # Keep a clean original copy before entering the loop so it doesn't get overwritten with row data
 [ -f template_source.mac ] && cp template_source.mac template_source.mac.orig
@@ -44,30 +53,44 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
     echo "Intensity: $intensity"
     echo "--------------------------"
 
-    # edit copy of the template
-    sed -i \
-      -e "s|/gps/particle.*|/gps/particle $particletype|" \
-      -e "s|/control/execute.*|/control/execute $spectrum|" \
-      template_source.mac
+    # Increment counter to make a dedicated macro file for this specific row data
+    ((source_counter++))
+    current_macro="template_source_${source_counter}.mac"
+
+# Copy the clean template to our new uniquely named target file
+    cp template_source.mac.orig "$current_macro"
+
+    # --- CROSS-PLATFORM MAC/LINUX SED COMPATIBILITY LAYER ---
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS requires an explicit empty string for in-place editing
+        sed -i '' \
+          -e "s|/gps/particle.*|/gps/particle $particletype|" \
+          -e "s|/control/execute.*|/control/execute $spectrum|" \
+          "$current_macro"
+    else
+        # Standard Linux/GNU environment format
+        sed -i \
+          -e "s|/gps/particle.*|/gps/particle $particletype|" \
+          -e "s|/control/execute.*|/control/execute $spectrum|" \
+          "$current_macro"
+    fi
 
     #if else here to make it so first added source is just added otherwise sourceadd used instead.
     if [ "$first_source" = true ]; then
         
         echo "/gps/source/intensity $intensity" >> template_multi_source.mac
-        echo "/control/execute template_source.mac" >> template_multi_source.mac
+        echo "/control/execute ./$current_macro" >> template_multi_source.mac
         echo "" >> template_multi_source.mac
 
         if [ "$num" -gt 1 ]; then
             run_num=$((num-1))
-            seq $run_num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute template_source.mac\n\n" >> template_multi_source.mac
+            seq $run_num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute ./$current_macro\n\n" >> template_multi_source.mac
         fi
         first_source=false
     else
-        seq $num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute template_source.mac\n\n" >> template_multi_source.mac
+        seq $num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute ./$current_macro\n\n" >> template_multi_source.mac
     fi
 
-    # clean up the copy to reset for the next loop, pulled over from other file.
-    cp template_source.mac.orig template_source.mac
 done < "$csv_file"
 
 rm -f template_source.mac.orig
