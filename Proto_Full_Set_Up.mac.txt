@@ -1,3 +1,4 @@
+/QR/generator/mode gps
 /run/initialize
 #
 #Allow CSV to save.

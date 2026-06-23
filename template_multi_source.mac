@@ -1,3 +1,4 @@
+/QR/generator/mode gps
 /run/initialize
 #This file will allow arbitrary number of source, types of particles, at arbitrary intensities.
 #
@@ -42,4 +43,3 @@
 
 /gps/source/multiplevertex true
 /run/beamOn 100
-
