@@ -8,4 +8,4 @@
 
 /control/execute macros/sources/gps_single_neutron_source.mac
 
-/run/beamOn 500
+/run/beamOn 500000
