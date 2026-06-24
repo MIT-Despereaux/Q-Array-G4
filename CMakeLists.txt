@@ -177,25 +177,15 @@ if(WITH_CRY)
 endif()
 
 # ----------------------------------------------------------------------------
-# Copy all scripts to the build directory.
+# Copy runtime macros and test scripts to the build directory.
 #
+file(GLOB_RECURSE MACRO_FILES CONFIGURE_DEPENDS
+  RELATIVE ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/macros/*
+)
+
 set(EXTRA_SCRIPTS
-  macros/init_vis.mac
-  macros/geometry_lab_proton_visual.mac
-  macros/geometry_lab_proton_batch.mac
-  macros/dspx_cosmic_visual.mac
-  macros/dspx_cosmic_batch.mac
-  macros/leiden_cosmic_visual.mac
-  macros/leiden_cosmic_batch.mac
-  macros/gps_single_neutron_test.mac
-  macros/gps_double_neutron_gamma_test.mac
-  macros/gps_multi_demo_test.mac
-  macros/gps_single_neutron_visual.mac
-  macros/gps_double_neutron_gamma_visual.mac
-  macros/gps_multi_demo_visual.mac
-  macros/sources/gps_single_neutron_source.mac
-  macros/sources/gps_double_neutron_gamma_sources.mac
-  macros/sources/gps_multi_demo_sources.mac
+  ${MACRO_FILES}
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
@@ -231,14 +221,6 @@ foreach(_obsolete_script
     dspx_cosmic_batch.mac
     leiden_cosmic_visual.mac
     leiden_cosmic_batch.mac
-    macros/Set_Up.mac.txt
-    macros/Proto_Full_Set_Up.mac.txt
-    macros/source_position.mac
-    macros/temp_init.mac
-    macros/template_multi_source.mac
-    macros/template_source.mac
-    macros/sources/test_spectrum_gamma.mac
-    macros/sources/test_spectrum_n.mac
     tests/run_test_no_vis.mac)
   file(REMOVE ${PROJECT_BINARY_DIR}/${_obsolete_script})
 endforeach()
