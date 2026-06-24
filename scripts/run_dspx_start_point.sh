@@ -10,12 +10,15 @@ staging_dir="${output_dir}/_gps_sources"
 output_prefix="test"
 
 if [[ $# -lt 2 ]]; then
-    echo "Usage: ./scripts/run_dspx_start_point.sh <test_hist | ISO_spectrum | mono> <single | double | multi>"
+    echo "Usage: ./scripts/run_dspx_start_point.sh <test_hist | ISO_spectrum | mono> <single | double | multi> [multi_events] [multi_csv]"
     exit 1
 fi
 
 dist_type=$1
 source_mode=$2
+multi_events=${3:-100}
+multi_csv=${4:-"${repo_root}/scripts/example_multi_source.csv"}
+run_multi_setup=false
 
 case "${source_mode}" in
     single)
@@ -25,11 +28,12 @@ case "${source_mode}" in
         macro="macros/gps_double_neutron_gamma_test.mac"
         ;;
     multi)
-        macro="macros/gps_multi_demo_test.mac"
+        run_multi_setup=true
+        macro="temporary_multi_source.mac"
         ;;
     *)
         echo "Invalid mode selection: '${source_mode}'"
-        echo "Usage: ./scripts/run_dspx_start_point.sh <test_hist | ISO_spectrum | mono> <single | double | multi>"
+        echo "Usage: ./scripts/run_dspx_start_point.sh <test_hist | ISO_spectrum | mono> <single | double | multi> [multi_events] [multi_csv]"
         exit 1
         ;;
 esac
@@ -44,6 +48,10 @@ cmake -S "${repo_root}" -B "${build_dir}" \
   -DQARRAY_DETECTOR_GEOMETRY=DSPX \
   -DWITH_CRY=OFF
 cmake --build "${build_dir}"
+
+if [[ "${run_multi_setup}" == true ]]; then
+    "${repo_root}/scripts/multi_source_setup.sh" "${multi_events}" "${multi_csv}"
+fi
 
 echo "=========================================="
 echo "Running Geant4 macro: ${macro}"

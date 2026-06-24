@@ -1,0 +1,154 @@
+#!/bin/bash
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+repo_root="$(cd "$script_dir/.." && pwd)"
+echo "Script directory: $script_dir"
+echo "Repository root: $repo_root"
+template_dir="$repo_root/macros/templates"
+generated_template_dir="$repo_root/build-dspx"
+template_multi_source="$template_dir/template_multi_source.mac"
+template_source="$template_dir/template_source.mac"
+temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
+echo "Template directory: $template_dir"
+echo "Generated template directory: $generated_template_dir"
+cleanup_after_run=false
+
+#ensure correct input: csv file and a number of events needed, add proper bool here
+# We can put csvs in the scripts folder.
+args=()
+for arg in "$@"; do
+    case "$arg" in
+        --cleanup)
+            cleanup_after_run=true
+            ;;
+        *)
+            args+=("$arg")
+            ;;
+    esac
+done
+set -- "${args[@]}"
+
+if [[ -z "$1" || -z "$2" ]]; then
+    echo "Error: You must supply number of events (int) and CSV file."
+    echo "Usage: ./multi_source_setup.sh [--cleanup] <int> <.csv>"
+    exit 1
+fi
+
+Event_Number=$1
+csv_file=$2
+
+# --- ADD THIS CHECK HERE ---
+if [ ! -f "$csv_file" ]; then
+    echo "Error: The CSV file could not be found at: $csv_file"
+    echo "Please double-check the path and try again."
+    exit 1
+fi
+
+if [ ! -f "$template_multi_source" ]; then
+    echo "Error: The multi-source template could not be found at: $template_multi_source"
+    exit 1
+fi
+
+if [ ! -f "$template_source" ]; then
+    echo "Error: The source template could not be found at: $template_source"
+    exit 1
+fi
+
+mkdir -p "$generated_template_dir"
+
+# Remove stale generated files so the new run starts from a clean template folder.
+rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*.mac
+
+# Rebuild the temporary macro from the static template header every run.
+awk '
+    { print }
+    /^#Below add augmented data[[:space:]]*$/ { exit }
+' "$template_multi_source" > "$temporary_multi_source"
+echo "" >> "$temporary_multi_source"
+
+first_source=true
+source_counter=0   # NEW: Track a unique ID for every source file created
+
+while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
+    
+    # Strip hidden Windows/Excel carriage returns (\r) and trailing spaces instantly
+    col1=$(echo "$col1" | tr -d '\r\n[:space:]')
+    col2=$(echo "$col2" | tr -d '\r\n[:space:]')
+    col3=$(echo "$col3" | tr -d '\r\n[:space:]')
+    col4=$(echo "$col4" | tr -d '\r\n[:space:]')
+
+    # ignore header to csv
+    if [[ "$col1" == "type" || -z "$col1" ]]; then
+        continue
+    fi
+
+    # variables Imma use go here:
+    particletype="$col1"
+    declare -i num="$col2" 
+    #gotta make sure integer number of sources
+    intensity="$col3"
+    spectrum="$col4"
+
+    # read back so i can sanity check.
+    echo "New Source"
+    echo "Type: $particletype"
+    echo "Number:  $num"
+    echo "Intensity: $intensity"
+    echo "--------------------------"
+
+    # Increment counter to make a dedicated macro file for this specific row data
+    ((source_counter++))
+    current_macro="template_source_${source_counter}.mac"
+    current_macro_path="$generated_template_dir/$current_macro"
+
+    # Copy the clean template to our new uniquely named target file
+    cp "$template_source" "$current_macro_path"
+
+    # --- CROSS-PLATFORM MAC/LINUX SED COMPATIBILITY LAYER ---
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # macOS requires an explicit empty string for in-place editing
+        sed -i '' \
+          -e "s|/gps/particle.*|/gps/particle $particletype|" \
+          -e "s|/control/execute.*|/control/execute $spectrum|" \
+          "$current_macro_path"
+    else
+        # Standard Linux/GNU environment format
+        sed -i \
+          -e "s|/gps/particle.*|/gps/particle $particletype|" \
+          -e "s|/control/execute.*|/control/execute $spectrum|" \
+          "$current_macro_path"
+    fi
+
+    #if else here to make it so first added source is just added otherwise sourceadd used instead.
+    if [ "$first_source" = true ]; then
+        
+        echo "/gps/source/intensity $intensity" >> "$temporary_multi_source"
+        echo "/control/execute $current_macro_path" >> "$temporary_multi_source"
+        echo "" >> "$temporary_multi_source"
+
+        if [ "$num" -gt 1 ]; then
+            run_num=$((num-1))
+            seq $run_num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute $current_macro_path\n\n" >> "$temporary_multi_source"
+        fi
+        first_source=false
+    else
+        seq $num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute $current_macro_path\n\n" >> "$temporary_multi_source"
+    fi
+
+done < "$csv_file"
+
+# Guarantee a clean newline layout for the tail commands
+echo "" >> "$temporary_multi_source"
+echo "/gps/source/multiplevertex true" >> "$temporary_multi_source"
+echo "/run/beamOn $Event_Number" >> "$temporary_multi_source"
+echo "" >> "$temporary_multi_source"
+
+if [ "$cleanup_after_run" = true ]; then
+    rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*.mac
+fi
+
+#now slide it into init_vis.mac in similiar manner.
+# Don't do this. For visual testing, please put this somewhere else to avoid overwriting the original init_vis.mac.
+# echo "/control/execute ./template_multi_source.mac" >> init_vis.mac
+
+echo "Finished subscript!"
