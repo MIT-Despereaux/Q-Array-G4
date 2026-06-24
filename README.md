@@ -20,6 +20,18 @@ git submodule update --init --recursive
 ln -s $G4INSTALL/share/Geant4/examples examples
 ```
 
+# Conventions
+
+All scripts for running the program and for submitting slurm jobs should go into the `scripts` folder,
+and they should be assumed to be run under the repo root directory.
+
+All macros should go under the `macros` folder, including source spectrum used for the general particle source (GPS)
+generator. These files will be copied into the `build` (`build-dspx`) folder during cmake configuration and build phase. 
+
+For visualization tests, run `./main` (which loads the `init_vis.mac` automatically) and then `/control/execute <macro_name>.mac` under the `build` folder.
+
+For batch tests, run `./main <macro_name>.mac` under the `build` folder to execute the script. 
+
 # Building
 
 Configure and build with CRY disabled by default:
