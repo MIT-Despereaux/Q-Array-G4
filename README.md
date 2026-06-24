@@ -52,13 +52,21 @@ Note, you might need to use `export QT_QPA_PLATFORM=xcb` to force an X11 session
 Run a batch macro:
 
 ```sh
-cd build && ./main leiden_cosmic_batch.mac
+cd build && ./main macros/leiden_cosmic_batch.mac
 ```
 
-For running single/multiple particle sources instead return to root folder and run. test_hist, ISO_spectrum, and mono are solely used to label your output folders for ease of working with. single creates one particle source, dual two, and multi N particle sources, however it requires a CSV to be fed in. The CSV format must have type,number,intensity,spectrum as its header column. number must be an integer, spectrum must be relative path to spectrum.mac files to be read for that source.
+GPS test macros are self-contained and live in `macros/`. Run them directly:
 
 ```sh
-cd .. && ./Start_Point.sh <test_hist | ISO_spectrum | mono> <single | dual | multi> <int: number of events> "Path_to_CSV"
+cd build && ./main macros/gps_single_neutron_test.mac
+cd build && ./main macros/gps_double_neutron_gamma_test.mac
+cd build && ./main macros/gps_multi_demo_test.mac
+```
+
+For running the same GPS test macros from the repository root and sorting the generated `test*.csv`/`test*.json` outputs, use `scripts/Start_Point.sh`. `test_hist`, `ISO_spectrum`, and `mono` only label the sorted output folder.
+
+```sh
+./scripts/Start_Point.sh <test_hist | ISO_spectrum | mono> <single | double | multi>
 ```
 
 # Testing

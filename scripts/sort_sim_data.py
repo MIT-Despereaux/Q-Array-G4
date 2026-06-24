@@ -33,7 +33,7 @@ def main():
     # --- 1. Validate Command Line Arguments ---
     if len(sys.argv) < 2:
         print("Error: Missing distribution type variable.")
-        print("Usage: python3 sort_sim_data.py <test_hist|ISO_spectrum|mono>")
+        print("Usage: python3 scripts/sort_sim_data.py <test_hist|ISO_spectrum|mono> [macro_path]")
         sys.exit(1)
         
     dist_type = sys.argv[1]
@@ -41,7 +41,7 @@ def main():
         print(f"Warning: Unexpected distribution type '{dist_type}' provided.")
 
     # --- 2. Gather Dynamic Information ---
-    macro_file = "Set_Up.mac.txt"
+    macro_file = sys.argv[2] if len(sys.argv) >= 3 else "macros/gps_single_neutron_test.mac"
     num_particles, particle_names = parse_macro_for_particles(macro_file)
     
     # Generate date token formatted as Month/Day_HourMinute (e.g., 06_22_1327)

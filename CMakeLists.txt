@@ -180,13 +180,16 @@ endif()
 # Copy all scripts to the build directory.
 #
 set(EXTRA_SCRIPTS
-  init_vis.mac
-  geometry_lab_proton.mac
-  geometry_lab_proton_batch.mac
-  dspx_cosmic_visual.mac
-  dspx_cosmic_batch.mac
-  leiden_cosmic_visual.mac
-  leiden_cosmic_batch.mac
+  macros/init_vis.mac
+  macros/geometry_lab_proton_visual.mac
+  macros/geometry_lab_proton_batch.mac
+  macros/dspx_cosmic_visual.mac
+  macros/dspx_cosmic_batch.mac
+  macros/leiden_cosmic_visual.mac
+  macros/leiden_cosmic_batch.mac
+  macros/gps_single_neutron_test.mac
+  macros/gps_double_neutron_gamma_test.mac
+  macros/gps_multi_demo_test.mac
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
@@ -199,6 +202,10 @@ set(EXTRA_SCRIPTS
 )
 
 foreach(_script ${EXTRA_SCRIPTS})
+  get_filename_component(_script_dir ${_script} DIRECTORY)
+  if(_script_dir)
+    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/${_script_dir})
+  endif()
   configure_file(
     ${PROJECT_SOURCE_DIR}/${_script}
     ${PROJECT_BINARY_DIR}/${_script}
@@ -210,6 +217,22 @@ foreach(_obsolete_script
     run_test.mac
     vis_1.mac
     vis_2.mac
+    init_vis.mac
+    geometry_lab_proton.mac
+    geometry_lab_proton_visual.mac
+    geometry_lab_proton_batch.mac
+    dspx_cosmic_visual.mac
+    dspx_cosmic_batch.mac
+    leiden_cosmic_visual.mac
+    leiden_cosmic_batch.mac
+    macros/Set_Up.mac.txt
+    macros/Proto_Full_Set_Up.mac.txt
+    macros/source_position.mac
+    macros/temp_init.mac
+    macros/template_multi_source.mac
+    macros/template_source.mac
+    macros/sources/test_spectrum_gamma.mac
+    macros/sources/test_spectrum_n.mac
     tests/run_test_no_vis.mac)
   file(REMOVE ${PROJECT_BINARY_DIR}/${_obsolete_script})
 endforeach()
@@ -236,7 +259,7 @@ set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis)
 if(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
   add_test(
     NAME leiden_cosmic_batch
-    COMMAND main leiden_cosmic_batch.mac
+    COMMAND main macros/leiden_cosmic_batch.mac
   )
   list(APPEND SMOKE_TESTS leiden_cosmic_batch)
 

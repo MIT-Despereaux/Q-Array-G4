@@ -1,4 +1,0 @@
-type,number,intensity,spectrum
-neutron,2,1,./spectrum.mac
-geantino,1,1,./spectrum.mac
-gamma,2,1,./spectrum_gamma.mac

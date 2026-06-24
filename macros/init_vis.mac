@@ -11,5 +11,3 @@
 /vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
 /vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
 #
-/control/execute ./template_multi_source.mac
-/control/execute ./template_multi_source.mac
