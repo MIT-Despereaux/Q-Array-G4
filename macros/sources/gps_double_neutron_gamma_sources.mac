@@ -1,0 +1,29 @@
+/gps/source/intensity 1.0
+/gps/particle neutron
+/gps/ene/type User
+/gps/hist/type energy
+/gps/hist/point 0.0 0.0
+/gps/hist/point 0.1 1.0
+/gps/hist/point 1.0 2.5
+/gps/hist/point 2.0 5.0
+/gps/hist/point 14.0 0.0
+/gps/pos/type Volume
+/gps/pos/shape Sphere
+/gps/pos/centre -240. 60. 150. cm
+/gps/pos/radius 5. cm
+/gps/ang/type iso
+
+/gps/source/add 1.0
+/gps/particle gamma
+/gps/ene/type User
+/gps/hist/type energy
+/gps/hist/point 0.999 0.0
+/gps/hist/point 1 1.0
+/gps/hist/point 1.001 0
+/gps/pos/type Volume
+/gps/pos/shape Sphere
+/gps/pos/centre -240. 60. 150. cm
+/gps/pos/radius 5. cm
+/gps/ang/type iso
+
+/gps/source/multiplevertex true

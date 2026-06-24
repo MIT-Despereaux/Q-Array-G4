@@ -190,6 +190,12 @@ set(EXTRA_SCRIPTS
   macros/gps_single_neutron_test.mac
   macros/gps_double_neutron_gamma_test.mac
   macros/gps_multi_demo_test.mac
+  macros/gps_single_neutron_visual.mac
+  macros/gps_double_neutron_gamma_visual.mac
+  macros/gps_multi_demo_visual.mac
+  macros/sources/gps_single_neutron_source.mac
+  macros/sources/gps_double_neutron_gamma_sources.mac
+  macros/sources/gps_multi_demo_sources.mac
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
