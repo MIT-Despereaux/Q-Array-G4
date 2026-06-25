@@ -8,6 +8,9 @@ build_dir="${repo_root}/build-dspx"
 output_dir="${repo_root}/output/Data"
 staging_dir="${output_dir}/_gps_sources"
 output_prefix="test"
+generated_template_dir="$repo_root/build-dspx"
+temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
+
 
 if [[ $# -lt 2 ]]; then
     echo "Usage: ./scripts/run_dspx_start_point.sh <test_hist | ISO_spectrum | mono> <single | double | multi> [multi_events] [multi_csv]"
@@ -18,6 +21,8 @@ dist_type=$1
 source_mode=$2
 multi_events=${3:-100}
 multi_csv=${4:-"${repo_root}/scripts/example_multi_source.csv"}
+display_mode=$5
+#we choose if visual or batch here as I want to append to 
 run_multi_setup=false
 
 case "${source_mode}" in
@@ -29,7 +34,7 @@ case "${source_mode}" in
         ;;
     multi)
         run_multi_setup=true
-        macro="temporary_multi_source.mac"
+        macro=$temporary_multi_source
         ;;
     *)
         echo "Invalid mode selection: '${source_mode}'"
@@ -58,7 +63,20 @@ echo "Running Geant4 macro: ${macro}"
 echo "=========================================="
 
 cd "${build_dir}"
-./main "${macro}"
+case "${display_mode}" in
+    visual)
+    echo "/control/execute $macro" >> "init_vis.mac"
+    ./main
+    ;;
+    batch)
+    #file here to strip visual from macro
+    ./main "${macro}"
+    ;;
+    *)
+
+    ;;
+esac
+
 
 echo "=========================================="
 echo "Simulation finished. Starting file sorter."
