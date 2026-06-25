@@ -1,18 +1,7 @@
-# 1. INITIALIZE FIRST (Builds the C++ world geometry)
+/QR/output/writeSteps true
+/QR/output/writeAllEvents true
+/QR/output/addNtuple full full
 /run/initialize
 
-# 2. OPEN THE VIEWPORT (Instantiates the GUI canvas)
-/vis/open OGL 1200x1200-0+0
-
-# 3. CONSTRUCT THE SCENE (Binds the geometry to the canvas)
-/vis/drawVolume
-/vis/scene/add/trajectories smooth
-/vis/scene/endOfEventAction accumulate 10
-
-# 4. DEFINE THE SOURCES (Your dynamic CSV modifications)
+# [Your multiple sources appended here by multi_source_setup.sh]
 /gps/source/multiplevertex true
-# [Your appended /gps/source/add blocks go here]
-
-# 5. DEFINE STYLING & FIRE BEAM
-/vis/viewer/set/autoRefresh true
-/run/beamOn 100

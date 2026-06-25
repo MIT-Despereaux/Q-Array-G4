@@ -1,11 +1,80 @@
-# Clean styling profile
+/control/verbose 2
+/run/verbose 2
+
+# 1. Open the visual window canvas
+/vis/open OGL 1200x1200-0+0
+
+# 2. Tell Geant4 to look at your generated source macro
+# (The shell script will append this exact line to the bottom)
+
+/control/echo ==========================================
+/control/echo !!! SUCCESS: RUNNING THE AUGMENTED MACRO !!!
+/control/echo ==========================================
 /vis/drawVolume
-/vis/viewer/zoom 4
-/vis/viewer/set/viewpointThetaPhi 70 30
 /vis/scene/add/trajectories smooth
 /vis/scene/endOfEventAction accumulate 10
-/vis/viewer/set/autoRefresh true
+/control/execute /Users/tclassen23/q-array-g4/build-dspx/temporary_multi_source.mac
 
-/vis/modeling/trajectories/create/drawByCharge
-/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
-/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
+
+/control/echo ==========================================
+/control/echo !!! SUCCESS: RUNNING THE AUGMENTED MACRO !!!
+/control/echo ==========================================
+/vis/drawVolume
+/vis/scene/add/trajectories smooth
+/vis/scene/endOfEventAction accumulate 10
+/control/execute /Users/tclassen23/q-array-g4/build-dspx/temporary_multi_source.mac
+
+
+/control/echo ==========================================
+/control/echo !!! SUCCESS: RUNNING THE AUGMENTED MACRO !!!
+/control/echo ==========================================
+/vis/drawVolume
+/vis/scene/add/trajectories smooth
+/vis/scene/endOfEventAction accumulate 10
+/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle
+/vis/modeling/trajectories/customDrawByParticle/set neutron yellow
+/vis/modeling/trajectories/customDrawByParticle/set gamma cyan
+/vis/modeling/trajectories/customDrawByParticle/set e- red
+/vis/modeling/trajectories/customDrawByParticle/set proton blue
+/vis/modeling/trajectories/select customDrawByParticle
+/control/execute /Users/tclassen23/q-array-g4/build-dspx/temporary_multi_source.mac
+
+
+/control/echo ==========================================
+/control/echo !!! SUCCESS: RUNNING THE AUGMENTED MACRO !!!
+/control/echo ==========================================
+/vis/scene/create
+/run/initialize
+/vis/drawVolume world
+/vis/scene/add/trajectories smooth
+/vis/scene/endOfEventAction accumulate 10
+/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle
+/vis/modeling/trajectories/customDrawByParticle/set neutron yellow
+/vis/modeling/trajectories/customDrawByParticle/set gamma cyan
+/vis/modeling/trajectories/customDrawByParticle/set e- red
+/vis/modeling/trajectories/customDrawByParticle/set proton blue
+/vis/modeling/trajectories/select customDrawByParticle
+/vis/viewer/reset
+/vis/viewer/rescale
+/vis/viewer/refresh
+/control/execute /Users/tclassen23/q-array-g4/build-dspx/temporary_multi_source.mac
+
+
+/control/echo ==========================================
+/control/echo !!! SUCCESS: RUNNING THE AUGMENTED MACRO !!!
+/control/echo ==========================================
+/vis/scene/create
+/run/initialize
+/vis/drawVolume world
+/vis/scene/add/trajectories smooth
+/vis/scene/endOfEventAction accumulate 10
+/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle
+/vis/modeling/trajectories/customDrawByParticle/set neutron yellow
+/vis/modeling/trajectories/customDrawByParticle/set gamma cyan
+/vis/modeling/trajectories/customDrawByParticle/set e- red
+/vis/modeling/trajectories/customDrawByParticle/set proton blue
+/vis/modeling/trajectories/select customDrawByParticle
+/vis/viewer/reset
+/vis/viewer/rescale
+/vis/viewer/refresh
+/control/execute /Users/tclassen23/q-array-g4/build-dspx/temporary_multi_source.mac

@@ -65,16 +65,57 @@ echo "=========================================="
 cd "${build_dir}"
 case "${display_mode}" in
     visual)
-    cp "${repo_root}/macros/init_vis.mac" "init_vis.mac"
-    # echo "/control/execute ${macro}" >> "init_vis.mac"
-    # echo "/control/session/start" >> "init_vis.mac"
-    ./main
-    ;;
+    # 1. Clear out any hidden Windows \r characters from the template file while copying it
+    tr -d '\r' < "${repo_root}/macros/init_vis.mac" > "init_vis.mac"
     
+    # 2. Add safe, forced Unix newlines
+    echo "" >> "init_vis.mac"
+    echo "" >> "init_vis.mac"
+    
+    # 3. Append your setup commands safely with Multi-Threaded Scene Fixes
+    echo "/control/echo ==========================================" >> "init_vis.mac"
+    echo "/control/echo !!! SUCCESS: RUNNING THE AUGMENTED MACRO !!!" >> "init_vis.mac"
+    echo "/control/echo ==========================================" >> "init_vis.mac"
+    
+    # MT FIX: Explicitly create scene and initialize run to set geometric extent
+    echo "/vis/scene/create" >> "init_vis.mac"
+    echo "/run/initialize" >> "init_vis.mac"
+    
+    # Now that the geometry bounds are calculated, we can safely target the volumes
+    echo "/vis/drawVolume world" >> "init_vis.mac"
+    echo "/vis/scene/add/trajectories smooth" >> "init_vis.mac"
+    echo "/vis/scene/endOfEventAction accumulate 10" >> "init_vis.mac"
+    
+    # --- CUSTOM PARTICLE COLORING ---
+    echo "/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle" >> "init_vis.mac"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set neutron yellow" >> "init_vis.mac"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set gamma cyan" >> "init_vis.mac"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set e- red" >> "init_vis.mac"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set proton blue" >> "init_vis.mac"
+    echo "/vis/modeling/trajectories/select customDrawByParticle" >> "init_vis.mac"
+    # ---------------------------------------------
+
+    # MT FIX: Force camera systems to refresh and capture the updated extent mapping
+    echo "/vis/viewer/reset" >> "init_vis.mac"
+    echo "/vis/viewer/rescale" >> "init_vis.mac"
+    echo "/vis/viewer/refresh" >> "init_vis.mac"
+
+    # Execute the generated GPS multi-source setup macro
+    echo "/control/execute ${macro}" >> "init_vis.mac"
+    
+    # 4. Push this clean, augmented file back to the repository macro path where Geant4 looks
+    cp "init_vis.mac" "${repo_root}/macros/init_vis.mac"
+    
+    # 5. Launch Geant4
+    ./main
+    
+    # 6. Revert the repository macro back to its clean git state when the GUI closes
+    git checkout -- "${repo_root}/macros/init_vis.mac" 2>/dev/null || true
+    ;;
     batch)
     "${repo_root}/scripts/batch_mode.sh" "${macro}" 
     ./main "${macro}"
-    sleep 9
+    # sleep 9
     "${repo_root}/scripts/batch_mode.sh" "${macro}" 
     ;;
     

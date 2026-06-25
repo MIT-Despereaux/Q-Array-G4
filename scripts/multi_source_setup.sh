@@ -62,7 +62,7 @@ rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*
 # Rebuild the temporary macro from the static template header every run.
 awk '
     { print }
-    /^#Below add augmented data[[:space:]]*$/ { exit }
+    /^# \[Your multiple sources appended here.*$/ { exit }
 ' "$template_multi_source" > "$temporary_multi_source"
 echo "" >> "$temporary_multi_source"
 
