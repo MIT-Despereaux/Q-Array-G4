@@ -1,13 +1,11 @@
-# Macro file for the initialization of example B1
-# in interactive session
-#
-# Set some default verbose
-/control/verbose 2
-#/control/saveHistory
-/run/verbose 2
-#
-# Create a standard drawing model for your trajectories
+# Clean styling profile
+/vis/drawVolume
+/vis/viewer/zoom 4
+/vis/viewer/set/viewpointThetaPhi 70 30
+/vis/scene/add/trajectories smooth
+/vis/scene/endOfEventAction accumulate 10
+/vis/viewer/set/autoRefresh true
+
 /vis/modeling/trajectories/create/drawByCharge
 /vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
 /vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
-#

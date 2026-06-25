@@ -1,45 +1,18 @@
+# 1. INITIALIZE FIRST (Builds the C++ world geometry)
 /run/initialize
-#This file will allow arbitrary number of source, types of particles, at arbitrary intensities.
-#
-#Allow CSV to save.
-#
-/QR/output/writeSteps true
-/QR/output/writeAllEvents true
-/QR/output/addNtuple full full
-#
-#Draw Visual
-#
-/vis/open OGL 600x600-0+0
+
+# 2. OPEN THE VIEWPORT (Instantiates the GUI canvas)
+/vis/open OGL 1200x1200-0+0
+
+# 3. CONSTRUCT THE SCENE (Binds the geometry to the canvas)
 /vis/drawVolume
-/vis/viewer/zoom 4
-/vis/viewer/set/viewpointThetaPhi 70 30
 /vis/scene/add/trajectories smooth
 /vis/scene/endOfEventAction accumulate 10
-# FORCE THE GRAPHICS CORE TO KEEP AND REFRESH TRACKS
+
+# 4. DEFINE THE SOURCES (Your dynamic CSV modifications)
+/gps/source/multiplevertex true
+# [Your appended /gps/source/add blocks go here]
+
+# 5. DEFINE STYLING & FIRE BEAM
 /vis/viewer/set/autoRefresh true
-/vis/scene/notifyHandlers
-#
-#Below add augmented data
-
-/gps/source/multiplevertex true
 /run/beamOn 100
-
-/gps/source/intensity 1
-/control/execute ./template_source_1.mac
-
-/gps/source/add 1
-/control/execute ./template_source_1.mac
-
-/gps/source/add 1
-/control/execute ./template_source_2.mac
-
-/gps/source/add 1
-/control/execute ./template_source_3.mac
-
-/gps/source/add 1
-/control/execute ./template_source_3.mac
-
-
-/gps/source/multiplevertex true
-/run/beamOn 100
-
