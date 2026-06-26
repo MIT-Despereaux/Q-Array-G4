@@ -14,11 +14,3 @@
 /vis/modeling/trajectories/customDrawByParticle/set geantino magenta 
 /vis/modeling/trajectories/customDrawByParticle/set proton blue 
 /vis/modeling/trajectories/select customDrawByParticle 
-
-
-/QR/output/writeSteps true
-/QR/output/writeAllEvents true
-/QR/output/addNtuple full full
-/run/initialize
-/QR/generator/mode gps
-/control/execute /Users/tclassen23/q-array-g4/build-dspx/temporary_multi_source.mac
