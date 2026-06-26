@@ -65,52 +65,52 @@ echo "=========================================="
 cd "${build_dir}"
 case "${display_mode}" in
     visual)
-    # 1. Clear out any hidden Windows \r characters from the template file while copying it
-    tr -d '\r' < "${repo_root}/macros/init_vis.mac" > "init_vis.mac"
+    local_macro="./init_vis.mac"
+    repo_macro="/Users/tclassen23/q-array-g4/macros/init_vis.mac"
+
+    # 1. Pull the base clean template from the repo
+    tr -d '\r' < "$repo_macro" > "$local_macro"
     
-    # 2. Add safe, forced Unix newlines
-    echo "" >> "init_vis.mac"
-    echo "" >> "init_vis.mac"
+    # 2. Add safe Unix line spacing
+    echo "" >> "$local_macro"
+    echo "" >> "$local_macro"
     
-    # 3. Append your setup commands safely with Multi-Threaded Scene Fixes
-    echo "/control/echo ==========================================" >> "init_vis.mac"
-    echo "/control/echo !!! SUCCESS: RUNNING THE AUGMENTED MACRO !!!" >> "init_vis.mac"
-    echo "/control/echo ==========================================" >> "init_vis.mac"
-    
-    # MT FIX: Explicitly create scene and initialize run to set geometric extent
-    echo "/vis/scene/create" >> "init_vis.mac"
-    echo "/run/initialize" >> "init_vis.mac"
-    
-    # Now that the geometry bounds are calculated, we can safely target the volumes
-    echo "/vis/drawVolume world" >> "init_vis.mac"
-    echo "/vis/scene/add/trajectories smooth" >> "init_vis.mac"
-    echo "/vis/scene/endOfEventAction accumulate 10" >> "init_vis.mac"
+    # 3. Append the baseline visual controls that worked originally
+    echo "/vis/drawVolume" >> "$local_macro"
+    echo "/vis/scene/add/trajectories smooth" >> "$local_macro"
+    echo "/vis/scene/endOfEventAction accumulate -1" >> "$local_macro"
     
     # --- CUSTOM PARTICLE COLORING ---
-    echo "/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle" >> "init_vis.mac"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set neutron yellow" >> "init_vis.mac"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set gamma cyan" >> "init_vis.mac"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set e- red" >> "init_vis.mac"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set proton blue" >> "init_vis.mac"
-    echo "/vis/modeling/trajectories/select customDrawByParticle" >> "init_vis.mac"
-    # ---------------------------------------------
-
-    # MT FIX: Force camera systems to refresh and capture the updated extent mapping
-    echo "/vis/viewer/reset" >> "init_vis.mac"
-    echo "/vis/viewer/rescale" >> "init_vis.mac"
-    echo "/vis/viewer/refresh" >> "init_vis.mac"
-
-    # Execute the generated GPS multi-source setup macro
-    echo "/control/execute ${macro}" >> "init_vis.mac"
+    echo "/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle" >> "$local_macro"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set neutron yellow" >> "$local_macro"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set gamma cyan" >> "$local_macro"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set e- red" >> "$local_macro"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set geantino magenta" >> "$local_macro"
+    echo "/vis/modeling/trajectories/customDrawByParticle/set proton blue" >> "$local_macro"
+    echo "/vis/modeling/trajectories/select customDrawByParticle" >> "$local_macro"
     
-    # 4. Push this clean, augmented file back to the repository macro path where Geant4 looks
-    cp "init_vis.mac" "${repo_root}/macros/init_vis.mac"
+    # Run your source macro setup
+    echo "/control/execute ${macro}" >> "$local_macro"
     
-    # 5. Launch Geant4
+    # 4. Overwrite the repository file path so Geant4 reads it
+    cp "$local_macro" "$repo_macro"
+    
+    # 5. Launch Geant4 natively
     ./main
     
-    # 6. Revert the repository macro back to its clean git state when the GUI closes
-    git checkout -- "${repo_root}/macros/init_vis.mac" 2>/dev/null || true
+    # 6. Revert back to the clean baseline state using bulletproof echos
+    echo "/control/verbose 2" > "$repo_macro"
+    echo "/run/verbose 2" >> "$repo_macro"
+    echo "" >> "$repo_macro"
+    echo "# 1. Open the visual window canvas" >> "$repo_macro"
+    echo "/vis/open OGL 1200x1200-0+0" >> "$repo_macro"
+    echo "" >> "$repo_macro"
+    echo "# 2. Tell Geant4 to look at your generated source macro" >> "$repo_macro"
+    echo "# (The shell script will append this exact line to the bottom)" >> "$repo_macro"
+    
+    cp "$repo_macro" "$local_macro"
+    ;;
+    cp "$repo_macro" "$local_macro"
     ;;
     batch)
     "${repo_root}/scripts/batch_mode.sh" "${macro}" 
