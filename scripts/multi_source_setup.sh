@@ -79,6 +79,7 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
 
     # Ignore header to csv
     if [[ "$col1" == "type" || -z "$col1" ]]; then
+        echo "DEBUG: Skipping this line because it is a header or empty."
         continue
     fi
 
@@ -90,6 +91,7 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
     echo "Processing CSV Row -> Type: $particletype, Count: $num, Intensity: $intensity"
 
     # Loop for the total number of sources specified in this row
+# Loop for the total number of sources specified in this row
     for (( i=1; i<=num; i++ )); do
         # Increment global counter to give every single source its own macro file
         ((source_counter++))
@@ -102,39 +104,44 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
         # Calculate the exact 0-indexed GPS ID for this source block
         gps_index=$((source_counter - 1))
 
-        # --- CROSS-PLATFORM MAC/LINUX SED COMPATIBILITY LAYER ---
+        # --- UNIFIED SED AND SPECTRUM APPNEDING LAYER ---
         if [[ "$OSTYPE" == "darwin"* ]]; then
             sed -i '' \
               -e "s|/gps/source/set.*|/gps/source/set $gps_index|" \
               -e "s|__SOURCE_INDEX__|$gps_index|" \
               -e "s|/gps/particle.*|/gps/particle $particletype|" \
-              -e "s|__SPECTRUM_PATH__|./$spectrum|" \
               "$current_macro_path"
         else
             sed -i \
               -e "s|/gps/source/set.*|/gps/source/set $gps_index|" \
               -e "s|__SOURCE_INDEX__|$gps_index|" \
               -e "s|/gps/particle.*|/gps/particle $particletype|" \
-              -e "s|__SPECTRUM_PATH__|./$spectrum|" \
               "$current_macro_path"
         fi
 
+        # Pass the spectrum path to your converter relative to the repo root execution 
+        # (Assuming $spectrum from the CSV holds the relative path like 'macros/sources/ISO_Neutron_Spectrum.txt')
+        #full_spectrum_path="$repo_root/$spectrum"
+
+        # Append the converted raw points and cap it with interpolation
+        echo "# --- Appended Spectrum Points via convert_spectrum.sh ---" >> "$current_macro_path"
+        "$script_dir/convert_spectrum.sh" "$spectrum" >> "$current_macro_path"
+        echo "/gps/hist/inter Lin" >> "$current_macro_path"
+
         # Write the orchestration commands to temporary_multi_source.mac
         if [ "$first_source" = true ]; then
-            # Source 0 already exists by default, just configure it
             echo "/gps/source/intensity $intensity" >> "$temporary_multi_source"
             echo "/control/execute ./$current_macro" >> "$temporary_multi_source"
             echo "" >> "$temporary_multi_source"
             first_source=false
         else
-            # Create a brand new source slot and configure it
             echo "/gps/source/add $intensity" >> "$temporary_multi_source"
             echo "/control/execute ./$current_macro" >> "$temporary_multi_source"
             echo "" >> "$temporary_multi_source"
         fi
     done
 
-done < "$csv_file"
+done < <(sed -e '1s/^\xef\xbb\xbf//' -e 's/\r//g' "$csv_file")
 
 # Guarantee a clean newline layout for the tail commands
 echo "" >> "$temporary_multi_source"

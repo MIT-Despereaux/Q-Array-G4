@@ -1,0 +1,3 @@
+type,num,intensity,spectrum
+neutron,2,1,/Users/tclassen23/q-array-g4/scripts/ISO_neutron_spectrum.csv
+gamma,1,1,/Users/tclassen23/q-array-g4/scripts/Gamma_Spectrum.csv

@@ -16,6 +16,8 @@
 /gps/ang/type iso
 
 /gps/particle geantino
-/gps/ene/type User
-#/gps/hist/type energy
-/control/execute __SPECTRUM_PATH__
+/gps/ene/type Arb
+/gps/ene/diffspec 1
+/gps/hist/type arb
+#/gps/hist/file __SPECTRUM_PATH__
+#/gps/hist/inter Lin
