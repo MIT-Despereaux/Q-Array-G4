@@ -108,6 +108,8 @@ EOF
     echo "/QR/output/writeAllEvents true" >> "$build_macro"
     echo "/QR/output/addNtuple full full" >> "$build_macro"
     echo "/run/initialize" >> "$build_macro"
+    echo "/QR/generator/mode gps" >> "$build_macro"
+    
     
     # Run your source macro setup
     echo "/control/execute ${macro}" >> "$build_macro"

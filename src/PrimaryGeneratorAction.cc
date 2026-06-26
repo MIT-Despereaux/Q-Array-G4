@@ -67,7 +67,7 @@ namespace QArray
       : G4VUserPrimaryGeneratorAction()
   {
     G4int n_particle = 1;
-    mParticleGun = new G4ParticleGun(n_particle);
+    mParticleGun = new G4ParticleGun();
 
     // Default particle kinematics
     G4ParticleTable *particleTable = G4ParticleTable::GetParticleTable();
@@ -209,6 +209,10 @@ namespace QArray
   {
     // create a settings string for CRY
     auto meta = Metadata::GetInstance();
+
+    //Just for now! see if it works??
+    // Hardcode to GPS for diagnostic testing
+    //G4String mode = "gps";
 
     G4String mode = meta->GetString("/QR/generator/mode");
     if (mode == "gps")
