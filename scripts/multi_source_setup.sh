@@ -71,75 +71,74 @@ source_counter=0   # NEW: Track a unique ID for every source file created
 
 while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
     
-    # Strip hidden Windows/Excel carriage returns (\r) and trailing spaces instantly
+    # Strip hidsden Windows/Excel carriage returns (\r) and trailing spaces instantly
     col1=$(echo "$col1" | tr -d '\r\n[:space:]')
     col2=$(echo "$col2" | tr -d '\r\n[:space:]')
     col3=$(echo "$col3" | tr -d '\r\n[:space:]')
     col4=$(echo "$col4" | tr -d '\r\n[:space:]')
 
-    # ignore header to csv
+    # Ignore header to csv
     if [[ "$col1" == "type" || -z "$col1" ]]; then
         continue
     fi
 
-    # variables Imma use go here:
     particletype="$col1"
     declare -i num="$col2" 
-    #gotta make sure integer number of sources
     intensity="$col3"
     spectrum="$col4"
 
-    # read back so i can sanity check.
-    echo "New Source"
-    echo "Type: $particletype"
-    echo "Number:  $num"
-    echo "Intensity: $intensity"
-    echo "--------------------------"
+    echo "Processing CSV Row -> Type: $particletype, Count: $num, Intensity: $intensity"
 
-    # Increment counter to make a dedicated macro file for this specific row data
-    ((source_counter++))
-    current_macro="template_source_${source_counter}.mac"
-    current_macro_path="$generated_template_dir/$current_macro"
+    # Loop for the total number of sources specified in this row
+    for (( i=1; i<=num; i++ )); do
+        # Increment global counter to give every single source its own macro file
+        ((source_counter++))
+        current_macro="template_source_${source_counter}.mac"
+        current_macro_path="$generated_template_dir/$current_macro"
 
-    # Copy the clean template to our new uniquely named target file
-    cp "$template_source" "$current_macro_path"
+        # Copy the clean template to our new uniquely named target file
+        cp "$template_source" "$current_macro_path"
 
-    # --- CROSS-PLATFORM MAC/LINUX SED COMPATIBILITY LAYER ---
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS requires an explicit empty string for in-place editing
-        sed -i '' \
-          -e "s|/gps/particle.*|/gps/particle $particletype|" \
-          -e "s|/control/execute.*|/control/execute $spectrum|" \
-          "$current_macro_path"
-    else
-        # Standard Linux/GNU environment format
-        sed -i \
-          -e "s|/gps/particle.*|/gps/particle $particletype|" \
-          -e "s|/control/execute.*|/control/execute $spectrum|" \
-          "$current_macro_path"
-    fi
+        # Calculate the exact 0-indexed GPS ID for this source block
+        gps_index=$((source_counter - 1))
 
-    #if else here to make it so first added source is just added otherwise sourceadd used instead.
-    if [ "$first_source" = true ]; then
-        
-        echo "/gps/source/intensity $intensity" >> "$temporary_multi_source"
-        echo "/control/execute $current_macro_path" >> "$temporary_multi_source"
-        echo "" >> "$temporary_multi_source"
-
-        if [ "$num" -gt 1 ]; then
-            run_num=$((num-1))
-            seq $run_num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute $current_macro_path\n\n" >> "$temporary_multi_source"
+        # --- CROSS-PLATFORM MAC/LINUX SED COMPATIBILITY LAYER ---
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' \
+              -e "s|/gps/source/set.*|/gps/source/set $gps_index|" \
+              -e "s|__SOURCE_INDEX__|$gps_index|" \
+              -e "s|/gps/particle.*|/gps/particle $particletype|" \
+              -e "s|__SPECTRUM_PATH__|./$spectrum|" \
+              "$current_macro_path"
+        else
+            sed -i \
+              -e "s|/gps/source/set.*|/gps/source/set $gps_index|" \
+              -e "s|__SOURCE_INDEX__|$gps_index|" \
+              -e "s|/gps/particle.*|/gps/particle $particletype|" \
+              -e "s|__SPECTRUM_PATH__|./$spectrum|" \
+              "$current_macro_path"
         fi
-        first_source=false
-    else
-        seq $num | xargs -I {} printf "/gps/source/add $intensity\n/control/execute $current_macro_path\n\n" >> "$temporary_multi_source"
-    fi
+
+        # Write the orchestration commands to temporary_multi_source.mac
+        if [ "$first_source" = true ]; then
+            # Source 0 already exists by default, just configure it
+            echo "/gps/source/intensity $intensity" >> "$temporary_multi_source"
+            echo "/control/execute ./$current_macro" >> "$temporary_multi_source"
+            echo "" >> "$temporary_multi_source"
+            first_source=false
+        else
+            # Create a brand new source slot and configure it
+            echo "/gps/source/add $intensity" >> "$temporary_multi_source"
+            echo "/control/execute ./$current_macro" >> "$temporary_multi_source"
+            echo "" >> "$temporary_multi_source"
+        fi
+    done
 
 done < "$csv_file"
 
 # Guarantee a clean newline layout for the tail commands
 echo "" >> "$temporary_multi_source"
-echo "/gps/source/multiplevertex true" >> "$temporary_multi_source"
+echo "/gps/source/multiplevertex false" >> "$temporary_multi_source"
 echo "/run/beamOn $Event_Number" >> "$temporary_multi_source"
 echo "" >> "$temporary_multi_source"
 

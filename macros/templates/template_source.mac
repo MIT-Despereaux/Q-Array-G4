@@ -3,16 +3,19 @@
 #
 #Editing following will specify each individual source.
 #
-/gps/particle geantino
-/gps/ene/type User
-/gps/hist/type energy
-/control/execute ./spectrum.mac.txt
+/gps/source/set __SOURCE_INDEX__
+
 #
 #These should remain between all, as this process creates one localized source.
 #
 /gps/pos/type Volume
 /gps/pos/shape Sphere
-#/gps/pos/centre -240. 60. 150. cm
-/gps/pos/centre 0. 0. 0. cm
 /gps/pos/radius 5. cm
+/gps/pos/centre -240. 60. 150. cm
+#/gps/pos/centre 0. 0. 0. cm
 /gps/ang/type iso
+
+/gps/particle geantino
+/gps/ene/type User
+#/gps/hist/type energy
+/control/execute __SPECTRUM_PATH__

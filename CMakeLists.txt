@@ -24,7 +24,7 @@ enable_testing()
 option(WITH_GEANT4_UIVIS "Build with Geant4 UI and Vis drivers" ON)
 option(BUILD_STATIC_LIBS "Build static libraries" OFF)
 option(WITH_CRY "Build with CRY cosmic ray generator support" OFF)
-set(QARRAY_DETECTOR_GEOMETRY "LEIDEN_II" CACHE STRING "Detector geometry implementation: CURIE, LEIDEN_II, or DSPX")
+set(QARRAY_DETECTOR_GEOMETRY "DSPX" CACHE STRING "Detector geometry implementation: CURIE, LEIDEN_II, or DSPX")
 set_property(CACHE QARRAY_DETECTOR_GEOMETRY PROPERTY STRINGS CURIE LEIDEN_II DSPX)
 
 # Determine required components for Geant4 based on the given options.
