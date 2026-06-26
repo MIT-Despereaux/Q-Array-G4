@@ -65,52 +65,60 @@ echo "=========================================="
 cd "${build_dir}"
 case "${display_mode}" in
     visual)
-    local_macro="./init_vis.mac"
+    # Define paths explicitly
     repo_macro="/Users/tclassen23/q-array-g4/macros/init_vis.mac"
+    build_macro="./macros/init_vis.mac"  # Points to build-dspx/macros/init_vis.mac
 
-    # 1. Pull the base clean template from the repo
-    tr -d '\r' < "$repo_macro" > "$local_macro"
+    # CREATE CLEANUP FUNCTION: This runs no matter what (even on crash/exit)
+    cleanup() {
+        echo "--> Reverting macros back to pristine state..."
+        cat << 'EOF' > "$repo_macro"
+# Macro file for the initialization of example B1
+# in interactive session
+#
+# Set some default verbose
+/control/verbose 2
+#/control/saveHistory
+/run/verbose 2
+#
+# Create a standard drawing model for your trajectories
+/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle 
+/vis/modeling/trajectories/customDrawByParticle/set neutron yellow 
+/vis/modeling/trajectories/customDrawByParticle/set gamma cyan 
+/vis/modeling/trajectories/customDrawByParticle/set e- red 
+/vis/modeling/trajectories/customDrawByParticle/set geantino magenta 
+/vis/modeling/trajectories/customDrawByParticle/set proton blue 
+/vis/modeling/trajectories/select customDrawByParticle 
+EOF
+        # Sync the pristine version back to the build directory too
+        cp "$repo_macro" "$build_macro"
+    }
+    # Register the cleanup function to fire when the script exits or is interrupted
+    trap cleanup EXIT INT TERM
+
+    # 1. Pull the base clean template from the repo into the build directory
+    tr -d '\r' < "$repo_macro" > "$build_macro"
     
     # 2. Add safe Unix line spacing
-    echo "" >> "$local_macro"
-    echo "" >> "$local_macro"
+    echo "" >> "$build_macro"
+    echo "" >> "$build_macro"
     
-    # 3. Append the baseline visual controls that worked originally
-    echo "/vis/drawVolume" >> "$local_macro"
-    echo "/vis/scene/add/trajectories smooth" >> "$local_macro"
-    echo "/vis/scene/endOfEventAction accumulate -1" >> "$local_macro"
-    
-    # --- CUSTOM PARTICLE COLORING ---
-    echo "/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle" >> "$local_macro"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set neutron yellow" >> "$local_macro"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set gamma cyan" >> "$local_macro"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set e- red" >> "$local_macro"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set geantino magenta" >> "$local_macro"
-    echo "/vis/modeling/trajectories/customDrawByParticle/set proton blue" >> "$local_macro"
-    echo "/vis/modeling/trajectories/select customDrawByParticle" >> "$local_macro"
+    # 3. Append your temporary runtime controls
+    echo "/QR/output/writeSteps true" >> "$build_macro"
+    echo "/QR/output/writeAllEvents true" >> "$build_macro"
+    echo "/QR/output/addNtuple full full" >> "$build_macro"
+    echo "/run/initialize" >> "$build_macro"
     
     # Run your source macro setup
-    echo "/control/execute ${macro}" >> "$local_macro"
+    echo "/control/execute ${macro}" >> "$build_macro"
     
-    # 4. Overwrite the repository file path so Geant4 reads it
-    cp "$local_macro" "$repo_macro"
+    # 4. Copy the modified macro to the repo if Geant4 needs to look there too
+    cp "$build_macro" "$repo_macro"
     
-    # 5. Launch Geant4 natively
+    # 5. Launch Geant4 natively (it will now read the modified build_macro)
     ./main
     
-    # 6. Revert back to the clean baseline state using bulletproof echos
-    echo "/control/verbose 2" > "$repo_macro"
-    echo "/run/verbose 2" >> "$repo_macro"
-    echo "" >> "$repo_macro"
-    echo "# 1. Open the visual window canvas" >> "$repo_macro"
-    echo "/vis/open OGL 1200x1200-0+0" >> "$repo_macro"
-    echo "" >> "$repo_macro"
-    echo "# 2. Tell Geant4 to look at your generated source macro" >> "$repo_macro"
-    echo "# (The shell script will append this exact line to the bottom)" >> "$repo_macro"
-    
-    cp "$repo_macro" "$local_macro"
-    ;;
-    cp "$repo_macro" "$local_macro"
+    # Note: Step 6 & 7 are now handled automatically by the 'trap' function above!
     ;;
     batch)
     "${repo_root}/scripts/batch_mode.sh" "${macro}" 
