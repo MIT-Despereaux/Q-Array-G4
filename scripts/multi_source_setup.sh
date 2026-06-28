@@ -91,7 +91,6 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
     echo "Processing CSV Row -> Type: $particletype, Count: $num, Intensity: $intensity"
 
     # Loop for the total number of sources specified in this row
-# Loop for the total number of sources specified in this row
     for (( i=1; i<=num; i++ )); do
         # Increment global counter to give every single source its own macro file
         ((source_counter++))
