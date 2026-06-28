@@ -34,11 +34,19 @@ For batch tests, run `./main <macro_name>.mac` under the `build` folder to execu
 
 # Building
 
-Configure and build with CRY disabled by default:
+Configure and build with the DSPX detector geometry selected and CRY disabled
+by default:
 
 ```sh
 cmake -S . -B build
 cmake --build build
+```
+
+To build with the Leiden II detector geometry instead:
+
+```sh
+cmake -S . -B build-leiden -DQARRAY_DETECTOR_GEOMETRY=LEIDEN_II
+cmake --build build-leiden
 ```
 
 To include the CRY cosmic ray generator, opt in at configure time:
@@ -64,7 +72,7 @@ Note, you might need to use `export QT_QPA_PLATFORM=xcb` to force an X11 session
 Run a batch macro:
 
 ```sh
-cd build && ./main macros/leiden_cosmic_batch.mac
+cd build && ./main macros/dspx_cosmic_batch.mac
 ```
 
 GPS test macros are self-contained and live in `macros/`. Run them directly:
@@ -100,6 +108,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-The default Leiden II test suite runs a short cosmic batch macro, a
+The default DSPX test suite runs the DSPX-specific scoring checks, a
 particle-gun event, and verifies that selecting CRY fails clearly when
-`WITH_CRY=OFF`. DSPX builds use the DSPX-specific scoring checks.
+`WITH_CRY=OFF`. Leiden II builds use the Leiden cosmic and energy-deposition
+checks.

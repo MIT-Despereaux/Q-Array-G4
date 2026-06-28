@@ -22,6 +22,9 @@ git submodule update --init --recursive
 cmake -S . -B build
 ```
 
+This selects the DSPX detector geometry by default. Configure with
+`-DQARRAY_DETECTOR_GEOMETRY=LEIDEN_II` to select the Leiden II geometry.
+
 Build the simulation executable:
 
 ```sh
@@ -37,7 +40,7 @@ cd build && ./main
 Run a batch macro:
 
 ```sh
-cd build && ./main macros/leiden_cosmic_batch.mac
+cd build && ./main macros/dspx_cosmic_batch.mac
 ```
 
 Self-contained GPS test macros live in `macros/` with names like
@@ -77,7 +80,7 @@ plus a short macro run as the required smoke test before submitting changes:
 ```sh
 cmake -S . -B build
 cmake --build build
-cd build && ./main macros/leiden_cosmic_batch.mac
+cd build && ./main macros/dspx_cosmic_batch.mac
 ```
 
 For changes to geometry, physics lists, sensitive detectors, or output formats,
