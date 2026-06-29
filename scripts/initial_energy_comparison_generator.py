@@ -29,18 +29,18 @@ def load_simulated_energies(filename):
     return np.array(energies_mev)
 
 # Load your simulated gammas (adjust filename if needed)
-sim_energies = load_simulated_energies('./output/initial_data/audited_neutrons.csv')
+sim_energies = load_simulated_energies('./output/initial_data/audited_gammas.csv')
 
 # 2. Load the reference spectrum data
-ref_df = pd.read_csv('./scripts/ISO_neutron_spectrum.csv')
+ref_df = pd.read_csv('./scripts/Gamma_Spectrum.csv')
 ref_df.columns = [c.strip() for c in ref_df.columns]  # Clean up any accidental spaces
 
 E_ref = ref_df.iloc[:, 0].values  # First column: Energy points
 B_ref = ref_df.iloc[:, 1].values  # Second column: Weights/Rates
 
 # 3. Normalize the reference data by sum to yield fractional weights
-#B_ref_fractional = B_ref / np.sum(B_ref)
-B_ref_fractional = B_ref
+B_ref_fractional = B_ref / np.sum(B_ref)
+#B_ref_fractional = B_ref
 
 # 4. Generate the Comparison Plot
 plt.figure(figsize=(10, 6))
@@ -59,11 +59,11 @@ plt.plot(E_ref, B_ref_fractional, color='crimson', linewidth=2,
 # 5. Formatting the Plot
 plt.xlabel('Energy (MeV)')
 plt.ylabel('Fraction of Total Particles')
-plt.title('Comparison of Simulated Data vs. Reference: Neutrons')
+plt.title('Comparison of Simulated Data vs. Reference: Gammas')
 plt.xlim(0, max(E_ref)) 
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend(loc='upper right')
 
 # ---- SAVING FEATURE RESTORED ----
-plt.savefig('./scripts/charts/neutron_comparison.png', dpi=300)
+plt.savefig('./scripts/charts/gammas_comparison_t2.png', dpi=300)
 plt.show()

@@ -4,7 +4,7 @@
 set -e
 
 # Number of times you want to run the simulation
-RUNS=50
+RUNS=$1
 
 echo "=========================================="
 echo " Starting batch execution: $RUNS total runs"

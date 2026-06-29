@@ -9,8 +9,8 @@ generated_template_dir="$repo_root/build-dspx"
 template_multi_source="$template_dir/template_multi_source.mac"
 template_source="$template_dir/template_source.mac"
 temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
-echo "Template directory: $template_dir"
-echo "Generated template directory: $generated_template_dir"
+#echo "Template directory: $template_dir"
+#echo "Generated template directory: $generated_template_dir"
 cleanup_after_run=false
 
 #ensure correct input: csv file and a number of events needed, add proper bool here
@@ -118,13 +118,27 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
               "$current_macro_path"
         fi
 
-        # Pass the spectrum path to your converter relative to the repo root execution 
-        # (Assuming $spectrum from the CSV holds the relative path like 'macros/sources/ISO_Neutron_Spectrum.txt')
-        #full_spectrum_path="$repo_root/$spectrum"
+        # --- ROBUST PATH RESOLUTION & ERROR ISOLATION ---
+        # Strip any accidental hidden trailing whitespaces or carriage returns
+        clean_spectrum=$(echo "$spectrum" | tr -d '\r\n[:space:]')
 
-        # Append the converted raw points and cap it with interpolation
+        # Dynamically build an absolute path using the repo root context
+        if [[ "$clean_spectrum" == "../"* ]]; then
+            # Strip the leading '../' and hook directly onto repo root
+            pure_path=${clean_spectrum#../}
+            full_spectrum_path="${repo_root}/${pure_path}"
+        else
+            full_spectrum_path="${clean_spectrum}"
+        fi
+
+        # Append converted points safely, stopping execution if the converter fails
         echo "# --- Appended Spectrum Points via convert_spectrum.sh ---" >> "$current_macro_path"
-        "$script_dir/convert_spectrum.sh" "$spectrum" >> "$current_macro_path"
+        
+        if ! "$script_dir/convert_spectrum.sh" "$full_spectrum_path" >> "$current_macro_path"; then
+            echo "ERROR: convert_spectrum.sh crashed or could not process path: $full_spectrum_path"
+            exit 1
+        fi
+        
         echo "/gps/hist/inter Lin" >> "$current_macro_path"
 
         # Write the orchestration commands to temporary_multi_source.mac
@@ -152,9 +166,5 @@ echo "" >> "$temporary_multi_source"
 if [ "$cleanup_after_run" = true ]; then
     rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*.mac
 fi
-
-#now slide it into init_vis.mac in similiar manner.
-# Don't do this. For visual testing, please put this somewhere else to avoid overwriting the original init_vis.mac.
-# echo "/control/execute ./template_multi_source.mac" >> init_vis.mac
 
 echo "Finished subscript!"

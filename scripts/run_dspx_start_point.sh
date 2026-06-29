@@ -201,7 +201,11 @@ EOF
     #todo "unbound vairable"
 
     # 3. Append your temporary runtime controls
+    
+    echo "/process/em/UseGeneralProcess false" >> "$build_macro"
     echo "/run/initialize" >> "$build_macro"
+    #FOR NOW REMOVING POSITRON ANNIHILATION.
+    echo "/process/inactivate conv" >> "$build_macro"
     echo "/QR/generator/mode gps" >> "$build_macro"
     echo "/QR/output/writeSteps true" >> "$build_macro"
     echo "/QR/output/writeAllEvents true" >> "$build_macro"
