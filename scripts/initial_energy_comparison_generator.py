@@ -65,5 +65,5 @@ plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend(loc='upper right')
 
 # ---- SAVING FEATURE RESTORED ----
-plt.savefig('./scripts/charts/neutron_comparison_full.png', dpi=300)
+plt.savefig('./scripts/charts/neutron_comparison.png', dpi=300)
 plt.show()
