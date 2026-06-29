@@ -144,6 +144,7 @@ done < <(sed -e '1s/^\xef\xbb\xbf//' -e 's/\r//g' "$csv_file")
 
 # Guarantee a clean newline layout for the tail commands
 echo "" >> "$temporary_multi_source"
+echo "/tracking/verbose 1" >> "$temporary_multi_source"
 echo "/gps/source/multiplevertex false" >> "$temporary_multi_source"
 echo "/run/beamOn $Event_Number" >> "$temporary_multi_source"
 echo "" >> "$temporary_multi_source"
