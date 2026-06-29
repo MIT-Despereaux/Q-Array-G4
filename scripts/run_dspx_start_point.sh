@@ -66,7 +66,7 @@ cd "${build_dir}"
 case "${display_mode}" in
     visual)
     # Define paths explicitly
-    repo_macro="/Users/tclassen23/q-array-g4/macros/init_vis.mac"
+    repo_macro="../macros/init_vis.mac"
     build_macro="./macros/init_vis.mac"  # Points to build-dspx/macros/init_vis.mac
 
     # CREATE CLEANUP FUNCTION: This runs no matter what (even on crash/exit)
@@ -109,7 +109,11 @@ EOF
     echo "/QR/output/addNtuple full full" >> "$build_macro"
     echo "/run/initialize" >> "$build_macro"
     echo "/QR/generator/mode gps" >> "$build_macro"
-    
+
+    # gotta add temp output data here:
+    # echo "/tracking/verbose 1" >> "$build_macro"
+    # echo "/run/verbose 0" >> "$build_macro"
+    # echo "/event/verbose 0" >> "$build_macro"    
     
     # Run your source macro setup
     echo "/control/execute ${macro}" >> "$build_macro"
@@ -119,10 +123,50 @@ EOF
     
     # 5. Launch Geant4 natively (it will now read the modified build_macro)
     ./main
+    # Run simulation, capture only Step 0 of Primary Track 1, and split by particle
+    # ./main | awk '/trackID=1/ || /initStep/' | tee \
+    #     >(grep -E "neutron" > audited_neutrons.log) \
+    #     >(grep -E "gamma"   > audited_gammas.log) \
+    #     > /dev/null
     
     # Note: Step 6 & 7 are now handled automatically by the 'trap' function above!
     ;;
     batch)
+    #Batch might need some help now that
+    #essentially I need to change this portion, it scrubs temporary file of visual components, but really I want it to do all above just no visual
+    repo_macro="../macros/blank_template.mac"
+    build_macro="./macros/blank_template.mac"  # Points to build-dspx/macros/ version
+
+    # CREATE CLEANUP FUNCTION: This runs no matter what (even on crash/exit)
+    cleanup() {
+        echo "--> Reverting macros back to pristine state..."
+        cat << 'EOF' > "$repo_macro"
+# Batch macro template
+
+/control/verbose 2
+/run/verbose 2
+
+/QR/output/writeSteps true
+/QR/output/writeAllEvents true
+/QR/output/addNtuple full full
+/run/initialize
+/QR/generator/mode gps
+EOF
+        # Sync the pristine version back to the build directory too
+        cp "$repo_macro" "$build_macro"
+    }
+    # Register the cleanup function to fire when the script exits or is interrupted
+    trap cleanup EXIT INT TERM
+
+    # 1. Pull the base clean template from the repo into the build directory
+    tr -d '\r' < "$repo_macro" > "$build_macro"
+    
+    # 2. Run your source macro setup
+    echo "/control/execute ${macro}" >> "$build_macro"
+    
+    # 3. Copy the modified macro to the repo if Geant4 needs to look there too
+    cp "$build_macro" "$repo_macro"
+
     "${repo_root}/scripts/batch_mode.sh" "${macro}" 
     ./main "${macro}"
     # sleep 9
