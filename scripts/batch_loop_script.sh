@@ -4,7 +4,7 @@
 set -e
 
 # Number of times you want to run the simulation
-RUNS=10
+RUNS=30
 
 echo "=========================================="
 echo " Starting batch execution: $RUNS total runs"
@@ -14,7 +14,7 @@ for ((i=1; i<=RUNS; i++))
 do
     echo ""
     echo "------------------------------------------"
-    echo " Executing Run #i of $RUNS"
+    echo " Executing Run $i of $RUNS"
     echo "------------------------------------------"
     
     # Call your original runtime script here.
