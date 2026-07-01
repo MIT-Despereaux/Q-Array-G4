@@ -2,6 +2,6 @@
 #Same shape/volume/position for all of them for now as we want them to overlap entirely.
 /gps/pos/type Volume
 /gps/pos/shape Sphere
-/gps/pos/centre -240. 60. 150. cm
+/gps/pos/centre -300. 50. 200. cm
 /gps/pos/radius 5. cm
 /gps/ang/type iso

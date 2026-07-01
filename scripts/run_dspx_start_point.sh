@@ -129,42 +129,42 @@ EOF
     cp "$build_macro" "$repo_macro"
     
     # 5. Launch Geant4 natively (it will now read the modified build_macro)
-    #./main
+    ./main
     # Run simulation, capture only Step 0 of Primary Track 1, and split by particle
-    ./main | awk '
-    # 1. Capture the particle type from the track info header line
-    /G4Track Information:/ {
-        # Extract the thread ID (e.g., "G4WT3")
-        thread = $1
+    # ./main | awk '
+    # # 1. Capture the particle type from the track info header line
+    # /G4Track Information:/ {
+    #     # Extract the thread ID (e.g., "G4WT3")
+    #     thread = $1
         
-        # Safely isolate the particle name by searching for the token "Particle ="
-        if (match($0, /Particle = [a-zA-Z0-9_-]+/)) {
-            part_string = substr($0, RSTART, RLENGTH)
-            split(part_string, parts, "= ")
-            particle[thread] = parts[2]
-        }
-    }
+    #     # Safely isolate the particle name by searching for the token "Particle ="
+    #     if (match($0, /Particle = [a-zA-Z0-9_-]+/)) {
+    #         part_string = substr($0, RSTART, RLENGTH)
+    #         split(part_string, parts, "= ")
+    #         particle[thread] = parts[2]
+    #     }
+    # }
 
-    # 2. When the initial step is found, grab the energy and write it out
-    /initStep$/ {
-        thread = $1
-        p_type = particle[thread]
+    # # 2. When the initial step is found, grab the energy and write it out
+    # /initStep$/ {
+    #     thread = $1
+    #     p_type = particle[thread]
         
-        # In a standard tracking line, KineE is the 5th column after the thread ID prefix
-        # ($2=Step#, $3=X, $4=Y, $5=Z, $6=KineE)
-        # If the units are split, we can grab both the value ($6) and unit ($7)
-        energy = $10 
-        unit = $11
+    #     # In a standard tracking line, KineE is the 5th column after the thread ID prefix
+    #     # ($2=Step#, $3=X, $4=Y, $5=Z, $6=KineE)
+    #     # If the units are split, we can grab both the value ($6) and unit ($7)
+    #     energy = $10 
+    #     unit = $11
 
-        if (p_type == "neutron") {
-            print energy "," unit >> "../output/initial_data/audited_neutrons.csv"
-        } else if (p_type == "gamma") {
-            print energy "," unit >> "../output/initial_data/audited_gammas.csv"
-        }
+    #     if (p_type == "neutron") {
+    #         print energy "," unit >> "../output/initial_data/audited_neutrons.csv"
+    #     } else if (p_type == "gamma") {
+    #         print energy "," unit >> "../output/initial_data/audited_gammas.csv"
+    #     }
         
-        # Clean up state for this thread
-        delete particle[thread]
-    }'
+    #     # Clean up state for this thread
+    #     delete particle[thread]
+    # }'
     
     # Note: Step 6 & 7 are now handled automatically by the 'trap' function above!
     ;;
@@ -202,10 +202,10 @@ EOF
 
     # 3. Append your temporary runtime controls
     
-    echo "/process/em/UseGeneralProcess false" >> "$build_macro"
+    #echo "/process/em/UseGeneralProcess false" >> "$build_macro"
     echo "/run/initialize" >> "$build_macro"
     #FOR NOW REMOVING POSITRON ANNIHILATION.
-    echo "/process/inactivate conv" >> "$build_macro"
+    #echo "/process/inactivate conv" >> "$build_macro"
     echo "/QR/generator/mode gps" >> "$build_macro"
     echo "/QR/output/writeSteps true" >> "$build_macro"
     echo "/QR/output/writeAllEvents true" >> "$build_macro"
@@ -219,44 +219,44 @@ EOF
 
     "${repo_root}/scripts/batch_mode.sh" "${macro}" 
     # Normal version
-    #./main "${build_macro}"
+    ./main "${build_macro}"
     # sleep 9
 
-    ./main "${build_macro}" | awk '
-    # 1. Capture the particle type from the track info header line
-    /G4Track Information:/ {
-        # Extract the thread ID (e.g., "G4WT3")
-        thread = $1
+    # ./main "${build_macro}" | awk '
+    # # 1. Capture the particle type from the track info header line
+    # /G4Track Information:/ {
+    #     # Extract the thread ID (e.g., "G4WT3")
+    #     thread = $1
         
-        # Safely isolate the particle name by searching for the token "Particle ="
-        if (match($0, /Particle = [a-zA-Z0-9_-]+/)) {
-            part_string = substr($0, RSTART, RLENGTH)
-            split(part_string, parts, "= ")
-            particle[thread] = parts[2]
-        }
-    }
+    #     # Safely isolate the particle name by searching for the token "Particle ="
+    #     if (match($0, /Particle = [a-zA-Z0-9_-]+/)) {
+    #         part_string = substr($0, RSTART, RLENGTH)
+    #         split(part_string, parts, "= ")
+    #         particle[thread] = parts[2]
+    #     }
+    # }
 
-    # 2. When the initial step is found, grab the energy and write it out
-    /initStep$/ {
-        thread = $1
-        p_type = particle[thread]
+    # # 2. When the initial step is found, grab the energy and write it out
+    # /initStep$/ {
+    #     thread = $1
+    #     p_type = particle[thread]
         
-        # In a standard tracking line, KineE is the 5th column after the thread ID prefix
-        # ($2=Step#, $3=X, $4=Y, $5=Z, $6=KineE)
-        # If the units are split, we can grab both the value ($6) and unit ($7)
-        energy = $10 
-        unit = $11
+    #     # In a standard tracking line, KineE is the 5th column after the thread ID prefix
+    #     # ($2=Step#, $3=X, $4=Y, $5=Z, $6=KineE)
+    #     # If the units are split, we can grab both the value ($6) and unit ($7)
+    #     energy = $10 
+    #     unit = $11
 
-        if (p_type == "neutron") {
-            print energy "," unit >> "../output/initial_data/audited_neutrons.csv"
-        } else if (p_type == "gamma") {
-            print energy "," unit >> "../output/initial_data/audited_gammas.csv"
-        }
+    #     if (p_type == "neutron") {
+    #         print energy "," unit >> "../output/initial_data/audited_neutrons.csv"
+    #     } else if (p_type == "gamma") {
+    #         print energy "," unit >> "../output/initial_data/audited_gammas.csv"
+    #     }
         
-        # Clean up state for this thread
-        delete particle[thread]
-    }'
-    echo "Added to CSV file!"
+    #     # Clean up state for this thread
+    #     delete particle[thread]
+    # }'
+    # echo "Added to CSV file!"
 
     "${repo_root}/scripts/batch_mode.sh" "${macro}" 
     ;;
