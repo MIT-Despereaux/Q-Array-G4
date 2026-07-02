@@ -63,12 +63,12 @@ echo "Running Geant4 macro: ${macro}"
 echo "=========================================="
 
 cd "${build_dir}"
+
+repo_macro="../macros/blank_template.mac"
+build_macro="./macros/blank_template.mac"  # Points to build-dspx/macros/ version
+
 case "${display_mode}" in
     visual)
-    # Define paths explicitly
-    repo_macro="../macros/init_vis.mac"
-    build_macro="./macros/init_vis.mac"  # Points to build-dspx/macros/init_vis.mac
-
     # CREATE CLEANUP FUNCTION: This runs no matter what (even on crash/exit)
     cleanup() {
         echo "--> Reverting macros back to pristine state..."
@@ -108,14 +108,6 @@ EOF
     SEED2=$RANDOM
     echo "/random/setSeeds $SEED1 $SEED2" >> "$build_macro"
     #todo "unbound vairable"
-
-    # 3. Append your temporary runtime controls
-    echo "/QR/output/writeSteps true" >> "$build_macro"
-    echo "/QR/output/writeAllEvents true" >> "$build_macro"
-    echo "/QR/output/addNtuple full full" >> "$build_macro"
-    echo "/run/initialize" >> "$build_macro"
-    echo "/QR/generator/mode gps" >> "$build_macro"
-    
 
     # gotta add temp output data here:
     # echo "/tracking/verbose 1" >> "$build_macro"
@@ -171,8 +163,6 @@ EOF
     batch)
     #Batch might need some help now that
     #essentially I need to change this portion, it scrubs temporary file of visual components, but really I want it to do all above just no visual
-    repo_macro="../macros/blank_template.mac"
-    build_macro="./macros/blank_template.mac"  # Points to build-dspx/macros/ version
 
     # CREATE CLEANUP FUNCTION: This runs no matter what (even on crash/exit)
     cleanup() {

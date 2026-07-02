@@ -26,11 +26,11 @@ All scripts for running the program and for submitting slurm jobs should go into
 and they should be assumed to be run under the repo root directory.
 
 All macros should go under the `macros` folder, including source spectrum used for the general particle source (GPS)
-generator. These files will be copied into the `build` (`build-dspx`) folder during cmake configuration and build phase. 
+generator. These files will be copied into the `build` (`build-dspx`) folder during cmake configuration and build phase.
 
 For visualization tests, run `./main` (which loads the `init_vis.mac` automatically) and then `/control/execute <macro_name>.mac` under the `build` folder.
 
-For batch tests, run `./main <macro_name>.mac` under the `build` folder to execute the script. 
+For batch tests, run `./main <macro_name>.mac` under the `build` folder to execute the script.
 
 # Building
 
@@ -93,11 +93,7 @@ cd build-dspx && ./main macros/gps_double_neutron_gamma_visual.mac
 cd build-dspx && ./main macros/gps_multi_demo_visual.mac
 ```
 
-For running the same GPS test macros and sorting the generated `test*.csv`/`test*.json` outputs, use `scripts/run_dspx_start_point.sh`. The script configures and builds `build-dspx` with DSPX geometry, runs from that build directory so copied macros resolve correctly, and stages raw outputs under `output/Data/_gps_sources` before sorting them into a numbered run folder. `test_hist`, `ISO_spectrum`, and `mono` only label the sorted output folder.
-
-```sh
-./scripts/run_dspx_start_point.sh <test_hist | ISO_spectrum | mono> <single | double | multi>
-```
+A generalized particle source exists. `dspx_AmBe_visual.sh` and `dspx_AmBe_batch.sh`create a neutron and gamma source for 241-AmBe. However this script is highly generalizable to other arbitrary combination of particle types with different energy spectrum. Altering `./scripts/Multi_Source_Spectrums.csv` allows new combinations of general particle sources to be specified. A CSV file must be used for the spectrums.
 
 # Testing
 

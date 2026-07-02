@@ -19,7 +19,7 @@ do
     
     # Call your original runtime script here.
     # Pass whatever arguments it usually expects (like your macro name)
-    ./scripts/run_dspx_start_point.sh ISO_spectrum multi 100 "/Users/tclassen23/q-array-g4/scripts/Multi_Source_Spectrums.csv" batch
+    ./scripts/dspx_AmBe_batch.sh ISO_spectrum multi 100 "/Users/tclassen23/q-array-g4/scripts/Multi_Source_Spectrums.csv" batch
     
 done
 

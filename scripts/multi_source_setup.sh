@@ -13,7 +13,7 @@ temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
 #echo "Generated template directory: $generated_template_dir"
 cleanup_after_run=false
 
-Event_Number=100
+Event_Number=10
 csv_file="$repo_root/scripts/Multi_Source_Spectrums.csv"
 
 #ensure correct input: csv file and a number of events needed, add proper bool here
@@ -68,6 +68,20 @@ echo "" >> "$temporary_multi_source"
 
 first_source=true
 source_counter=0   # NEW: Track a unique ID for every source file created
+
+SEED1=$RANDOM
+SEED2=$RANDOM
+echo "" >> "$temporary_multi_source"
+echo "/random/setSeeds $SEED1 $SEED2" >> "$temporary_multi_source"
+#Moving over the initialization steps from run_dspx_start_point.sh to here to allow this to be stand alone.
+echo "/QR/output/writeSteps true" >> "$temporary_multi_source"
+echo "/QR/output/writeAllEvents true" >> "$temporary_multi_source"
+echo "/QR/output/addNtuple full full" >> "$temporary_multi_source"
+echo "/run/initialize" >> "$temporary_multi_source"
+echo "/QR/generator/mode gps" >> "$temporary_multi_source"
+#might need to split this into two seperate files... one for batch and one for visual...
+echo "" >> "$temporary_multi_source"
+
 
 while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
     
