@@ -55,7 +55,7 @@ cmake -S "${repo_root}" -B "${build_dir}" \
 cmake --build "${build_dir}"
 
 if [[ "${run_multi_setup}" == true ]]; then
-    "${repo_root}/scripts/multi_source_setup.sh" "${multi_events}" "${multi_csv}"
+    "${repo_root}/scripts/multi_source_setup.sh"
 fi
 
 echo "=========================================="

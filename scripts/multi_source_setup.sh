@@ -13,6 +13,9 @@ temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
 #echo "Generated template directory: $generated_template_dir"
 cleanup_after_run=false
 
+Event_Number=100
+csv_file="$repo_root/scripts/Multi_Source_Spectrums.csv"
+
 #ensure correct input: csv file and a number of events needed, add proper bool here
 # We can put csvs in the scripts folder.
 args=()
@@ -28,14 +31,11 @@ for arg in "$@"; do
 done
 set -- "${args[@]}"
 
-if [[ -z "$1" || -z "$2" ]]; then
-    echo "Error: You must supply number of events (int) and CSV file."
-    echo "Usage: ./multi_source_setup.sh [--cleanup] <int> <.csv>"
-    exit 1
-fi
-
-Event_Number=$1
-csv_file=$2
+# if [[ -z "$1" || -z "$2" ]]; then
+#     echo "Error: You must supply number of events (int) and CSV file."
+#     echo "Usage: ./multi_source_setup.sh [--cleanup] <int> <.csv>"
+#     exit 1
+# fi
 
 # --- ADD THIS CHECK HERE ---
 if [ ! -f "$csv_file" ]; then

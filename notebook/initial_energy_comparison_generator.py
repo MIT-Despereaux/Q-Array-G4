@@ -65,5 +65,5 @@ plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend(loc='upper right')
 
 # ---- SAVING FEATURE RESTORED ----
-plt.savefig('./notebook/image/charts/gammas_comparison_t2.png', dpi=300)
+plt.savefig('./scripts/charts/gammas_comparison_t2.png', dpi=300)
 plt.show()
