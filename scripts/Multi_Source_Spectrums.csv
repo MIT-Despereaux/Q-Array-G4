@@ -1,3 +1,3 @@
 type,num,intensity,spectrum
-gamma,1,1,../scripts/Gamma_Spectrum.csv
+gamma,1,1,../scripts/Gamma_Spectrum_v2.csv
 neutron,2,1,../scripts/ISO_neutron_spectrum.csv
