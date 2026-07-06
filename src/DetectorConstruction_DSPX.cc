@@ -7,6 +7,7 @@
 #include "G4Colour.hh"
 #include "G4LogicalVolume.hh"
 #include "G4LogicalVolumeStore.hh"
+#include "G4PhysicalVolumeStore.hh" // <-- Added to search for the crystal
 #include "G4Material.hh"
 #include "G4NistManager.hh"
 #include "G4PVPlacement.hh"
@@ -18,6 +19,11 @@
 #include "G4VisAttributes.hh"
 
 #include <cctype>
+
+#ifdef USE_G4CMP
+  #include "G4LatticeManager.hh"
+  #include "G4LatticePhysical.hh"
+#endif
 
 namespace QArray
 {
@@ -153,6 +159,30 @@ namespace QArray
                         0,
                         checkOverlaps);
     }
+
+    // --- G4CMP LATTICE REGISTRATION ---
+#ifdef USE_G4CMP
+    // G4CMP LATTICE REGISTRATION
+    auto* physStore = G4PhysicalVolumeStore::GetInstance();
+    auto* LM = G4LatticeManager::GetLatticeManager();
+    for (auto* physVol : *physStore)
+    {
+      if (physVol->GetName() == "DetectorSnCubePhysical") 
+      {
+        G4LatticeLogical* latticeLogical = LM->LoadLattice(physVol->GetLogicalVolume()->GetMaterial(), "Cu");
+        
+        // FIX: Only pass the latticeLogical. 
+        // Optional parameters are Miller indices (h, k, l, rot). Leaving it empty defaults to [1, 0, 0].
+        auto* crystalLattice = new G4LatticePhysical(latticeLogical);
+        
+        // The G4LatticeManager is what actually binds the physical volume to the lattice properties!
+        LM->RegisterLattice(physVol, crystalLattice);
+        
+        G4cout << "G4CMP Lattice (Using Ge proxy properties) registered to: " << physVol->GetName() << G4endl;
+      }
+    }
+#endif
+    // ----------------------------------
 
     return worldPhysical;
   }
