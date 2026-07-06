@@ -25,6 +25,10 @@
 
 /run/initialize
 
+# G4CMP added macros:
+/g4cmp/phononBounces 0
+/g4cmp/qpBounces 1000000000
+
 # >>> Configure sources below
 
 /QR/generator/mode gps

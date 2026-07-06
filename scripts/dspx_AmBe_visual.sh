@@ -57,6 +57,10 @@ cleanup() {
 /vis/modeling/trajectories/customDrawByParticle/set e- red 
 /vis/modeling/trajectories/customDrawByParticle/set geantino magenta 
 /vis/modeling/trajectories/customDrawByParticle/set proton blue 
+/vis/modeling/trajectories/customDrawByParticle/set phononTS Red 
+/vis/modeling/trajectories/customDrawByParticle/set phononTF Green
+/vis/modeling/trajectories/customDrawByParticle/set phononL Blue
+/vis/modeling/trajectories/customDrawByParticle/set BogoliubovQP White
 /vis/modeling/trajectories/select customDrawByParticle 
 EOF
     # Sync the pristine version back to the build directory too
