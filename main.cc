@@ -16,6 +16,10 @@
 #include "G4UIExecutive.hh"
 #include "Randomize.hh"
 
+// --- G4CMP Include ---
+#include "G4CMPPhysics.hh"
+// ---------------------
+
 #include "MCSampler.hh"
 
 using namespace QArray;
@@ -53,6 +57,13 @@ int main(int argc, char **argv)
   G4PhysListFactory plFactory;
   G4VModularPhysicsList *physicsList = plFactory.GetReferencePhysList("QBBC_EMV");
   physicsList->SetVerboseLevel(0);
+  
+  // --- G4CMP Physics Registration ---
+  // Inject the condensed matter physics processes (phonons, charge carriers) 
+  // into the standard high-energy physics list.
+  physicsList->RegisterPhysics(new G4CMPPhysics());
+  // ----------------------------------
+
   runManager->SetUserInitialization(physicsList);
 
   // User action initialization
