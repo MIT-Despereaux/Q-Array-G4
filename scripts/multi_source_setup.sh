@@ -18,8 +18,8 @@ fi
 
 cleanup_after_run=false
 
-Event_Number=10
-csv_file="$repo_root/scripts/Multi_Source_Spectrums.csv"
+Event_Number=100
+csv_file="$repo_root/scripts/Gamma_Source.csv"
 
 # Parse incoming arguments, filtering out our runtime behavior flags
 args=()
