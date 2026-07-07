@@ -6,23 +6,26 @@ echo "Script directory: $script_dir"
 echo "Repository root: $repo_root"
 template_dir="$repo_root/macros/templates"
 generated_template_dir="$repo_root/build-dspx"
-template_multi_source="$template_dir/template_multi_source.mac"
-template_source="$template_dir/template_source.mac"
-temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
-#echo "Template directory: $template_dir"
-#echo "Generated template directory: $generated_template_dir"
+
+# Default configuration mode
+mode="batch"
 cleanup_after_run=false
 
 Event_Number=10
 csv_file="$repo_root/scripts/Multi_Source_Spectrums.csv"
 
-#ensure correct input: csv file and a number of events needed, add proper bool here
-# We can put csvs in the scripts folder.
+# Parse incoming arguments, filtering out our runtime behavior flags
 args=()
 for arg in "$@"; do
     case "$arg" in
         --cleanup)
             cleanup_after_run=true
+            ;;
+        --visual)
+            mode="visual"
+            ;;
+        --batch)
+            mode="batch"
             ;;
         *)
             args+=("$arg")
@@ -31,16 +34,17 @@ for arg in "$@"; do
 done
 set -- "${args[@]}"
 
-# if [[ -z "$1" || -z "$2" ]]; then
-#     echo "Error: You must supply number of events (int) and CSV file."
-#     echo "Usage: ./multi_source_setup.sh [--cleanup] <int> <.csv>"
-#     exit 1
-# fi
+# Dynamically construct the specific macro template path based on the parsed mode
+template_multi_source="$template_dir/template_multi_source_${mode}.mac"
+template_source="$template_dir/template_source.mac"
+temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
 
-# --- ADD THIS CHECK HERE ---
+echo "Selected configuration mode: $mode"
+echo "Using macro template: $template_multi_source"
+
+# --- sanity checks ---
 if [ ! -f "$csv_file" ]; then
     echo "Error: The CSV file could not be found at: $csv_file"
-    echo "Please double-check the path and try again."
     exit 1
 fi
 
@@ -56,42 +60,34 @@ fi
 
 mkdir -p "$generated_template_dir"
 
-# Remove stale generated files so the new run starts from a clean template folder.
+# Clean old generated source outputs
 rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*.mac
 
-# Rebuild the temporary macro from the static template header every run.
-awk '
-    { print }
-    /^# \[Your multiple sources appended here.*$/ { exit }
-' "$template_multi_source" > "$temporary_multi_source"
-echo "" >> "$temporary_multi_source"
+# Copy the baseline chosen master template file directly to our destination target
+cp "$template_multi_source" "$temporary_multi_source"
+
+# Create a clean scratch file to pool all dynamic source configurations during execution
+snippet_file="$generated_template_dir/dynamic_sources.tmp"
+rm -f "$snippet_file"
 
 first_source=true
-source_counter=0   # NEW: Track a unique ID for every source file created
+source_counter=0   
 
 SEED1=$RANDOM
 SEED2=$RANDOM
-echo "" >> "$temporary_multi_source"
-echo "/random/setSeeds $SEED1 $SEED2" >> "$temporary_multi_source"
-#Moving over the initialization steps from run_dspx_start_point.sh to here to allow this to be stand alone.
-echo "/QR/output/writeSteps true" >> "$temporary_multi_source"
-echo "/QR/output/writeAllEvents true" >> "$temporary_multi_source"
-echo "/QR/output/addNtuple full full" >> "$temporary_multi_source"
-echo "/run/initialize" >> "$temporary_multi_source"
-echo "/QR/generator/mode gps" >> "$temporary_multi_source"
-#might need to split this into two seperate files... one for batch and one for visual...
-echo "" >> "$temporary_multi_source"
 
+# Write initial headers to the dynamic snippet cache
+echo "/QR/generator/mode gps" >> "$snippet_file"
+echo "/random/setSeeds $SEED1 $SEED2" >> "$snippet_file"
+echo "" >> "$snippet_file"
 
 while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
     
-    # Strip hidsden Windows/Excel carriage returns (\r) and trailing spaces instantly
     col1=$(echo "$col1" | tr -d '\r\n[:space:]')
     col2=$(echo "$col2" | tr -d '\r\n[:space:]')
     col3=$(echo "$col3" | tr -d '\r\n[:space:]')
     col4=$(echo "$col4" | tr -d '\r\n[:space:]')
 
-    # Ignore header to csv
     if [[ "$col1" == "type" || -z "$col1" ]]; then
         echo "DEBUG: Skipping this line because it is a header or empty."
         continue
@@ -104,20 +100,14 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
 
     echo "Processing CSV Row -> Type: $particletype, Count: $num, Intensity: $intensity"
 
-    # Loop for the total number of sources specified in this row
     for (( i=1; i<=num; i++ )); do
-        # Increment global counter to give every single source its own macro file
         ((source_counter++))
         current_macro="template_source_${source_counter}.mac"
         current_macro_path="$generated_template_dir/$current_macro"
 
-        # Copy the clean template to our new uniquely named target file
         cp "$template_source" "$current_macro_path"
-
-        # Calculate the exact 0-indexed GPS ID for this source block
         gps_index=$((source_counter - 1))
 
-        # --- UNIFIED SED AND SPECTRUM APPNEDING LAYER ---
         if [[ "$OSTYPE" == "darwin"* ]]; then
             sed -i '' \
               -e "s|/gps/source/set.*|/gps/source/set $gps_index|" \
@@ -132,20 +122,15 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
               "$current_macro_path"
         fi
 
-        # --- ROBUST PATH RESOLUTION & ERROR ISOLATION ---
-        # Strip any accidental hidden trailing whitespaces or carriage returns
         clean_spectrum=$(echo "$spectrum" | tr -d '\r\n[:space:]')
 
-        # Dynamically build an absolute path using the repo root context
         if [[ "$clean_spectrum" == "../"* ]]; then
-            # Strip the leading '../' and hook directly onto repo root
             pure_path=${clean_spectrum#../}
             full_spectrum_path="${repo_root}/${pure_path}"
         else
             full_spectrum_path="${clean_spectrum}"
         fi
 
-        # Append converted points safely, stopping execution if the converter fails
         echo "# --- Appended Spectrum Points via convert_spectrum.sh ---" >> "$current_macro_path"
         
         if ! "$script_dir/convert_spectrum.sh" "$full_spectrum_path" >> "$current_macro_path"; then
@@ -155,30 +140,58 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
         
         echo "/gps/hist/inter Lin" >> "$current_macro_path"
 
-        # Write the orchestration commands to temporary_multi_source.mac
+        # Redirect the orchestration command routing to our scratch workspace block
         if [ "$first_source" = true ]; then
-            echo "/gps/source/intensity $intensity" >> "$temporary_multi_source"
-            echo "/control/execute ./$current_macro" >> "$temporary_multi_source"
-            echo "" >> "$temporary_multi_source"
+            echo "/gps/source/intensity $intensity" >> "$snippet_file"
+            echo "/control/execute ./$current_macro" >> "$snippet_file"
+            echo "" >> "$snippet_file"
             first_source=false
         else
-            echo "/gps/source/add $intensity" >> "$temporary_multi_source"
-            echo "/control/execute ./$current_macro" >> "$temporary_multi_source"
-            echo "" >> "$temporary_multi_source"
+            echo "/gps/source/add $intensity" >> "$snippet_file"
+            echo "/control/execute ./$current_macro" >> "$snippet_file"
+            echo "" >> "$snippet_file"
         fi
     done
 
 done < <(sed -e '1s/^\xef\xbb\xbf//' -e 's/\r//g' "$csv_file")
 
-# Guarantee a clean newline layout for the tail commands
-echo "" >> "$temporary_multi_source"
-echo "/tracking/verbose 1" >> "$temporary_multi_source"
-echo "/gps/source/multiplevertex false" >> "$temporary_multi_source"
-echo "/run/beamOn $Event_Number" >> "$temporary_multi_source"
-echo "" >> "$temporary_multi_source"
+# Append the trailing target macro definitions to the snippet file
+echo "" >> "$snippet_file"
 
-if [ "$cleanup_after_run" = true ]; then
-    rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*.mac
+if [ "$mode" = "batch" ]; then
+    echo "/tracking/verbose 1" >> "$snippet_file"
 fi
 
-echo "Finished subscript!"
+echo "/gps/source/multiplevertex false" >> "$snippet_file"
+echo "/run/beamOn $Event_Number" >> "$snippet_file"
+echo "" >> "$snippet_file"
+
+# --- SURGICAL IN-PLACE INJECTION STEP ---
+# This awk process scans the copied template, finds the # >>> marker, dumps the dynamic source profile,
+# skips the stale inner lines, and resumes printing safely from # <<< downwards.
+awk -v snippet="$snippet_file" '
+    /^# >>>/ {
+        print
+        while ((getline line < snippet) > 0) {
+            print line
+        }
+        close(snippet)
+        skip = 1
+        next
+    }
+    /^# <<</ {
+        skip = 0
+    }
+    !skip {
+        print
+    }
+' "$temporary_multi_source" > "${temporary_multi_source}.tmp" && mv "${temporary_multi_source}.tmp" "$temporary_multi_source"
+
+# Evacuate the temporary scratch accumulator file
+rm -f "$snippet_file"
+
+# if [ "$cleanup_after_run" = true ]; then
+#     rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*.mac
+# fi
+
+echo "Finished script orchestration successfully!"

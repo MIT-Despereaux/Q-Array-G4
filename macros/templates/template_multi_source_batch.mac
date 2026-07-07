@@ -40,8 +40,7 @@
 /control/execute ./template_source_3.mac
 
 /gps/source/multiplevertex false
-
-# <<< Configuration done
-
 /tracking/verbose 1
 /run/beamOn 10
+
+# <<< Configuration done
