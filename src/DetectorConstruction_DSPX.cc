@@ -159,31 +159,6 @@ namespace QArray
                         0,
                         checkOverlaps);
     }
-
-    // --- G4CMP LATTICE REGISTRATION ---
-#ifdef USE_G4CMP
-    // G4CMP LATTICE REGISTRATION
-    auto* physStore = G4PhysicalVolumeStore::GetInstance();
-    auto* LM = G4LatticeManager::GetLatticeManager();
-    for (auto* physVol : *physStore)
-    {
-      if (physVol->GetName() == "DetectorSnCubePhysical") 
-      {
-        G4LatticeLogical* latticeLogical = LM->LoadLattice(physVol->GetLogicalVolume()->GetMaterial(), "Cu");
-        
-        // FIX: Only pass the latticeLogical. 
-        // Optional parameters are Miller indices (h, k, l, rot). Leaving it empty defaults to [1, 0, 0].
-        auto* crystalLattice = new G4LatticePhysical(latticeLogical);
-        
-        // The G4LatticeManager is what actually binds the physical volume to the lattice properties!
-        LM->RegisterLattice(physVol, crystalLattice);
-        
-        G4cout << "G4CMP Lattice (Using Ge proxy properties) registered to: " << physVol->GetName() << G4endl;
-      }
-    }
-#endif
-    // ----------------------------------
-
     return worldPhysical;
   }
 
@@ -204,6 +179,42 @@ namespace QArray
              << " requirement=" << (registrationOnly ? "registration" : "positive")
              << G4endl;
     }
+  
+#ifdef USE_G4CMP
+    auto* physStore = G4PhysicalVolumeStore::GetInstance();
+    auto* LM = G4LatticeManager::GetLatticeManager();
+    
+    for (auto* physVol : *physStore)
+    {
+      if (physVol->GetName() == "DetectorSnCubePhysical") 
+      {
+        auto* logVol = physVol->GetLogicalVolume();
+        
+        // Load the Aluminum lattice configuration
+        G4LatticeLogical* latticeLogical = LM->LoadLattice(logVol->GetMaterial(), "Al");
+        
+        G4double polycrystalElasticScatteringMFP = 0.0;
+        G4double scDelta0 = 0.18 * CLHEP::meV;
+        G4double scTeff = 0.01 * CLHEP::kelvin;
+        G4double scDn = 1.22e11 / (CLHEP::meV * CLHEP::mm3);
+        G4double scQPLocalTrappingTau = 10.0 * CLHEP::ms;
+        G4double scQPDiffusionStepTau = 100.0 * CLHEP::ns;
+
+        auto* crystalLattice = new G4LatticePhysical(
+            latticeLogical, 
+            polycrystalElasticScatteringMFP,
+            scDelta0, scTeff, scDn, 
+            scQPLocalTrappingTau, scQPDiffusionStepTau
+        );
+        
+        // ALTERNATIVE REGISTRATION: Bind directly to the LOGICAL volume
+        LM->RegisterLattice(logVol, crystalLattice);
+        
+        G4cout << "[G4CMP-DEBUG] Registered Aluminum Lattice to LOGICAL volume: " 
+               << logVol->GetName() << G4endl;
+      }
+    }
+#endif
   }
 
   void DetectorConstruction::ConstructFridge()
