@@ -69,7 +69,7 @@ echo "/control/execute ${macro}" >> "$build_macro"
 # 3. Copy the modified macro to the repo if Geant4 needs to look there too
 cp "$build_macro" "$repo_macro"
 
-"${repo_root}/scripts/batch_mode.sh" "${macro}" 
+# "${repo_root}/scripts/batch_mode.sh" "${macro}" 
 # Normal version
 ./main "${build_macro}"
 
@@ -110,7 +110,7 @@ cp "$build_macro" "$repo_macro"
 # }'
 # echo "Added to CSV file!"
 
-"${repo_root}/scripts/batch_mode.sh" "${macro}" 
+# "${repo_root}/scripts/batch_mode.sh" "${macro}" 
 
 
 echo "=========================================="
