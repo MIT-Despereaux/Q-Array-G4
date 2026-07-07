@@ -1,5 +1,0 @@
-#This file contains ONLY the spectrum histogram
-/gps/hist/type energy
-/gps/hist/point 0.999 0.0
-/gps/hist/point 1 1.0
-/gps/hist/point 1.001 0
