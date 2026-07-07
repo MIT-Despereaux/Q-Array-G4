@@ -8,7 +8,14 @@ template_dir="$repo_root/macros/templates"
 generated_template_dir="$repo_root/build-dspx"
 
 # Default configuration mode
-mode="batch"
+mode="$1"
+
+if [[ "$mode" != "batch" && "$mode" != "visual" ]]; then
+    echo "ERROR: Invalid mode specified: '$mode'"
+    echo "Usage: $0 <batch|visual> [other arguments...]"
+    exit 1
+fi
+
 cleanup_after_run=false
 
 Event_Number=10
@@ -156,7 +163,7 @@ while IFS=',' read -r col1 col2 col3 col4 || [ -n "$col1" ]; do
 done < <(sed -e '1s/^\xef\xbb\xbf//' -e 's/\r//g' "$csv_file")
 
 # Append the trailing target macro definitions to the snippet file
-echo "" >> "$snippet_file"
+#echo "" >> "$snippet_file"
 
 if [ "$mode" = "batch" ]; then
     echo "/tracking/verbose 1" >> "$snippet_file"

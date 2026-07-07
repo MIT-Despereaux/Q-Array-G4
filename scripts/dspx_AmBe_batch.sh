@@ -27,7 +27,7 @@ cmake -S "${repo_root}" -B "${build_dir}" \
 cmake --build "${build_dir}"
 
 if [[ "${run_multi_setup}" == true ]]; then
-    "${repo_root}/scripts/multi_source_setup.sh"
+    "${repo_root}/scripts/multi_source_setup.sh" "batch"
 fi
 
 echo "=========================================="
