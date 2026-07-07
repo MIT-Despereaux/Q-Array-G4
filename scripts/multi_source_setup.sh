@@ -18,7 +18,7 @@ fi
 
 cleanup_after_run=false
 
-Event_Number=10
+Event_Number=3
 csv_file="$repo_root/scripts/Multi_Source_Spectrums.csv"
 
 # Parse incoming arguments, filtering out our runtime behavior flags
