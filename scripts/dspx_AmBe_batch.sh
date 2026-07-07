@@ -73,6 +73,7 @@ cp "$build_macro" "$repo_macro"
 # Normal version
 #./main "${build_macro}"
 
+# <<< DEBUGGING SPECTRUM: START
 # #Keep this, its for troubleshooting purposes:
 ./main "${build_macro}" | awk '
 # 1. Capture the particle type from the track info header line
@@ -109,6 +110,7 @@ cp "$build_macro" "$repo_macro"
     delete particle[thread]
 }'
 echo "Added to CSV file!"
+# >>> DEBUGGING SPECTRUM: END
 
 
 
