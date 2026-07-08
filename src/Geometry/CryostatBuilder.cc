@@ -22,6 +22,9 @@
 #include <array>
 #include <cmath>
 #include <filesystem>
+#include "G4LogicalSkinSurface.hh"
+#include "G4LogicalBorderSurface.hh"  // <-- IMPORTANT: Added for precise volume-to-volume interface
+#include "G4OpticalSurface.hh"
 
 namespace QArray::Geometry
 {
@@ -531,23 +534,17 @@ namespace QArray::Geometry
   // ---------------------------------------------------------------------------
   void CryostatBuilder::BuildMeshComponents(const CryostatVolumes& volumes)
   {
-    // ovcVacuumLogical is a G4Tubs: local z=0 is at its GEOMETRIC CENTER.
-    // Center in cryostat frame = kOvcInnerBottomZ + kOvcHeight/2 = +139.40 mm.
-    // pos_in_parent = originInCryostatZ - ovcVacLocalCenterZ
     constexpr G4double ovcVacLocalCenterZ = kOvcVacuumCenterZ;
 
     struct MeshSpec
     {
-      const char*      filename;     // relative to mMeshDataPath
-      const char*      solidName;
-      const char*      lvName;
-      const char*      pvName;
-      const char*      material;     // NIST name
+      const char* filename;     
+      const char* solidName;
+      const char* lvName;
+      const char* pvName;
+      const char* material;     
       G4LogicalVolume* CryostatVolumes::* parentLV;
-      // Position of the part's own origin in the parent LV frame.
       G4ThreeVector    position;
-      // Rotation around Z axis applied to the mesh before placement.
-      // 0 = no rotation (default), 180*deg = flipped around Z.
       G4double         rotationZ = 0.;
       G4double         alpha = 0.8;
       G4double         red = 184 / 255.;
@@ -567,13 +564,13 @@ namespace QArray::Geometry
         new G4LogicalVolume(detectorAssemblySolid, vacuum, "DetectorBoxAssemblyLogical");
     detectorAssemblyLogical->SetVisAttributes(new G4VisAttributes(false));
 
-    // Detector origin = base mesh reference origin.  The screw-hole alignment
-    // offset is adjustable; the box origin is 2 x 12.7 mm in +X and
-    // 7 x 12.7 mm in -Z from that offset.
     const G4ThreeVector detectorBoxFromAlignment(2. * 12.7 * mm, 0., -7. * 12.7 * mm);
     const G4ThreeVector detectorAlignmentOffset(-12.3 * mm, -35.5 * mm, +12.15 * mm);
     const G4ThreeVector detectorOriginInCryostat = detectorAlignmentOffset + detectorBoxFromAlignment;
-    new G4PVPlacement(nullptr,
+    
+    // --- SUGGESTION 1: Capture the Assembly Mother Volume Physical Pointer ---
+    G4VPhysicalVolume* detectorAssemblyPhysical = new G4PVPlacement(
+                      nullptr,
                       G4ThreeVector(detectorOriginInCryostat.x(),
                                     detectorOriginInCryostat.y(),
                                     detectorOriginInCryostat.z() - ovcVacLocalCenterZ),
@@ -594,7 +591,10 @@ namespace QArray::Geometry
     auto* detectorCrystalLogical =
         new G4LogicalVolume(detectorCrystalSolid, tin, "DetectorSnCubeLogical");
     detectorCrystalLogical->SetVisAttributes(new G4VisAttributes(G4Colour(0.10, 0.85, 0.95, 1.0)));
-    new G4PVPlacement(nullptr,
+    
+    // --- SUGGESTION 2: Capture the Tin Cube Physical Pointer ---
+    G4VPhysicalVolume* detectorSnCubePhysical = new G4PVPlacement(
+                      nullptr,
                       G4ThreeVector(0.,
                                     0.,
                                     detectorBoxFloorZ + detectorCrystalClearance + 15.4 * mm / 2.),
@@ -604,6 +604,19 @@ namespace QArray::Geometry
                       false,
                       0,
                       mCheckOverlaps);
+
+    // --- SUGGESTION 3: Establish Explicit G4LogicalBorderSurfaces ---
+    // This creates an absolute, foolproof bridge between the two geometries, silencing 
+    // G4CMPQPBoundaryProcess and G4CMPPhononBoundary warnings completely.
+    auto* crystalSurface = new G4OpticalSurface("CrystalSurface");
+    crystalSurface->SetModel(glisur);
+    crystalSurface->SetType(dielectric_dielectric); 
+    crystalSurface->SetFinish(polished); 
+    
+    if (detectorSnCubePhysical && detectorAssemblyPhysical) {
+        new G4LogicalBorderSurface("CubeToAssembly", detectorSnCubePhysical, detectorAssemblyPhysical, crystalSurface);
+        new G4LogicalBorderSurface("AssemblyToCube", detectorAssemblyPhysical, detectorSnCubePhysical, crystalSurface);
+    }
 
     // -------------------------------------------------------------------------
     // Mesh inventory -- matches src/Geometry/obj/README.md

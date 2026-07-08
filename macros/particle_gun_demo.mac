@@ -1,0 +1,112 @@
+# Centered DSPX cosmic-ray visualization. Run with an executable configured using:
+#   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
+
+/run/numberOfThreads 1
+
+/control/verbose 1
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 2   
+# Turned to 2 so you can see the secondary particles list in the console
+
+# Shift the complete lab/fridge assembly so the Sn cube is at world origin.
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38125 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/output/enable false
+/QR/output/writeSteps true
+/QR/output/writeAllEvents true
+/QR/output/addNtuple full full
+
+# =========================================================================
+# 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
+# =========================================================================
+/g4cmp/phononBounces 5
+/g4cmp/qpBounces 5
+
+# Phonon and QP creation options
+/g4cmp/samplingEnergy 2.5 eV
+/g4cmp/producePhonons 1.
+/g4cmp/produceCharges 1.
+/g4cmp/sampleLuke 0.
+/g4cmp/minEPhonons 0.000001 eV   
+
+/g4cmp/eTrappingMFP 50 um
+/g4cmp/hTrappingMFP 50 um
+
+# =========================================================================
+# 2. NOW INITIALIZE THE GEOMETRY AND PHYSICS TABLES
+# =========================================================================
+/run/initialize
+
+# =========================================================================
+# 3. POST-INITIALIZATION (Now in 'Idle' State - Safe to Activate Processes)
+# =========================================================================
+/process/inactivate scPairBreaking
+/process/inactivate qpRadiatesPhonon
+/process/activate qpRecombination
+/process/inactivate G4CMPSecondaryProduction
+
+# =========================================================================
+# 4. CONFIGURE VISUALIZATION AND PARTICLE GUN
+# =========================================================================
+/vis/open OGL 1200x1200-0+0
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+/vis/viewer/set/globalLineWidthScale 2
+/vis/viewer/set/globalMarkerScale 2
+/vis/drawVolume
+/vis/scene/add/trajectories smooth
+/vis/geometry/set/visibility worldLogical 0 false
+/vis/geometry/set/colour labLogical 0 0.5 0.5 0.5 0.12
+/vis/viewer/set/viewpointVector 0.3 -1 0.7
+/vis/viewer/set/upVector 0 0 1
+/vis/viewer/set/auxiliaryEdge false
+/vis/viewer/centreOn DetectorSnCubePhysical
+/vis/viewer/zoom 8
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+/vis/scene/endOfEventAction accumulate
+
+# >>> Configure sources below (RESTORED ORIGINAL POSITION)
+/QR/generator/mode gps
+/random/setSeeds 123456 567890
+
+# --- SOURCE 0 (The electron source) ---
+# Geant4's default source is automatically active here
+/gps/particle e-
+/gps/pos/type Volume
+/gps/pos/shape Para
+/gps/pos/centre 0.0 -50.0 0.0 mm
+/gps/pos/halfx 0.1 mm
+/gps/pos/halfy 0.1 mm
+/gps/pos/halfz 0.1 mm
+/gps/direction 0 1 0
+/gps/ene/type Mono
+/gps/energy 5 keV
+/gps/source/intensity 1
+
+# --- SOURCE 1 (The added Phonon source) ---
+# Explicitly instantiate the second source handle
+/gps/source/add 1
+
+/gps/particle phononL
+/gps/pos/type Volume
+/gps/pos/shape Para
+/gps/pos/centre 0.0 0.0 0.0 mm
+/gps/pos/halfx 0.1 mm
+/gps/pos/halfy 0.1 mm
+/gps/pos/halfz 0.1 mm
+/gps/direction 0 1 0
+/gps/ene/type Mono
+/gps/energy 50 keV
+
+# Fire 2 events to sample the sources
+/run/beamOn 2
+
+# <<< Configuration done
+/vis/viewer/rebuild
+/vis/viewer/refresh
+/vis/viewer/flush
