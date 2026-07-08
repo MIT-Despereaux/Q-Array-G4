@@ -29,7 +29,7 @@
 /vis/viewer/set/globalMarkerScale 2
 /vis/drawVolume
 /vis/scene/add/trajectories smooth
-/vis/modeling/trajectories/create/drawByParticleID
+#/vis/modeling/trajectories/create/drawByParticleID
 #/vis/modeling/trajectories/drawByParticleID-0/default/setDrawStepPts true
 /vis/scene/add/scale 10 cm
 /vis/scene/add/axes 0 0 0 10 cm
@@ -75,7 +75,7 @@
 /QR/generator/mode gps
 /random/setSeeds 123456 567890
 
-/gps/number 1
+/gps/number 3
 /gps/particle phononTF
 
 # Since your globalOffset centered the Sn Cube at the world origin,

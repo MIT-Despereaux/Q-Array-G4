@@ -34,20 +34,41 @@
 
 # >>> Configure sources below
 
+#/QR/generator/mode gps
+#/random/setSeeds 8890 18489
+
+#/gps/source/intensity 1
+#/control/execute ./template_source_1.mac
+
+#/gps/source/add 1
+#/control/execute ./template_source_2.mac
+
+#/gps/source/add 1
+#/control/execute ./template_source_3.mac
+
+#/gps/source/multiplevertex false
+#/tracking/verbose 1
+#/run/beamOn 10
+
 /QR/generator/mode gps
-/random/setSeeds 8890 18489
+/random/setSeeds 123456 567890
 
-/gps/source/intensity 1
-/control/execute ./template_source_1.mac
+/gps/number 1
+/gps/particle phononTF
 
-/gps/source/add 1
-/control/execute ./template_source_2.mac
+# Since your globalOffset centered the Sn Cube at the world origin,
+# spawn the phonon exactly at (0, 0, 0) inside your volume!
+/gps/pos/type Volume
+/gps/pos/shape Para
+/gps/pos/centre 0.0 0.0 0.0 mm
+/gps/pos/halfx 0.001 mm
+/gps/pos/halfy 0.001 mm
+/gps/pos/halfz 0.001 mm
 
-/gps/source/add 1
-/control/execute ./template_source_3.mac
+/gps/ang/type iso
+/gps/ene/type Mono
+/gps/energy 0.0040 eV    # 4 meV typical acoustic phonon energy
 
-/gps/source/multiplevertex false
-/tracking/verbose 1
-/run/beamOn 10
+/run/beamOn 1
 
 # <<< Configuration done

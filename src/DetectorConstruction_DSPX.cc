@@ -181,38 +181,63 @@ namespace QArray
     }
   
 #ifdef USE_G4CMP
-    auto* physStore = G4PhysicalVolumeStore::GetInstance();
     auto* LM = G4LatticeManager::GetLatticeManager();
-    
-    for (auto* physVol : *physStore)
-    {
-      if (physVol->GetName() == "DetectorSnCubePhysical") 
-      {
-        auto* logVol = physVol->GetLogicalVolume();
+    G4int threadId = G4Threading::G4GetCurrentThreadId();
+
+    G4cout << "[G4CMP-DEBUG] Thread " << threadId << " starting lattice registration." << G4endl;
+    G4cout << "[G4CMP-DEBUG] mWorldLogical Address: " << mWorldLogical << G4endl;
+
+    std::function<G4VPhysicalVolume*(G4LogicalVolume*, const G4String&)> findPhysicalVolume;
+    findPhysicalVolume = [&](G4LogicalVolume* currentLog, const G4String& name) -> G4VPhysicalVolume* {
+        if (!currentLog) return nullptr;
         
-        // Load the Aluminum lattice configuration
+        G4int numDaughters = currentLog->GetNoDaughters();
+        // Log every logical volume we inspect to trace the hierarchy tree
+        G4cout << "[G4CMP-TRACE] Thread " << threadId << " inspecting Logical: " 
+               << currentLog->GetName() << " (Daughters: " << numDaughters << ")" << G4endl;
+
+        for (G4int i = 0; i < numDaughters; ++i) {
+            G4VPhysicalVolume* daughterPhys = currentLog->GetDaughter(i);
+            G4cout << "  -> Found Daughter Phys: " << daughterPhys->GetName() 
+                   << " [Address: " << daughterPhys << "]" << G4endl;
+
+            if (daughterPhys->GetName() == name) {
+                return daughterPhys;
+            }
+            G4VPhysicalVolume* found = findPhysicalVolume(daughterPhys->GetLogicalVolume(), name);
+            if (found) return found;
+        }
+        return nullptr;
+    };
+
+    G4VPhysicalVolume* physVol = findPhysicalVolume(mWorldLogical, "DetectorSnCubePhysical");
+
+    if (physVol) 
+    {
+        G4LogicalVolume* logVol = physVol->GetLogicalVolume();
         G4LatticeLogical* latticeLogical = LM->LoadLattice(logVol->GetMaterial(), "Al");
         
-        G4double polycrystalElasticScatteringMFP = 0.0;
-        G4double scDelta0 = 0.18 * CLHEP::meV;
-        G4double scTeff = 0.01 * CLHEP::kelvin;
-        G4double scDn = 1.22e11 / (CLHEP::meV * CLHEP::mm3);
-        G4double scQPLocalTrappingTau = 10.0 * CLHEP::ms;
-        G4double scQPDiffusionStepTau = 100.0 * CLHEP::ns;
-
         auto* crystalLattice = new G4LatticePhysical(
-            latticeLogical, 
-            polycrystalElasticScatteringMFP,
-            scDelta0, scTeff, scDn, 
-            scQPLocalTrappingTau, scQPDiffusionStepTau
+            latticeLogical, 0.0, 0.18 * CLHEP::meV, 0.01 * CLHEP::kelvin, 
+            1.22e11 / (CLHEP::meV * CLHEP::mm3), 10.0 * CLHEP::ms, 100.0 * CLHEP::ns
         );
         
-        // ALTERNATIVE REGISTRATION: Bind directly to the LOGICAL volume
-        LM->RegisterLattice(logVol, crystalLattice);
+        LM->RegisterLattice(physVol, crystalLattice);
         
-        G4cout << "[G4CMP-DEBUG] Registered Aluminum Lattice to LOGICAL volume: " 
-               << logVol->GetName() << G4endl;
-      }
+        G4cout << "[G4CMP-SUCCESS] Thread " << threadId 
+               << " registered Lattice to PhysVol Name: " << physVol->GetName() 
+               << " at Address: " << physVol << G4endl;
+               
+        // Verify if the manager actually holds it immediately after registration
+        if (LM->HasLattice(physVol)) {
+            G4cout << "[G4CMP-VERIFY] Thread " << threadId << " confirmation: HasLattice returns TRUE for " << physVol << G4endl;
+        } else {
+            G4cerr << "[G4CMP-WARN] Thread " << threadId << " confirmation: HasLattice returns FALSE immediately after registering!" << G4endl;
+        }
+    }
+    else
+    {
+        G4cerr << "[G4CMP-ERROR] Thread " << threadId << " completely failed to find DetectorSnCubePhysical tree branch." << G4endl;
     }
 #endif
   }

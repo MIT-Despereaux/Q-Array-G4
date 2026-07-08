@@ -209,7 +209,9 @@ namespace QArray
   {
     // create a settings string for CRY
     auto meta = Metadata::GetInstance();
-
+    
+    // //editted here to hardcode for testing:
+    // G4String mode = "gps";
     G4String mode = meta->GetString("/QR/generator/mode");
     if (mode == "gps")
       mMode = kGPS;
