@@ -14,6 +14,19 @@ macro="$generated_template_dir/temporary_multi_source.mac"
 dist_type="ISO_spectrum"
 run_multi_setup=true
 
+Event_Number=$1
+CSV="$2"
+
+if [[ ! "$Event_Number" =~ ^[0-9]+$ ]]; then
+    echo "Error: Event_Number '$Event_Number' must be a valid integer." >&2
+    exit 1
+fi
+
+# 2. Validate that csv_file ends with .csv
+if [[ "$CSV" != *.csv ]]; then
+    echo "Error: csv_file '$CSV' must be a string ending in .csv" >&2
+    exit 1
+fi
 
 mkdir -p "${staging_dir}"
 
@@ -27,7 +40,7 @@ cmake -S "${repo_root}" -B "${build_dir}" \
 cmake --build "${build_dir}"
 
 if [[ "${run_multi_setup}" == true ]]; then
-    "${repo_root}/scripts/multi_source_setup.sh" "batch"
+    "${repo_root}/scripts/multi_source_setup.sh" "batch" "$Event_Number" "$CSV"
 fi
 
 echo "=========================================="
