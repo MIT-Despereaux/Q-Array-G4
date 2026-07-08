@@ -26,28 +26,45 @@
 /g4cmp/phononBounces 5
 /g4cmp/qpBounces 5
 
-# Phonon and QP creation options
-/g4cmp/samplingEnergy 2.5 eV
+# CRITICAL CHANGE: We turn production back ON so the primary particle 
+# can generate phonons/QPs inside the cube.
 /g4cmp/producePhonons 1.
 /g4cmp/produceCharges 1.
+
+# Group the 5 keV energy into 2.5 keV discrete visual paths.
+# This guarantees you will see exactly ~2 clean primary visual tracks 
+# on screen instead of a massive drive-clogging cloud.
+/g4cmp/samplingEnergy 10 eV
+
+
 /g4cmp/sampleLuke 0.
 /g4cmp/minEPhonons 0.000001 eV   
-
 /g4cmp/eTrappingMFP 50 um
 /g4cmp/hTrappingMFP 50 um
 
 # =========================================================================
 # 2. NOW INITIALIZE THE GEOMETRY AND PHYSICS TABLES
 # =========================================================================
+# Set production cuts to 0 so even meV/eV secondary ions are tracked
+/run/setCut 0 mm
+/run/setCutForAGivenParticle e- 0 mm
+/run/setCutForAGivenParticle proton 0 mm
+
 /run/initialize
 
 # =========================================================================
 # 3. POST-INITIALIZATION (Now in 'Idle' State - Safe to Activate Processes)
 # =========================================================================
+
+# Tell the neutron engine to explicitly spawn the recoil nucleus
+/physics_engine/neutron/energyLimit 0 eV
+
+# We inactivate these so the lines created by the electron do not 
+# undergo secondary infinite feedback splitting.
 /process/inactivate scPairBreaking
 /process/inactivate qpRadiatesPhonon
 /process/activate qpRecombination
-/process/inactivate G4CMPSecondaryProduction
+/process/activate G4CMPSecondaryProduction
 
 # =========================================================================
 # 4. CONFIGURE VISUALIZATION AND PARTICLE GUN
@@ -70,13 +87,14 @@
 /vis/verbose warnings
 /vis/scene/endOfEventAction accumulate
 
-# >>> Configure sources below (RESTORED ORIGINAL POSITION)
+# >>> Configure sources below (Original working position)
 /QR/generator/mode gps
 /random/setSeeds 123456 567890
 
-# --- SOURCE 0 (The electron source) ---
-# Geant4's default source is automatically active here
-/gps/particle e-
+# --- SINGLE PRIMARY TRACKER ---
+# This setup fires from outside directly through the crystal cube,
+# forcing it to leave a clean, traceable trail of solid-state secondaries.
+/gps/particle neutron
 /gps/pos/type Volume
 /gps/pos/shape Para
 /gps/pos/centre 0.0 -50.0 0.0 mm
@@ -86,25 +104,9 @@
 /gps/direction 0 1 0
 /gps/ene/type Mono
 /gps/energy 5 keV
-/gps/source/intensity 1
 
-# --- SOURCE 1 (The added Phonon source) ---
-# Explicitly instantiate the second source handle
-/gps/source/add 1
-
-/gps/particle phononL
-/gps/pos/type Volume
-/gps/pos/shape Para
-/gps/pos/centre 0.0 0.0 0.0 mm
-/gps/pos/halfx 0.1 mm
-/gps/pos/halfy 0.1 mm
-/gps/pos/halfz 0.1 mm
-/gps/direction 0 1 0
-/gps/ene/type Mono
-/gps/energy 50 keV
-
-# Fire 2 events to sample the sources
-/run/beamOn 2
+# Fire 1 primary event
+/run/beamOn 1
 
 # <<< Configuration done
 /vis/viewer/rebuild
