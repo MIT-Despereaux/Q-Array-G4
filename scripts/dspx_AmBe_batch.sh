@@ -139,7 +139,8 @@ echo "=========================================="
 echo "Simulation finished. Starting file sorter."
 echo "=========================================="
 
-python3 "${repo_root}/scripts/sort_sim_data.py" "${dist_type}" "${macro}" "${staging_dir}" "${output_dir}"
+# python3 "${repo_root}/scripts/sort_sim_data.py" "${dist_type}" "${macro}" "${staging_dir}" "${output_dir}"
+# Not needed anymore as output added with macros.
 
 echo "=========================================="
 echo "Cleaning up temporary macros..."
