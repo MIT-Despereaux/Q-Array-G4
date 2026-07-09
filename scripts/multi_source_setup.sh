@@ -18,9 +18,6 @@ fi
 
 cleanup_after_run=false
 
-# Event_Number=3
-# csv_file="$repo_root/scripts/Multi_Source_Spectrums.csv"
-
 Event_Number=$2
 csv_file="$3"
 

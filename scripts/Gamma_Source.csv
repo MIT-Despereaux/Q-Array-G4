@@ -1,0 +1,2 @@
+type,num,intensity,spectrum
+gamma,1,1,../scripts/Gamma_Spectrum_v2.csv
