@@ -1,12 +1,20 @@
 # Centered DSPX cosmic-ray visualization. Run with an executable configured using:
 #   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
 
+# =========================================================================
+# THREADS & VERBOSITY
+# =========================================================================
+
 /run/numberOfThreads 1
 
 /control/verbose 1
 /run/verbose 1
 /event/verbose 0
 /tracking/verbose 0
+
+# =========================================================================
+# QR SETTINGS
+# =========================================================================
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
 /QR/geom/globalOffset -2.5381 -1.0645 -1.38125 m
@@ -19,7 +27,59 @@
 /QR/output/writeAllEvents true
 /QR/output/addNtuple full full
 
+# =========================================================================
+# G4CMP SETUP MACROS
+# =========================================================================
+
+/g4cmp/phononBounces 5
+/g4cmp/qpBounces 5
+
+/g4cmp/producePhonons 0.001
+# a 1000th of the normal amount just for sanities sake.
+
+/g4cmp/produceCharges 0.
+# gets rid of the holes and electrons as we only wanna look at qps
+
+/g4cmp/samplingEnergy 10 eV
+# min energy we care about.
+
+/g4cmp/sampleLuke 0.
+/g4cmp/minEPhonons 0.000001 eV   
+/g4cmp/eTrappingMFP 50 um
+/g4cmp/hTrappingMFP 50 um
+
+# Set production cuts to 0 so even meV/eV secondary ions are tracked
+/run/setCut 0 mm
+/run/setCutForAGivenParticle e- 0 mm
+/run/setCutForAGivenParticle proton 0 mm
+
+# =========================================================================
+# INITIALZING
+# =========================================================================
+
 /run/initialize
+
+# =========================================================================
+# PROCESS - ACTIVE & INACTIVE
+# =========================================================================
+
+# Tell the neutron engine to explicitly spawn the recoil nucleus
+/physics_engine/neutron/energyLimit 0 eV
+
+/process/activate scPairBreaking
+# Allowing phonons to break quasiparticles. OFF otherwise overwhelms.
+
+/process/inactivate qpRadiatesPhonon
+/process/inactivate qpRecombination
+/process/activate G4CMPSecondaryProduction
+
+/process/inactivate phononDownconversion
+/process/activate qpLocalTrapping
+/process/activate TrackLimiter
+
+# =========================================================================
+# VISUALIZATION
+# =========================================================================
 
 /vis/open OGL 1200x1200-0+0
 /vis/viewer/set/autoRefresh false
@@ -48,52 +108,32 @@
 /vis/verbose warnings
 /vis/scene/endOfEventAction accumulate
 
-# G4CMP added macros:
-/g4cmp/phononBounces 100
-/g4cmp/qpBounces 1000000000
-/process/activate scPairBreaking
-/process/activate qpRadiatesPhonon
-/process/activate qpRecombination
+# =========================================================================
+# PARTICLE SOURCE - IMPLEMENTATION STEP
+# =========================================================================
 
 # >>> Configure sources below
 
-#/QR/generator/mode gps
-#/random/setSeeds 148854 4824
-
-#/gps/source/intensity 1
-#/control/execute ./template_source_1.mac
-
-#/gps/source/add 1
-#/control/execute ./template_source_2.mac
-
-#/gps/source/add 1
-#/control/execute ./template_source_3.mac
-
-#/gps/source/multiplevertex false
-#/run/beamOn 10
-
 /QR/generator/mode gps
-/random/setSeeds 123456 567890
+/random/setSeeds 148854 4824
 
-/gps/number 3
-/gps/particle phononTF
+/gps/source/intensity 1
+/control/execute ./template_source_1.mac
 
-# Since your globalOffset centered the Sn Cube at the world origin,
-# spawn the phonon exactly at (0, 0, 0) inside your volume!
-/gps/pos/type Volume
-/gps/pos/shape Para
-/gps/pos/centre 0.0 0.0 0.0 mm
-/gps/pos/halfx 0.001 mm
-/gps/pos/halfy 0.001 mm
-/gps/pos/halfz 0.001 mm
+/gps/source/add 1
+/control/execute ./template_source_2.mac
 
-/gps/ang/type iso
-/gps/ene/type Mono
-/gps/energy 0.0040 eV    # 4 meV typical acoustic phonon energy
+/gps/source/add 1
+/control/execute ./template_source_3.mac
 
+/gps/source/multiplevertex false
 /run/beamOn 1
 
 # <<< Configuration done
+
+# =========================================================================
+# VIEW READY
+# =========================================================================
 
 /vis/viewer/rebuild
 /vis/viewer/refresh

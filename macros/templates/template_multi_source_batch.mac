@@ -1,6 +1,10 @@
 # Centered DSPX cosmic-ray batch run. Run with an executable configured using:
 #   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
 
+
+# =========================================================================
+# Threads & Verbosity
+# =========================================================================
 /run/numberOfThreads 8
 
 /control/verbose 1
@@ -9,6 +13,11 @@
 /tracking/verbose 0
 /process/verbose 0
 /process/em/verbose 0
+
+# =========================================================================
+# QR Settings & Output
+# =========================================================================
+
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
 /QR/geom/globalOffset -2.5381 -1.0645 -1.38175 m
@@ -23,52 +32,85 @@
 /QR/output/addNtuple full full
 /QR/output/filename <OUTPUT_FILE>
 
+
+# =========================================================================
+# G4CMP MACRO - SETUP
+# =========================================================================
+
+/g4cmp/phononBounces 5
+/g4cmp/qpBounces 5
+
+/g4cmp/producePhonons 0.001
+# a 1000th of the normal amount just for sanities sake.
+
+/g4cmp/produceCharges 0.
+# gets rid of the holes and electrons as we only wanna look at qps
+
+/g4cmp/samplingEnergy 10 eV
+
+/g4cmp/sampleLuke 0.
+/g4cmp/minEPhonons 0.000001 eV   
+/g4cmp/eTrappingMFP 50 um
+/g4cmp/hTrappingMFP 50 um
+
+# =========================================================================
+# SECONDARY TRACKING SETTINGS
+# =========================================================================
+
+# Set production cuts to 0 so even meV/eV secondary ions are tracked
+/run/setCut 0 mm
+/run/setCutForAGivenParticle e- 0 mm
+/run/setCutForAGivenParticle proton 0 mm
+
+# =========================================================================
+# Initializing
+# =========================================================================
+
 /run/initialize
 
-# G4CMP added macros:
-/g4cmp/phononBounces 100
-/g4cmp/qpBounces 1000000000
+# =========================================================================
+# PROCESSES - ACTIVE & INACTIVE
+# =========================================================================
+
+# Tell the neutron engine to explicitly spawn the recoil nucleus
+/physics_engine/neutron/energyLimit 0 eV
+
+
 /process/activate scPairBreaking
-/process/activate qpRadiatesPhonon
-/process/activate qpRecombination
+# Allowing phonons to break quasiparticles. inactive to prevent cascade
+
+/process/inactivate qpRadiatesPhonon
+/process/inactivate qpRecombination
+/process/activate G4CMPSecondaryProduction
+
+
+/process/inactivate phononDownconversion
+/process/activate qpLocalTrapping
+/process/activate TrackLimiter
+# implemented to further reduce amount of particles created.
+
+# =========================================================================
+# PARTICLE SOURCE INFORMATION
+# =========================================================================
+
+# implement normal particle source here.
 
 # >>> Configure sources below
 
-#/QR/generator/mode gps
-#/random/setSeeds 8890 18489
-
-#/gps/source/intensity 1
-#/control/execute ./template_source_1.mac
-
-#/gps/source/add 1
-#/control/execute ./template_source_2.mac
-
-#/gps/source/add 1
-#/control/execute ./template_source_3.mac
-
-#/gps/source/multiplevertex false
-#/tracking/verbose 1
-#/run/beamOn 10
-
 /QR/generator/mode gps
-/random/setSeeds 123456 567890
+/random/setSeeds 8890 18489
 
-/gps/number 1
-/gps/particle phononTF
+/gps/source/intensity 1
+/control/execute ./template_source_1.mac
 
-# Since your globalOffset centered the Sn Cube at the world origin,
-# spawn the phonon exactly at (0, 0, 0) inside your volume!
-/gps/pos/type Volume
-/gps/pos/shape Para
-/gps/pos/centre 0.0 0.0 0.0 mm
-/gps/pos/halfx 0.001 mm
-/gps/pos/halfy 0.001 mm
-/gps/pos/halfz 0.001 mm
+/gps/source/add 1
+/control/execute ./template_source_2.mac
 
-/gps/ang/type iso
-/gps/ene/type Mono
-/gps/energy 0.0040 eV    # 4 meV typical acoustic phonon energy
+/gps/source/add 1
+/control/execute ./template_source_3.mac
 
-/run/beamOn 1
+/gps/source/multiplevertex false
+#/tracking/verbose 1
+/run/beamOn 10
 
 # <<< Configuration done
