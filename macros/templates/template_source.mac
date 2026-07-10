@@ -1,0 +1,26 @@
+#This file will create source for multi, seperated from other for ease of working with.
+#Same shape/volume/position for all of them for now as we want them to overlap entirely.
+#
+#Editing following will specify each individual source.
+#
+/gps/source/set __SOURCE_INDEX__
+
+#
+#These should remain between all, as this process creates one localized source.
+#
+/gps/pos/type Volume
+/gps/pos/shape Cylinder
+/gps/pos/radius 1.12. cm
+/gps/pos/halfz 1.55 cm
+/gps/pos/centre 0. -27.5. -12.7 cm
+#/gps/pos/centre 255. 105. 120. cm
+#/gps/pos/centre 0. 0. 0. cm
+/gps/ang/type iso
+
+/gps/particle geantino
+/gps/ene/type Arb
+/gps/ene/diffspec 1
+/gps/hist/type arb
+#/gps/hist/file __SPECTRUM_PATH__
+#/gps/hist/inter Lin
+

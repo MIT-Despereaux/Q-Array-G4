@@ -67,7 +67,7 @@ namespace QArray
       : G4VUserPrimaryGeneratorAction()
   {
     G4int n_particle = 1;
-    mParticleGun = new G4ParticleGun(n_particle);
+    mParticleGun = new G4ParticleGun();
 
     // Default particle kinematics
     G4ParticleTable *particleTable = G4ParticleTable::GetParticleTable();

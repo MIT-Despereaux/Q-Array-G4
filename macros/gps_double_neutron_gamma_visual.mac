@@ -1,0 +1,58 @@
+# DSPX GPS neutron-plus-gamma visualization. Run with an executable configured using:
+#   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
+
+/run/numberOfThreads 1
+
+/control/verbose 1
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38125 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/output/enable false
+
+/run/initialize
+
+/vis/open OGL 1200x1200-0+0
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+/vis/viewer/set/background black
+/vis/viewer/set/globalLineWidthScale 2
+/vis/viewer/set/globalMarkerScale 2
+/vis/drawVolume
+/vis/scene/add/trajectories smooth
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set neutron green
+/vis/modeling/trajectories/drawByParticleID-0/set gamma yellow
+/vis/modeling/trajectories/drawByParticleID-0/default/setDrawStepPts true
+/vis/modeling/trajectories/drawByParticleID-0/default/setStepPtsColour white
+/vis/scene/add/scale 10 cm
+/vis/scene/add/axes 0 0 0 10 cm
+/vis/geometry/set/visibility worldLogical 0 false
+/vis/geometry/set/colour labLogical 0 0.5 0.5 0.5 0.12
+/vis/viewer/set/viewpointVector 0.3 -1 0.7
+/vis/viewer/set/upVector 0 0 1
+/vis/viewer/set/lightsVector 0.3 -1 0.85
+/vis/viewer/set/style surface
+/vis/viewer/set/auxiliaryEdge false
+/vis/viewer/centreOn DetectorSnCubePhysical
+/vis/viewer/zoom 8
+/vis/viewer/addCutawayPlane 0 0 0 m 1 0 0
+/vis/viewer/addCutawayPlane 0 0 0 m 0 1 0
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+/vis/scene/endOfEventAction accumulate
+
+/QR/generator/mode gps
+/control/execute macros/sources/gps_double_neutron_gamma_sources.mac
+
+/random/setSeeds 148854 4824
+/run/beamOn 25
+
+/vis/viewer/rebuild
+/vis/viewer/refresh
+/vis/viewer/flush

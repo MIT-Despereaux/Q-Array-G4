@@ -19,4 +19,4 @@ cmake -S "${repo_root}" -B "${build_dir}" \
 cmake --build "${build_dir}"
 
 cd "${build_dir}"
-./main dspx_cosmic_batch.mac
+./main macros/dspx_cosmic_batch.mac

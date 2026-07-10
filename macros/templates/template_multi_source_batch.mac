@@ -1,0 +1,46 @@
+# Centered DSPX cosmic-ray batch run. Run with an executable configured using:
+#   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
+
+/run/numberOfThreads 8
+
+/control/verbose 1
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/process/verbose 0
+/process/em/verbose 0
+
+# Shift the complete lab/fridge assembly so the Sn cube is at world origin.
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38175 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/output/enable true
+/QR/output/filetype csv
+/QR/output/writeSteps true
+/QR/output/writeAllEvents true
+/QR/output/addNtuple full full
+/QR/output/filename <OUTPUT_FILE>
+
+/run/initialize
+
+# >>> Configure sources below
+
+/QR/generator/mode gps
+/random/setSeeds 8890 18489
+
+/gps/source/intensity 1
+/control/execute ./template_source_1.mac
+
+/gps/source/add 1
+/control/execute ./template_source_2.mac
+
+/gps/source/add 1
+/control/execute ./template_source_3.mac
+
+/gps/source/multiplevertex false
+/tracking/verbose 1
+/run/beamOn 10
+
+# <<< Configuration done

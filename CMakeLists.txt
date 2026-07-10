@@ -24,7 +24,7 @@ enable_testing()
 option(WITH_GEANT4_UIVIS "Build with Geant4 UI and Vis drivers" ON)
 option(BUILD_STATIC_LIBS "Build static libraries" OFF)
 option(WITH_CRY "Build with CRY cosmic ray generator support" OFF)
-set(QARRAY_DETECTOR_GEOMETRY "LEIDEN_II" CACHE STRING "Detector geometry implementation: CURIE, LEIDEN_II, or DSPX")
+set(QARRAY_DETECTOR_GEOMETRY "DSPX" CACHE STRING "Detector geometry implementation: CURIE, LEIDEN_II, or DSPX")
 set_property(CACHE QARRAY_DETECTOR_GEOMETRY PROPERTY STRINGS CURIE LEIDEN_II DSPX)
 
 # Determine required components for Geant4 based on the given options.
@@ -177,16 +177,15 @@ if(WITH_CRY)
 endif()
 
 # ----------------------------------------------------------------------------
-# Copy all scripts to the build directory.
+# Copy runtime macros and test scripts to the build directory.
 #
+file(GLOB_RECURSE MACRO_FILES CONFIGURE_DEPENDS
+  RELATIVE ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/macros/*
+)
+
 set(EXTRA_SCRIPTS
-  init_vis.mac
-  geometry_lab_proton.mac
-  geometry_lab_proton_batch.mac
-  dspx_cosmic_visual.mac
-  dspx_cosmic_batch.mac
-  leiden_cosmic_visual.mac
-  leiden_cosmic_batch.mac
+  ${MACRO_FILES}
   tests/particle_gun_smoke.mac
   tests/mt_single_thread_no_vis.mac
   tests/cry_disabled.mac
@@ -199,6 +198,10 @@ set(EXTRA_SCRIPTS
 )
 
 foreach(_script ${EXTRA_SCRIPTS})
+  get_filename_component(_script_dir ${_script} DIRECTORY)
+  if(_script_dir)
+    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/${_script_dir})
+  endif()
   configure_file(
     ${PROJECT_SOURCE_DIR}/${_script}
     ${PROJECT_BINARY_DIR}/${_script}
@@ -210,6 +213,14 @@ foreach(_obsolete_script
     run_test.mac
     vis_1.mac
     vis_2.mac
+    init_vis.mac
+    geometry_lab_proton.mac
+    geometry_lab_proton_visual.mac
+    geometry_lab_proton_batch.mac
+    dspx_cosmic_visual.mac
+    dspx_cosmic_batch.mac
+    leiden_cosmic_visual.mac
+    leiden_cosmic_batch.mac
     tests/run_test_no_vis.mac)
   file(REMOVE ${PROJECT_BINARY_DIR}/${_obsolete_script})
 endforeach()
@@ -236,7 +247,7 @@ set(SMOKE_TESTS particle_gun_smoke mt_single_thread_no_vis)
 if(QARRAY_DETECTOR_GEOMETRY STREQUAL "LEIDEN_II")
   add_test(
     NAME leiden_cosmic_batch
-    COMMAND main leiden_cosmic_batch.mac
+    COMMAND main macros/leiden_cosmic_batch.mac
   )
   list(APPEND SMOKE_TESTS leiden_cosmic_batch)
 

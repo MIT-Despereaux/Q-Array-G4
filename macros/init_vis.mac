@@ -1,0 +1,16 @@
+# Macro file for the initialization of example B1
+# in interactive session
+#
+# Set some default verbose
+/control/verbose 2
+#/control/saveHistory
+/run/verbose 2
+#
+# Create a standard drawing model for your trajectories
+/vis/modeling/trajectories/create/drawByParticleID customDrawByParticle 
+/vis/modeling/trajectories/customDrawByParticle/set neutron yellow 
+/vis/modeling/trajectories/customDrawByParticle/set gamma cyan 
+/vis/modeling/trajectories/customDrawByParticle/set e- red 
+/vis/modeling/trajectories/customDrawByParticle/set geantino magenta 
+/vis/modeling/trajectories/customDrawByParticle/set proton blue 
+/vis/modeling/trajectories/select customDrawByParticle 
