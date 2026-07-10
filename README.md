@@ -95,6 +95,10 @@ cd build-dspx && ./main macros/gps_multi_demo_visual.mac
 
 A generalized particle source exists. `dspx_AmBe_visual.sh` and `dspx_AmBe_batch.sh`create a neutron and gamma source for 241-AmBe. However this script is highly generalizable to other arbitrary combination of particle types with different energy spectrum. Altering `./scripts/Multi_Source_Spectrums.csv` allows new combinations of general particle sources to be specified. A CSV file must be used for the spectrums.
 
+These spectrum can be tested by uncommenting the portion between `# <<< DEBUGGING SPECTRUM: START` and `# >>> DEBUGGING SPECTRUM: END` while commenting out `./main`. This saves the initialized energies in `./output/initial_data`.
+
+Feeding the path into the python files allow for graphing, gamma rays are naturally created by Geant4 so using the noisy grapher works better for retrieving the actual one. Run once with particle of choice replaced with geantino and another time with it remaining. The program takes the two and subtract them to create a new histogram. I plan to implement an automated version of this.
+
 # Testing
 
 Build and run the smoke tests:
@@ -108,3 +112,21 @@ The default DSPX test suite runs the DSPX-specific scoring checks, a
 particle-gun event, and verifies that selecting CRY fails clearly when
 `WITH_CRY=OFF`. Leiden II builds use the Leiden cosmic and energy-deposition
 checks.
+
+Further testing:
+
+To validate that the source you are creating is accurate do the following from repo root:
+
+1. `./scripts/multi_source_setup.sh batch 10000 ./scripts/Multi_Source_Spectrums.csv`
+   (you can swap run number and path to your version of `./scripts/Multi_Source_Spectrums.csv` above)
+
+2. `cd build-dspx`
+   Now within run your test source in batch mode and put output into log file:
+
+3. `./main </path/to/temporary/file/here> > </path/to/log/file/here.log>`
+   Extract the initial data from your path
+
+4. `cd ..` and then `./scripts/initial_energy_from_log.sh </path/to/log/file/here.log>`
+   Finally we can plot them, edit the following file to include your `.csv` used in your spectrum and your `.csv` just created in 4:
+
+5. `python ./notebook/initial_energy_comparison_generator.py`

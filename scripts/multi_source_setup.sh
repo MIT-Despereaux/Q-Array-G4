@@ -18,8 +18,19 @@ fi
 
 cleanup_after_run=false
 
-Event_Number=3
-csv_file="$repo_root/scripts/Multi_Source_Spectrums.csv"
+Event_Number=$2
+csv_file="$3"
+
+if [[ ! "$Event_Number" =~ ^[0-9]+$ ]]; then
+    echo "Error: Event_Number '$Event_Number' must be a valid integer." >&2
+    exit 1
+fi
+
+# 2. Validate that csv_file ends with .csv
+if [[ "$csv_file" != *.csv ]]; then
+    echo "Error: csv_file '$csv_file' must be a string ending in .csv" >&2
+    exit 1
+fi
 
 # Parse incoming arguments, filtering out our runtime behavior flags
 args=()
@@ -202,3 +213,4 @@ rm -f "$snippet_file"
 # fi
 
 echo "Finished script orchestration successfully!"
+echo "Your script can be executed with /control/execute $temporary_multi_source"

@@ -29,10 +29,12 @@ def load_simulated_energies(filename):
     return np.array(energies_mev)
 
 # Load your simulated gammas (adjust filename if needed)
-sim_energies = load_simulated_energies('./output/initial_data/audited_gammas.csv')
+sim_energies = load_simulated_energies('./output/initial_data/primary_gammas.csv')
 
 # 2. Load the reference spectrum data
-ref_df = pd.read_csv('./scripts/Gamma_Spectrum.csv')
+#ref_df = pd.read_csv('./scripts/Gamma_Spectrum_v2.csv')
+# 2. Load the reference spectrum data
+ref_df = pd.read_csv('./scripts/Gamma_Spectrum_v2.csv')
 ref_df.columns = [c.strip() for c in ref_df.columns]  # Clean up any accidental spaces
 
 E_ref = ref_df.iloc[:, 0].values  # First column: Energy points
@@ -65,5 +67,5 @@ plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend(loc='upper right')
 
 # ---- SAVING FEATURE RESTORED ----
-plt.savefig('./scripts/charts/gammas_comparison_t2.png', dpi=300)
+plt.savefig('./notebook/image/gamma_comparison_primary.png', dpi=300)
 plt.show()
