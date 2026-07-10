@@ -2,7 +2,7 @@
 #include "Geometry/CryostatBuilder.hh"
 #include "Metadata.hh"
 #include "SensitiveDetector.hh"
-
+#include "G4Tubs.hh"
 #include "G4Box.hh"
 #include "G4Colour.hh"
 #include "G4LogicalVolume.hh"
@@ -153,6 +153,40 @@ namespace QArray
                         0,
                         checkOverlaps);
     }
+// =======================================================
+    // HARDCODED GPS VISUAL TRACKING VOLUME
+    // =======================================================
+    // Dimensions matching your macro: radius = 5 cm, half-z = 10 cm
+    auto* solidVisualSource = new G4Tubs("GPS_Visual_Solid", 
+                                         0.*cm, 
+                                         1.12*cm, 
+                                         1.55*cm, 
+                                         0.*deg, 
+                                         360.*deg);
+    
+    // Match the background material (Air) so it has no physical effect on tracking
+    auto* logicalVisualSource = new G4LogicalVolume(solidVisualSource, 
+                                                    air, 
+                                                    "GPS_Visual_Logical");
+
+    // Make it a transparent cyan wireframe box
+    auto* visAtt = new G4VisAttributes(G4Colour(0.0, 1.0, 1.0, 0.4)); // Cyan with 40% opacity
+    visAtt->SetForceWireframe(true);
+    logicalVisualSource->SetVisAttributes(visAtt);
+
+    // Hardcoded center coordinates matching your macro: (0., -32., -12.7) cm
+    G4ThreeVector hardcodedSourcePos(0.*cm, -27.5*cm, -12.7*cm);
+
+    // Place it directly inside the world logical volume
+    new G4PVPlacement(nullptr,
+                      hardcodedSourcePos,
+                      logicalVisualSource,
+                      "GPS_Visual_Physical",
+                      mWorldLogical,
+                      false,
+                      0,
+                      false); // Overlap checking is false so it doesn't trigger warnings
+    // =======================================================
 
     return worldPhysical;
   }
