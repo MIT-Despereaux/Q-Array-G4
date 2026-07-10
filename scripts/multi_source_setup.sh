@@ -7,37 +7,33 @@ echo "Repository root: $repo_root"
 template_dir="$repo_root/macros/templates"
 generated_template_dir="$repo_root/build-dspx"
 
-# Default configuration mode
-mode="$1"
-
-if [[ "$mode" != "batch" && "$mode" != "visual" ]]; then
-    echo "ERROR: Invalid mode specified: '$mode'"
-    echo "Usage: $0 <batch|visual> [other arguments...]"
-    exit 1
-fi
-
 cleanup_after_run=false
+output_dir="../output"
+mode=""
 
-Event_Number=$2
-csv_file="$3"
-
-if [[ ! "$Event_Number" =~ ^[0-9]+$ ]]; then
-    echo "Error: Event_Number '$Event_Number' must be a valid integer." >&2
-    exit 1
-fi
-
-# 2. Validate that csv_file ends with .csv
-if [[ "$csv_file" != *.csv ]]; then
-    echo "Error: csv_file '$csv_file' must be a string ending in .csv" >&2
-    exit 1
-fi
+usage() {
+    echo "Usage: $0 <batch|visual> <event-count> <sources.csv> <output-file> [--output-dir <relative-dir>] [--cleanup]" >&2
+}
 
 # Parse incoming arguments, filtering out our runtime behavior flags
 args=()
-for arg in "$@"; do
+while [[ $# -gt 0 ]]; do
+    arg="$1"
     case "$arg" in
         --cleanup)
             cleanup_after_run=true
+            ;;
+        --output-dir)
+            shift
+            if [[ $# -eq 0 ]]; then
+                echo "Error: --output-dir requires a relative directory." >&2
+                usage
+                exit 1
+            fi
+            output_dir="$1"
+            ;;
+        --output-dir=*)
+            output_dir="${arg#--output-dir=}"
             ;;
         --visual)
             mode="visual"
@@ -49,16 +45,61 @@ for arg in "$@"; do
             args+=("$arg")
             ;;
     esac
+    shift
 done
 set -- "${args[@]}"
+
+if [[ -z "$mode" ]]; then
+    mode="$1"
+    shift
+fi
+
+Event_Number="$1"
+csv_file="$2"
+output_file="$3"
+
+if [[ "$mode" != "batch" && "$mode" != "visual" ]]; then
+    echo "ERROR: Invalid mode specified: '$mode'" >&2
+    usage
+    exit 1
+fi
+
+if [[ $# -ne 3 ]]; then
+    usage
+    exit 1
+fi
+
+if [[ ! "$Event_Number" =~ ^[0-9]+$ ]]; then
+    echo "Error: Event_Number '$Event_Number' must be a valid integer." >&2
+    exit 1
+fi
+
+if [[ "$csv_file" != *.csv ]]; then
+    echo "Error: csv_file '$csv_file' must be a string ending in .csv" >&2
+    exit 1
+fi
+
+if [[ -z "$output_file" || "$output_file" == */* || "$output_file" == "." || "$output_file" == ".." ]]; then
+    echo "Error: output-file must be a file name without a directory component." >&2
+    exit 1
+fi
+
+if [[ -z "$output_dir" || "$output_dir" == /* || "$output_dir" == ~* ]]; then
+    echo "Error: --output-dir must be a relative directory." >&2
+    exit 1
+fi
+output_dir="${output_dir%/}"
+[[ -n "$output_dir" ]] || output_dir="."
 
 # Dynamically construct the specific macro template path based on the parsed mode
 template_multi_source="$template_dir/template_multi_source_${mode}.mac"
 template_source="$template_dir/template_source.mac"
 temporary_multi_source="$generated_template_dir/temporary_multi_source.mac"
+output_path="${output_dir}/${output_file}"
 
 echo "Selected configuration mode: $mode"
 echo "Using macro template: $template_multi_source"
+echo "Output filename: $output_path"
 
 # --- sanity checks ---
 if [ ! -f "$csv_file" ]; then
@@ -77,12 +118,22 @@ if [ ! -f "$template_source" ]; then
 fi
 
 mkdir -p "$generated_template_dir"
+mkdir -p "$generated_template_dir/$output_dir"
 
 # Clean old generated source outputs
 rm -f "$temporary_multi_source" "$generated_template_dir"/template_source_[0-9]*.mac
 
 # Copy the baseline chosen master template file directly to our destination target
 cp "$template_multi_source" "$temporary_multi_source"
+
+escaped_output_path=$(printf '%s' "$output_path" | sed 's/[&|\\]/\\&/g')
+if [[ "$mode" == "batch" ]]; then
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s|<OUTPUT_FILE>|$escaped_output_path|g" "$temporary_multi_source"
+    else
+        sed -i "s|<OUTPUT_FILE>|$escaped_output_path|g" "$temporary_multi_source"
+    fi
+fi
 
 # Create a clean scratch file to pool all dynamic source configurations during execution
 snippet_file="$generated_template_dir/dynamic_sources.tmp"
