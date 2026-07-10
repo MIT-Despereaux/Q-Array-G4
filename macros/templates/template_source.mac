@@ -9,9 +9,10 @@
 #These should remain between all, as this process creates one localized source.
 #
 /gps/pos/type Volume
-/gps/pos/shape Sphere
-/gps/pos/radius 5. cm
-/gps/pos/centre 0. -32. -12.7 cm
+/gps/pos/shape Cylinder
+/gps/pos/radius 1.12. cm
+/gps/pos/halfz 1.55 cm
+/gps/pos/centre 0. -27.5. -12.7 cm
 #/gps/pos/centre 255. 105. 120. cm
 #/gps/pos/centre 0. 0. 0. cm
 /gps/ang/type iso
