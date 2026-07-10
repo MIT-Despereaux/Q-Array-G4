@@ -95,9 +95,7 @@ cd build-dspx && ./main macros/gps_multi_demo_visual.mac
 
 A generalized particle source exists. `dspx_AmBe_visual.sh` and `dspx_AmBe_batch.sh`create a neutron and gamma source for 241-AmBe. However this script is highly generalizable to other arbitrary combination of particle types with different energy spectrum. Altering `./scripts/Multi_Source_Spectrums.csv` allows new combinations of general particle sources to be specified. A CSV file must be used for the spectrums.
 
-These spectrum can be tested by uncommenting the portion between `# <<< DEBUGGING SPECTRUM: START` and `# >>> DEBUGGING SPECTRUM: END` while commenting out `./main`. This saves the initialized energies in `./output/initial_data`.
-
-Feeding the path into the python files allow for graphing, gamma rays are naturally created by Geant4 so using the noisy grapher works better for retrieving the actual one. Run once with particle of choice replaced with geantino and another time with it remaining. The program takes the two and subtract them to create a new histogram. I plan to implement an automated version of this.
+The cylindrical source location is hardcoded in `DetectorConstruction_DSPX` and is there purely for visual effect.
 
 # Testing
 
