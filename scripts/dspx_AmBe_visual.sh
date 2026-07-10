@@ -14,6 +14,22 @@ macro="$generated_template_dir/temporary_multi_source.mac"
 dist_type="ISO_spectrum"
 run_multi_setup=true
 
+if [ "$#" -eq 0 ]; then
+    echo "ERROR: You must provide an input variable."
+    echo "Usage: $0 <number of events> </path/to/CSV>"
+    
+    # Exit the script immediately with an error code
+    exit 1
+fi
+
+if [ "$#" -eq 1 ]; then
+    echo "ERROR: You must provide an input variable."
+    echo "Usage: $0 <number of events> </path/to/CSV>"
+    
+    # Exit the script immediately with an error code
+    exit 1
+fi
+
 Event_Number=$1
 CSV="$2"
 
