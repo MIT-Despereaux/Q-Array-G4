@@ -93,7 +93,7 @@ cd build-dspx && ./main macros/gps_double_neutron_gamma_visual.mac
 cd build-dspx && ./main macros/gps_multi_demo_visual.mac
 ```
 
-A generalized particle source exists. `dspx_AmBe_visual.sh` and `dspx_AmBe_batch.sh`create a neutron and gamma source for 241-AmBe. However this script is highly generalizable to other arbitrary combination of particle types with different energy spectrum. Altering `./scripts/Multi_Source_Spectrums.csv` allows new combinations of general particle sources to be specified. A CSV file must be used for the spectrums.
+A generalized particle source exists. `dspx_AmBe_visual.sh` and `dspx_AmBe_batch.sh` create a neutron and gamma source for 241-AmBe. However this script is highly generalizable to other arbitrary combination of particle types with different energy spectrum. Altering `./scripts/Multi_Source.csv` allows new combinations of general particle sources to be specified. A CSV file must be used for the spectrums.
 
 These spectrum can be tested by uncommenting the portion between `# <<< DEBUGGING SPECTRUM: START` and `# >>> DEBUGGING SPECTRUM: END` while commenting out `./main`. This saves the initialized energies in `./output/initial_data`.
 
@@ -117,8 +117,8 @@ Further testing:
 
 To validate that the source you are creating is accurate do the following from repo root:
 
-1. `./scripts/multi_source_setup.sh batch 10000 ./scripts/Multi_Source_Spectrums.csv`
-   (you can swap run number and path to your version of `./scripts/Multi_Source_Spectrums.csv` above)
+1. `./scripts/multi_source_setup.sh batch 10000 ./scripts/Multi_Source.csv`
+   (you can swap run number and path to your version of `./scripts/Multi_Source.csv` above)
 
 2. `cd build-dspx`
    Now within run your test source in batch mode and put output into log file:

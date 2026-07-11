@@ -1,2 +1,2 @@
 type,num,intensity,spectrum
-neutron,1,1,../scripts/ISO_neutron_spectrum.csv
+neutron,1,1,../macros/sources/ISO_neutron_spectrum.csv
