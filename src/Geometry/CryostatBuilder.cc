@@ -638,8 +638,8 @@ namespace QArray::Geometry
 
       G4ThreeVector userPos(0. * mm, 0. * mm, 12.9 * mm); 
       G4RotationMatrix* baseRot = new G4RotationMatrix();
-      //baseRot->rotateX(90. * deg);
-      baseRot->rotateX(0. * deg);
+      baseRot->rotateX(90. * deg);
+      //baseRot->rotateX(0. * deg);
       baseRot->rotateY(0. * deg);
       baseRot->rotateZ(0. * deg);
 
@@ -657,6 +657,7 @@ namespace QArray::Geometry
       fLogicalLatticeContainer.emplace("Silicon",  LM->LoadLattice(fSilicon, "Si"));
       fLogicalLatticeContainer.emplace("Aluminum", LM->LoadLattice(fAluminum, "Al"));
       fLogicalLatticeContainer.emplace("Copper",   LM->LoadLattice(fCopper, "Cu"));
+      fLogicalLatticeContainer.emplace("Niobium",  LM->LoadLattice(fNiobium, "Nb")); // <-- ADD THIS LINE
 
       const G4double GHz = 1e9 * hertz;
       const std::vector<G4double> anhCoeffs = {0, 0, 0, 0, 0, 1.51e-14};
@@ -705,11 +706,17 @@ namespace QArray::Geometry
 
       auto* physSiliconChip = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalSiPos, log_siliconChip, "SiliconChip", detectorAssemblyLogical, false, 0, mCheckOverlaps);
 
+      if (LM && fLogicalLatticeContainer["Silicon"]) {
+                auto* siLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Silicon"]);
+                siLatticePhys->SetMillerOrientation(1,0,0);
+                LM->RegisterLattice(physSiliconChip, siLatticePhys);
+            }
+
       if (detectorAssemblyPhysical && physSiliconChip) {
         new G4CMPLogicalBorderSurface("border_siliconChip_env", physSiliconChip, detectorAssemblyPhysical, fSiVacInterface);
         new G4CMPLogicalBorderSurface("border_env_siliconChip", detectorAssemblyPhysical, physSiliconChip, fSiVacInterface);
       }
-      // 5. Guard Housing
+// 5. Guard Housing
       G4VPhysicalVolume* physQubitHousing = nullptr;
       if (dp_useQubitHousing) {
         G4ThreeVector localHousingPos(0, 0, 0);
@@ -717,6 +724,15 @@ namespace QArray::Geometry
 
         auto* qubitHousing = new QuasiparticleQubitHousing(new G4RotationMatrix(*baseRot), globalHousingPos, "QubitHousing", detectorAssemblyLogical, false, 0, mCheckOverlaps);
         physQubitHousing = qubitHousing->GetPhysicalVolume();
+
+        // -------------------------------------------------------------
+        // COPPER QUBIT HOUSING LATTICE REGISTRATION
+        // -------------------------------------------------------------
+        if (LM && fLogicalLatticeContainer["Copper"] && physQubitHousing) {
+            auto* cuLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Copper"]);
+            cuLatticePhys->SetMillerOrientation(1,0,0);
+            LM->RegisterLattice(physQubitHousing, cuLatticePhys);
+        }
 
         if (physQubitHousing && physSiliconChip) {
           new G4CMPLogicalBorderSurface("border_siliconChip_qubitHousing", physSiliconChip, physQubitHousing, fSiCuInterface);
@@ -727,7 +743,6 @@ namespace QArray::Geometry
           }
         }
       }
-
       // 6. Ground Plane & Sub-Components
       if (dp_useGroundPlane) {
         auto* solid_groundPlane = new G4Box("GroundPlane_solid", 0.5 * dp_groundPlaneDimX, 0.5 * dp_groundPlaneDimY, 0.5 * dp_groundPlaneDimZ);
@@ -741,7 +756,21 @@ namespace QArray::Geometry
         G4ThreeVector localGpPos(0, 0, 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5);
         G4ThreeVector globalGpPos = userPos + (*baseRot)(localGpPos);
 
-        auto* physGroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalGpPos, log_groundPlane, "GroundPlane", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+auto* physGroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalGpPos, log_groundPlane, "GroundPlane", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+
+        // -------------------------------------------------------------
+        // NIOBIUM GROUND PLANE LATTICE REGISTRATION
+        // -------------------------------------------------------------
+        if (LM && fLogicalLatticeContainer["Niobium"]) {
+            auto* nbLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Niobium"],
+                                                        dp_polycryElScatMFP_Al, // Temporarily using Al parameters
+                                                        dp_scDelta0_Al,         // so the compiler passes
+                                                        dp_scTeff_Al,
+                                                        dp_scDn_Al,
+                                                        dp_scTauQPTrap_Al);
+            nbLatticePhys->SetMillerOrientation(1,0,0);
+            LM->RegisterLattice(physGroundPlane, nbLatticePhys);
+        }
 
         if (physSiliconChip && physGroundPlane) {
           new G4CMPLogicalBorderSurface("border_siliconChip_groundPlane", physSiliconChip, physGroundPlane, fSiAlInterface);
@@ -777,6 +806,21 @@ namespace QArray::Geometry
               }
             }
             if (matName.find("Aluminum") != std::string::npos) {
+              
+              // -------------------------------------------------------------
+              // ALUMINUM TRANSMISSION LINE LATTICE REGISTRATION
+              // -------------------------------------------------------------
+              if (LM && fLogicalLatticeContainer["Aluminum"]) {
+                  auto* alLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Aluminum"],
+                                                              dp_polycryElScatMFP_Al,
+                                                              dp_scDelta0_Al,
+                                                              dp_scTeff_Al,
+                                                              dp_scDn_Al,
+                                                              dp_scTauQPTrap_Al);
+                  alLatticePhys->SetMillerOrientation(1,0,0);
+                  LM->RegisterLattice(subPhys, alLatticePhys);
+              }
+
               if (physSiliconChip) {
                 new G4CMPLogicalBorderSurface("b_si_al_" + volName, physSiliconChip, subPhys, fSiAlInterface);
                 new G4CMPLogicalBorderSurface("b_al_si_" + volName, subPhys, physSiliconChip, fSiAlInterface);
@@ -825,6 +869,21 @@ namespace QArray::Geometry
                 }
               }
               if (matName.find("Aluminum") != std::string::npos) {
+                
+                // -------------------------------------------------------------
+                // ALUMINUM RESONATOR LATTICE REGISTRATION
+                // -------------------------------------------------------------
+                if (LM && fLogicalLatticeContainer["Aluminum"]) {
+                  auto* alLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Aluminum"],
+                                                              dp_polycryElScatMFP_Al,
+                                                              dp_scDelta0_Al,
+                                                              dp_scTeff_Al,
+                                                              dp_scDn_Al,
+                                                              dp_scTauQPTrap_Al);
+                  alLatticePhys->SetMillerOrientation(1,0,0);
+                  LM->RegisterLattice(subPhys, alLatticePhys);
+                }
+
                 if (physSiliconChip) {
                   new G4CMPLogicalBorderSurface("b_si_al_" + volName, physSiliconChip, subPhys, fSiAlInterface);
                   new G4CMPLogicalBorderSurface("b_al_si_" + volName, subPhys, physSiliconChip, fSiAlInterface);
@@ -908,7 +967,7 @@ namespace QArray::Geometry
             continue; 
           }
 
-          std::filesystem::path stlPath = std::filesystem::path(std::string(mMeshDataPath)) / spec.filename;
+          std::filesystem::path stlPath = std::filesystem::path("../src/Geometry") / spec.filename;
 
           // =========================================================================================
           // CRITICAL DEBUG: Print the absolute system path so you know exactly where it's looking

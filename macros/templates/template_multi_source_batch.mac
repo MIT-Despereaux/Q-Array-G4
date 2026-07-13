@@ -25,6 +25,8 @@
 /QR/geom/constructFridge true
 /QR/geom/addPb true
 
+/QR/geom/useQubitArray true
+
 /QR/output/enable true
 /QR/output/filetype csv
 /QR/output/writeSteps true
