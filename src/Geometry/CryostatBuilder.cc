@@ -544,6 +544,9 @@ namespace QArray::Geometry
   //   ovcVacuumLogical origin is at its geometric center, z=+139.40 mm in the
   //   cryostat frame.
   // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+  // BuildMeshComponents
+  // ---------------------------------------------------------------------------
   void CryostatBuilder::BuildMeshComponents(const CryostatVolumes& volumes)
   {
     constexpr G4double ovcVacLocalCenterZ = kOvcVacuumCenterZ;
@@ -574,14 +577,18 @@ namespace QArray::Geometry
                                             detectorAssemblyHalfZ);
     auto* detectorAssemblyLogical =
         new G4LogicalVolume(detectorAssemblySolid, vacuum, "DetectorBoxAssemblyLogical");
-    detectorAssemblyLogical->SetVisAttributes(new G4VisAttributes(false));
+    
+    // Explicit visibility for the mother bounding box so you can debug boundaries if needed
+    auto* assemblyVis = new G4VisAttributes(G4Colour(1.0, 1.0, 1.0, 0.1));
+    assemblyVis->SetVisibility(true);
+    detectorAssemblyLogical->SetVisAttributes(assemblyVis);
 
     const G4ThreeVector detectorBoxFromAlignment(2. * 12.7 * mm, 0., -7. * 12.7 * mm);
     const G4ThreeVector detectorAlignmentOffset(-12.3 * mm, -35.5 * mm, +12.15 * mm);
     const G4ThreeVector detectorOriginInCryostat = detectorAlignmentOffset + detectorBoxFromAlignment;
-    
-    // Ensure clean compilation with complete framework context visibility
-    // AVOID PITFALL: Retain direct local pointers to eliminate global store parsing overheads
+
+    auto meta = Metadata::GetInstance();
+
     G4VPhysicalVolume* detectorAssemblyPhysical = new G4PVPlacement(
                       nullptr,
                       G4ThreeVector(detectorOriginInCryostat.x(),
@@ -596,8 +603,6 @@ namespace QArray::Geometry
 
     constexpr G4double detectorBoxFloorZ = 3.5 * mm;
     constexpr G4double detectorCrystalClearance = 1.7 * mm;
-
-    auto meta = Metadata::GetInstance();
 
     if (!meta->GetBool("/QR/geom/useQubitArray"))
     {
@@ -624,40 +629,22 @@ namespace QArray::Geometry
           0,
           mCheckOverlaps);
     }
-else
+    else
     {
       // =================================================================
       // MODE 1: MULTI-STAGE G4CMP DETECTOR CHIP ARRAY (FLAT TRANSFORM)
       // =================================================================
       using namespace QuasiparticleDetectorParameters;
 
-      // 1. Initialize local variables with your HARDCODED DEFAULTS
       G4ThreeVector userPos(0. * mm, 0. * mm, 12.9 * mm); 
       G4RotationMatrix* baseRot = new G4RotationMatrix();
-      baseRot->rotateX(90. * deg);
+      //baseRot->rotateX(90. * deg);
+      baseRot->rotateX(0. * deg);
       baseRot->rotateY(0. * deg);
       baseRot->rotateZ(0. * deg);
 
-      // 2. SAFE OVERRIDE: Check if the macro settings exist/are active.
-      // If Metadata doesn't have a check function, we can check if they are non-zero,
-      // or if you want to allow macro overrides, uncomment this block:
-      /*
-      if (meta->HasKey("/QR/geom/qubitPos")) { // Adjust to match your Metadata API if HasKey exists
-          userPos = meta->GetThreeVector("/QR/geom/qubitPos");
-          G4ThreeVector userRotAngles = meta->GetThreeVector("/QR/geom/qubitRot");
-          baseRot->setIdentity();
-          baseRot->rotateX(userRotAngles.x());
-          baseRot->rotateY(userRotAngles.y());
-          baseRot->rotateZ(userRotAngles.z());
-          G4cout << "[CryostatBuilder] Using Macro overrides for Qubit Geometry." << G4endl;
-      } else {
-          G4cout << "[CryostatBuilder] Macro parameters not initialized. Falling back to hardcoded defaults." << G4endl;
-      }
-      */
       G4cout << "[CryostatBuilder] Qubit Array Position: " << userPos << G4endl;
 
-      // 3. Setup Materials and Borders
-      auto* nist = G4NistManager::Instance();
       auto* fSilicon  = nist->FindOrBuildMaterial("G4_Si");
       auto* fAluminum = nist->FindOrBuildMaterial("G4_Al");
       auto* fCopper   = nist->FindOrBuildMaterial("G4_Cu");
@@ -704,18 +691,17 @@ else
       fVacVacInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("VacVac", fVacVacInterface);
 
-      // 4. Substrate Chip (Rotated and Translated)
+// 4. Substrate Chip 
       auto* solid_siliconChip = new G4Box("QubitChip_solid", 0.5 * dp_siliconChipDimX, 0.5 * dp_siliconChipDimY, 0.5 * dp_siliconChipDimZ);
       auto* log_siliconChip = new G4LogicalVolume(solid_siliconChip, fSilicon, "SiliconChip_log");
 
-      // Fix: Instantiate directly, mutate, and assign
       auto* siVis = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6));
       siVis->SetVisibility(true);
       siVis->SetForceSolid(true);
       log_siliconChip->SetVisAttributes(siVis);
 
-      G4ThreeVector localSiPos(0, 0, 0.5 * (dp_housingDimZ - dp_siliconChipDimZ) + (dp_eps + 0.001 * mm));
-      G4ThreeVector globalSiPos = userPos + (*baseRot)(localSiPos); // Apply math safely
+      G4ThreeVector localSiPos(0, 0, 0.5 * (dp_housingDimZ - dp_siliconChipDimZ) + dp_eps);
+      G4ThreeVector globalSiPos = userPos + (*baseRot)(localSiPos);
 
       auto* physSiliconChip = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalSiPos, log_siliconChip, "SiliconChip", detectorAssemblyLogical, false, 0, mCheckOverlaps);
 
@@ -723,8 +709,7 @@ else
         new G4CMPLogicalBorderSurface("border_siliconChip_env", physSiliconChip, detectorAssemblyPhysical, fSiVacInterface);
         new G4CMPLogicalBorderSurface("border_env_siliconChip", detectorAssemblyPhysical, physSiliconChip, fSiVacInterface);
       }
-
-      // 5. Guard Housing (Rotated and Translated)
+      // 5. Guard Housing
       G4VPhysicalVolume* physQubitHousing = nullptr;
       if (dp_useQubitHousing) {
         G4ThreeVector localHousingPos(0, 0, 0);
@@ -743,12 +728,11 @@ else
         }
       }
 
-      // 6. Ground Plane & Sub-Components (Rotated and Translated)
+      // 6. Ground Plane & Sub-Components
       if (dp_useGroundPlane) {
         auto* solid_groundPlane = new G4Box("GroundPlane_solid", 0.5 * dp_groundPlaneDimX, 0.5 * dp_groundPlaneDimY, 0.5 * dp_groundPlaneDimZ);
         auto* log_groundPlane = new G4LogicalVolume(solid_groundPlane, fNiobium, "GroundPlane_log");
 
-        // Fix: Instantiate directly, mutate, and assign
         auto* gpVis = new G4VisAttributes(G4Colour(0.0, 1.0, 1.0, 0.4));
         gpVis->SetVisibility(true);
         gpVis->SetForceSolid(true);
@@ -866,6 +850,97 @@ else
           }
         }
       }
+    }
+
+    // =========================================================================================
+    // Mesh Specifications Array (WITH 'obj/' SUBFOLDER DIRECTORIES ADDED)
+    // =========================================================================================
+    const MeshSpec kMeshSpecs[] = {
+      {
+        "obj/Experimental_Paddle.stl",
+        "ExperimentalPaddleSolid",
+        "ExperimentalPaddle_LV",
+        "ExperimentalPaddle_PV",
+        "G4_Cu",
+        &CryostatVolumes::ovcVacuumLogical,
+        G4ThreeVector(0., 0., -0.1 * mm - ovcVacLocalCenterZ),
+        180. * deg,
+        0.25
+      },
+      {
+        "obj/Ricochet_Box_Platform.stl",
+        "RicochetBoxPlatformSolid",
+        "RicochetBoxPlatform_LV",
+        "RicochetBoxPlatform_PV",
+        "G4_Cu",
+        nullptr,
+        G4ThreeVector(0., 0., -3.1 * mm),
+        0.,
+        0.8,
+        0.20,
+        0.75,
+        0.35
+      },
+      {
+        "obj/Detector_Box.stl",
+        "DetectorBoxSolid",
+        "DetectorBox_LV",
+        "DetectorBox_PV",
+        "G4_Cu",
+        nullptr,
+        G4ThreeVector(0., 0., 0.),
+        180. * deg,
+        0.8,
+        0.55,
+        0.35,
+        0.95
+      },
+    };
+
+    // =========================================================================================
+    // The STL Mesh Loading Loop
+    // =========================================================================================
+    for (const auto& spec : kMeshSpecs)
+        {
+          if (std::string(spec.filename) == "obj/Detector_Box.stl" && meta->GetBool("/QR/geom/useQubitArray"))
+          {
+            G4cout << "[CryostatBuilder] Skipping Detector_Box.stl because Qubit Array is enabled." << G4endl;
+            continue; 
+          }
+
+          std::filesystem::path stlPath = std::filesystem::path(std::string(mMeshDataPath)) / spec.filename;
+
+          // =========================================================================================
+          // CRITICAL DEBUG: Print the absolute system path so you know exactly where it's looking
+          // =========================================================================================
+          G4cout << "[DEBUG-STL] Attempting to load mesh from absolute path: " 
+                << std::filesystem::absolute(stlPath).string() << G4endl;
+
+          if (!std::filesystem::exists(stlPath))
+          {
+            G4cerr << "[CryostatBuilder] CRITICAL WARNING: Mesh file not found at path: " 
+                  << stlPath.string() << " -- Skipping placement!" << G4endl;
+            continue;
+          }
+
+      auto solid = CADMesh::TessellatedMesh::FromSTL(stlPath.string())->GetSolid();
+      if (!solid) { continue; }
+      
+      auto* material = nist->FindOrBuildMaterial(spec.material);
+      auto* lv = new G4LogicalVolume(solid, material, spec.lvName);
+      lv->SetVisAttributes(new G4VisAttributes(G4Colour(spec.red, spec.green, spec.blue, spec.alpha)));
+      
+      G4LogicalVolume* parentLV = spec.parentLV ? volumes.*(spec.parentLV) : detectorAssemblyLogical;
+      if (!parentLV) { continue; }
+      
+      G4RotationMatrix* rot = nullptr;
+      if (spec.rotationZ != 0.) {
+        rot = new G4RotationMatrix();
+        rot->rotateZ(spec.rotationZ);
+      }
+      
+      new G4PVPlacement(rot, spec.position, lv, spec.pvName, parentLV, false, 0, mCheckOverlaps);
+      G4cout << "[CryostatBuilder] Successfully loaded and placed mesh: " << spec.filename << G4endl;
     }
   }
 }
