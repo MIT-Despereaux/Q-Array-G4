@@ -121,159 +121,95 @@ namespace QArray
   {
     delete mMessenger;
   }
-
   G4VPhysicalVolume* DetectorConstruction::Construct()
-  {
-    auto meta = Metadata::GetInstance();
-    auto* air = mNistManager->FindOrBuildMaterial("G4_AIR");
-
-    constexpr G4bool checkOverlaps = true;
-    constexpr G4double worldSize = 30.0 * m;
-
-    auto* worldSolid = new G4Box("worldBox", worldSize / 2., worldSize / 2., worldSize / 2.);
-    mWorldLogical = new G4LogicalVolume(worldSolid, air, "worldLogical");
-
-    auto* worldPhysical = new G4PVPlacement(nullptr,
-                                            G4ThreeVector(),
-                                            mWorldLogical,
-                                            "worldPhysical",
-                                            nullptr,
-                                            false,
-                                            0,
-                                            checkOverlaps);
-
-    if (meta->GetBool("/QR/geom/constructLab"))
     {
-      ConstructLab();
+      auto meta = Metadata::GetInstance();
+      auto* air = mNistManager->FindOrBuildMaterial("G4_AIR");
+
+      constexpr G4bool checkOverlaps = true;
+      constexpr G4double worldSize = 30.0 * m;
+
+      auto* worldSolid = new G4Box("worldBox", worldSize / 2., worldSize / 2., worldSize / 2.);
+      mWorldLogical = new G4LogicalVolume(worldSolid, air, "worldLogical");
+
+      auto* worldPhysical = new G4PVPlacement(nullptr,
+                                              G4ThreeVector(),
+                                              mWorldLogical,
+                                              "worldPhysical",
+                                              nullptr,
+                                              false,
+                                              0,
+                                              checkOverlaps);
+
+      if (meta->GetBool("/QR/geom/constructLab"))
+      {
+        ConstructLab();
+      }
+
+      if (meta->GetBool("/QR/geom/constructFridge"))
+      {
+        ConstructFridge();
+        new G4PVPlacement(nullptr,
+                          meta->GetThreeVector("/QR/geom/globalOffset") + FridgeCenterInLab(),
+                          mFridgeLogical,
+                          "fridgePhysical",
+                          mWorldLogical,
+                          false,
+                          0,
+                          checkOverlaps);
+      }
+
+      return worldPhysical;
     }
-
-    if (meta->GetBool("/QR/geom/constructFridge"))
-    {
-      ConstructFridge();
-      new G4PVPlacement(nullptr,
-                        meta->GetThreeVector("/QR/geom/globalOffset") + FridgeCenterInLab(),
-                        mFridgeLogical,
-                        "fridgePhysical",
-                        mWorldLogical,
-                        false,
-                        0,
-                        checkOverlaps);
-    }
-
-// =======================================================
-    // HARDCODED GPS VISUAL TRACKING VOLUME
-    // =======================================================
-    // Dimensions matching your macro: radius = 5 cm, half-z = 10 cm
-    auto* solidVisualSource = new G4Tubs("GPS_Visual_Solid", 
-                                         0.*cm, 
-                                         1.12*cm, 
-                                         1.55*cm, 
-                                         0.*deg, 
-                                         360.*deg);
-    
-    // Match the background material (Air) so it has no physical effect on tracking
-    auto* logicalVisualSource = new G4LogicalVolume(solidVisualSource, 
-                                                    air, 
-                                                    "GPS_Visual_Logical");
-
-    // Make it a transparent cyan wireframe box
-    auto* visAtt = new G4VisAttributes(G4Colour(0.0, 1.0, 1.0, 0.4)); // Cyan with 40% opacity
-    visAtt->SetForceWireframe(true);
-    logicalVisualSource->SetVisAttributes(visAtt);
-
-    // Hardcoded center coordinates matching your macro: (0., -32., -12.7) cm
-    G4ThreeVector hardcodedSourcePos(0.*cm, -27.5*cm, -12.7*cm);
-
-    // Place it directly inside the world logical volume
-    new G4PVPlacement(nullptr,
-                      hardcodedSourcePos,
-                      logicalVisualSource,
-                      "GPS_Visual_Physical",
-                      mWorldLogical,
-                      false,
-                      0,
-                      false); // Overlap checking is false so it doesn't trigger warnings
-    // =======================================================
-
-    return worldPhysical;
-  }
 
   void DetectorConstruction::ConstructSDandField()
   {
-    for (auto* logical : *G4LogicalVolumeStore::GetInstance())
-    {
-      const auto& logicalName = logical->GetName();
-      const auto& materialName = logical->GetMaterial()->GetName();
-      const auto detectorName = ScoringDetectorName(logicalName);
-      const G4bool registrationOnly =
-          materialName == "G4_AIR" || materialName == "G4_Galactic";
-
-      logical->SetSensitiveDetector(new SensitiveDetector(detectorName));
-      G4cout << "DSPX_SCORING logical=" << logicalName
-             << " detector=" << detectorName
-             << " material=" << materialName
-             << " requirement=" << (registrationOnly ? "registration" : "positive")
-             << G4endl;
-    }
-  
 #ifdef USE_G4CMP
     auto* LM = G4LatticeManager::GetLatticeManager();
-    G4int threadId = G4Threading::G4GetCurrentThreadId();
+    auto meta = Metadata::GetInstance();
+    auto* store = G4PhysicalVolumeStore::GetInstance();
 
-    G4cout << "[G4CMP-DEBUG] Thread " << threadId << " starting lattice registration." << G4endl;
-    G4cout << "[G4CMP-DEBUG] mWorldLogical Address: " << mWorldLogical << G4endl;
-
-    std::function<G4VPhysicalVolume*(G4LogicalVolume*, const G4String&)> findPhysicalVolume;
-    findPhysicalVolume = [&](G4LogicalVolume* currentLog, const G4String& name) -> G4VPhysicalVolume* {
-        if (!currentLog) return nullptr;
-        
-        G4int numDaughters = currentLog->GetNoDaughters();
-        // Log every logical volume we inspect to trace the hierarchy tree
-        G4cout << "[G4CMP-TRACE] Thread " << threadId << " inspecting Logical: " 
-               << currentLog->GetName() << " (Daughters: " << numDaughters << ")" << G4endl;
-
-        for (G4int i = 0; i < numDaughters; ++i) {
-            G4VPhysicalVolume* daughterPhys = currentLog->GetDaughter(i);
-            G4cout << "  -> Found Daughter Phys: " << daughterPhys->GetName() 
-                   << " [Address: " << daughterPhys << "]" << G4endl;
-
-            if (daughterPhys->GetName() == name) {
-                return daughterPhys;
-            }
-            G4VPhysicalVolume* found = findPhysicalVolume(daughterPhys->GetLogicalVolume(), name);
-            if (found) return found;
-        }
-        return nullptr;
-    };
-
-    G4VPhysicalVolume* physVol = findPhysicalVolume(mWorldLogical, "DetectorSnCubePhysical");
-
-    if (physVol) 
+    // Safe multi-threaded lookup matching dynamic macro configurations
+    if (meta->GetBool("/QR/geom/useQubitArray"))
     {
-        G4LogicalVolume* logVol = physVol->GetLogicalVolume();
-        G4LatticeLogical* latticeLogical = LM->LoadLattice(logVol->GetMaterial(), "Al");
-        
-        auto* crystalLattice = new G4LatticePhysical(
-            latticeLogical, 0.0, 0.18 * CLHEP::meV, 0.01 * CLHEP::kelvin, 
-            1.22e11 / (CLHEP::meV * CLHEP::mm3), 10.0 * CLHEP::ms, 100.0 * CLHEP::ns
-        );
-        
-        LM->RegisterLattice(physVol, crystalLattice);
-        
-        G4cout << "[G4CMP-SUCCESS] Thread " << threadId 
-               << " registered Lattice to PhysVol Name: " << physVol->GetName() 
-               << " at Address: " << physVol << G4endl;
-               
-        // Verify if the manager actually holds it immediately after registration
-        if (LM->HasLattice(physVol)) {
-            G4cout << "[G4CMP-VERIFY] Thread " << threadId << " confirmation: HasLattice returns TRUE for " << physVol << G4endl;
-        } else {
-            G4cerr << "[G4CMP-WARN] Thread " << threadId << " confirmation: HasLattice returns FALSE immediately after registering!" << G4endl;
-        }
+      // 1. Map tracking substrate
+      auto* physSiliconChip = store->GetVolume("SiliconChip", false);
+      if (physSiliconChip) {
+        auto* latSilicon = LM->LoadLattice(physSiliconChip->GetLogicalVolume()->GetMaterial(), "Si");
+        auto* crystalSilicon = new G4LatticePhysical(latSilicon);
+        crystalSilicon->SetMillerOrientation(1, 0, 0);
+        LM->RegisterLattice(physSiliconChip, crystalSilicon);
+      }
+
+      // 2. Map copper housing structure
+      auto* physQubitHousing = store->GetVolume("QubitHousing", false);
+      if (physQubitHousing) {
+        auto* latHousing = LM->LoadLattice(physQubitHousing->GetLogicalVolume()->GetMaterial(), "Cu");
+        auto* crystalHousing = new G4LatticePhysical(latHousing);
+        crystalHousing->SetMillerOrientation(1, 0, 0);
+        LM->RegisterLattice(physQubitHousing, crystalHousing);
+      }
+
+      // 3. Map dynamic superconducting ground plane
+      auto* physGroundPlane = store->GetVolume("GroundPlane", false);
+      if (physGroundPlane) {
+        using namespace QuasiparticleDetectorParameters;
+        auto* latGround = LM->LoadLattice(physGroundPlane->GetLogicalVolume()->GetMaterial(), "Al");
+        auto* crystalGround = new G4LatticePhysical(latGround, dp_polycryElScatMFP_Al, dp_scDelta0_Al, dp_scTeff_Al, dp_scDn_Al, dp_scTauQPTrap_Al);
+        crystalGround->SetMillerOrientation(1, 0, 0);
+        LM->RegisterLattice(physGroundPlane, crystalGround);
+      }
     }
     else
     {
-        G4cerr << "[G4CMP-ERROR] Thread " << threadId << " completely failed to find DetectorSnCubePhysical tree branch." << G4endl;
+      // Classic Calibration Run Fallback Mode
+      auto* crystalPhys = store->GetVolume("DetectorSnCubePhysical", false);
+      if (crystalPhys) {
+        auto* latticeLogical = LM->LoadLattice(crystalPhys->GetLogicalVolume()->GetMaterial(), "Si");
+        auto* crystalLattice = new G4LatticePhysical(latticeLogical);
+        crystalLattice->SetMillerOrientation(1, 0, 0);
+        LM->RegisterLattice(crystalPhys, crystalLattice);
+      }
     }
 #endif
   }
@@ -315,33 +251,39 @@ namespace QArray
   }
 
   void DetectorConstruction::DefineCommands()
-  {
-    mMessenger = new G4GenericMessenger(this, "/QR/geom/", "Geometry control");
+    {
+      mMessenger = new G4GenericMessenger(this, "/QR/geom/", "Geometry control");
 
-    auto meta = Metadata::GetInstance();
-    auto* globalOffset = meta->AddParamCommand<G4UIcmdWith3VectorAndUnit>(
-        "/QR/geom/globalOffset", "Global offset for everything.");
-    globalOffset->SetUnitCategory("Length");
-    meta->Set("/QR/geom/globalOffset", G4ThreeVector(0, 0, 0));
+      auto meta = Metadata::GetInstance();
+      auto* globalOffset = meta->AddParamCommand<G4UIcmdWith3VectorAndUnit>(
+          "/QR/geom/globalOffset", "Global offset for everything.");
+      globalOffset->SetUnitCategory("Length");
+      meta->Set("/QR/geom/globalOffset", G4ThreeVector(0, 0, 0));
 
-    meta->AddParamCommand<G4UIcmdWithAnInteger>("/QR/geom/tableVer",
-                                                "Geometry or table version",
-                                                "tableVer");
-    meta->Set("/QR/geom/tableVer", 20230601);
+      meta->AddParamCommand<G4UIcmdWithAnInteger>("/QR/geom/tableVer",
+                                                  "Geometry or table version",
+                                                  "tableVer");
+      meta->Set("/QR/geom/tableVer", 20230601);
 
-    meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/constructLab",
-                                            "Construct Lab?",
-                                            "cLab");
-    meta->Set("/QR/geom/constructLab", true);
+      meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/constructLab",
+                                              "Construct Lab?",
+                                              "cLab");
+      meta->Set("/QR/geom/constructLab", true);
 
-    meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/constructFridge",
-                                            "Construct Fridge?",
-                                            "cFridge");
-    meta->Set("/QR/geom/constructFridge", true);
+      meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/constructFridge",
+                                              "Construct Fridge?",
+                                              "cFridge");
+      meta->Set("/QR/geom/constructFridge", true);
 
-    meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/addPb",
-                                            "Add Pb?",
-                                            "addPb");
-    meta->Set("/QR/geom/addPb", false);
-  }
+      meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/addPb",
+                                              "Add Pb?",
+                                              "addPb");
+      meta->Set("/QR/geom/addPb", false);
+
+      // CONFIGURABLE SYSTEM FLAG REGISTRATION
+      meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/useQubitArray",
+                                              "Toggle active target architecture: True = Qubit Matrix, False = Bulk Calibration Block",
+                                              "useQubitArray");
+      meta->Set("/QR/geom/useQubitArray", false); 
+    }
 }

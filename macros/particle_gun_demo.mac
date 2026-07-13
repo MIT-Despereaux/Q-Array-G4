@@ -15,6 +15,8 @@
 /QR/geom/constructFridge true
 /QR/geom/addPb true
 
+/QR/geom/useQubitArray true
+
 /QR/output/enable false
 /QR/output/writeSteps true
 /QR/output/writeAllEvents true
