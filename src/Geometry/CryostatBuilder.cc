@@ -624,13 +624,39 @@ namespace QArray::Geometry
           0,
           mCheckOverlaps);
     }
-    else
+else
     {
       // =================================================================
-      // MODE 1: MULTI-STAGE G4CMP DETECTOR CHIP ARRAY
+      // MODE 1: MULTI-STAGE G4CMP DETECTOR CHIP ARRAY (FLAT TRANSFORM)
       // =================================================================
       using namespace QuasiparticleDetectorParameters;
 
+      // 1. Initialize local variables with your HARDCODED DEFAULTS
+      G4ThreeVector userPos(0. * mm, 0. * mm, 12.9 * mm); 
+      G4RotationMatrix* baseRot = new G4RotationMatrix();
+      baseRot->rotateX(90. * deg);
+      baseRot->rotateY(0. * deg);
+      baseRot->rotateZ(0. * deg);
+
+      // 2. SAFE OVERRIDE: Check if the macro settings exist/are active.
+      // If Metadata doesn't have a check function, we can check if they are non-zero,
+      // or if you want to allow macro overrides, uncomment this block:
+      /*
+      if (meta->HasKey("/QR/geom/qubitPos")) { // Adjust to match your Metadata API if HasKey exists
+          userPos = meta->GetThreeVector("/QR/geom/qubitPos");
+          G4ThreeVector userRotAngles = meta->GetThreeVector("/QR/geom/qubitRot");
+          baseRot->setIdentity();
+          baseRot->rotateX(userRotAngles.x());
+          baseRot->rotateY(userRotAngles.y());
+          baseRot->rotateZ(userRotAngles.z());
+          G4cout << "[CryostatBuilder] Using Macro overrides for Qubit Geometry." << G4endl;
+      } else {
+          G4cout << "[CryostatBuilder] Macro parameters not initialized. Falling back to hardcoded defaults." << G4endl;
+      }
+      */
+      G4cout << "[CryostatBuilder] Qubit Array Position: " << userPos << G4endl;
+
+      // 3. Setup Materials and Borders
       auto* nist = G4NistManager::Instance();
       auto* fSilicon  = nist->FindOrBuildMaterial("G4_Si");
       auto* fAluminum = nist->FindOrBuildMaterial("G4_Al");
@@ -678,29 +704,36 @@ namespace QArray::Geometry
       fVacVacInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("VacVac", fVacVacInterface);
 
-      G4ThreeVector baseCenterPos(0., 0., detectorBoxFloorZ + detectorCrystalClearance);
-
-      // Substrate Chip Setup
+      // 4. Substrate Chip (Rotated and Translated)
       auto* solid_siliconChip = new G4Box("QubitChip_solid", 0.5 * dp_siliconChipDimX, 0.5 * dp_siliconChipDimY, 0.5 * dp_siliconChipDimZ);
       auto* log_siliconChip = new G4LogicalVolume(solid_siliconChip, fSilicon, "SiliconChip_log");
-      log_siliconChip->SetVisAttributes(new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6)));
 
-      G4ThreeVector siliconChipTranslate = baseCenterPos + G4ThreeVector(0, 0, 0.5 * (dp_housingDimZ - dp_siliconChipDimZ) + dp_eps);
-      auto* physSiliconChip = new G4PVPlacement(nullptr, siliconChipTranslate, log_siliconChip, "SiliconChip", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+      // Fix: Instantiate directly, mutate, and assign
+      auto* siVis = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6));
+      siVis->SetVisibility(true);
+      siVis->SetForceSolid(true);
+      log_siliconChip->SetVisAttributes(siVis);
 
-      // AVOID PITFALL: Establish bidirectional boundary tracking relative to parent assembly volume
-      if (detectorAssemblyPhysical) {
+      G4ThreeVector localSiPos(0, 0, 0.5 * (dp_housingDimZ - dp_siliconChipDimZ) + (dp_eps + 0.001 * mm));
+      G4ThreeVector globalSiPos = userPos + (*baseRot)(localSiPos); // Apply math safely
+
+      auto* physSiliconChip = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalSiPos, log_siliconChip, "SiliconChip", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+
+      if (detectorAssemblyPhysical && physSiliconChip) {
         new G4CMPLogicalBorderSurface("border_siliconChip_env", physSiliconChip, detectorAssemblyPhysical, fSiVacInterface);
         new G4CMPLogicalBorderSurface("border_env_siliconChip", detectorAssemblyPhysical, physSiliconChip, fSiVacInterface);
       }
 
-      // Guard Layer Setup
+      // 5. Guard Housing (Rotated and Translated)
       G4VPhysicalVolume* physQubitHousing = nullptr;
       if (dp_useQubitHousing) {
-        auto* qubitHousing = new QuasiparticleQubitHousing(nullptr, baseCenterPos, "QubitHousing", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+        G4ThreeVector localHousingPos(0, 0, 0);
+        G4ThreeVector globalHousingPos = userPos + (*baseRot)(localHousingPos);
+
+        auto* qubitHousing = new QuasiparticleQubitHousing(new G4RotationMatrix(*baseRot), globalHousingPos, "QubitHousing", detectorAssemblyLogical, false, 0, mCheckOverlaps);
         physQubitHousing = qubitHousing->GetPhysicalVolume();
 
-        if (physQubitHousing) {
+        if (physQubitHousing && physSiliconChip) {
           new G4CMPLogicalBorderSurface("border_siliconChip_qubitHousing", physSiliconChip, physQubitHousing, fSiCuInterface);
           new G4CMPLogicalBorderSurface("border_qubitHousing_siliconChip", physQubitHousing, physSiliconChip, fSiCuInterface);
           if (detectorAssemblyPhysical) {
@@ -710,23 +743,32 @@ namespace QArray::Geometry
         }
       }
 
-      // Ground Plane Setup
+      // 6. Ground Plane & Sub-Components (Rotated and Translated)
       if (dp_useGroundPlane) {
         auto* solid_groundPlane = new G4Box("GroundPlane_solid", 0.5 * dp_groundPlaneDimX, 0.5 * dp_groundPlaneDimY, 0.5 * dp_groundPlaneDimZ);
         auto* log_groundPlane = new G4LogicalVolume(solid_groundPlane, fNiobium, "GroundPlane_log");
-        log_groundPlane->SetVisAttributes(new G4VisAttributes(G4Colour(0.0, 1.0, 1.0, 0.3)));
 
-        G4ThreeVector groundPlaneTranslate = baseCenterPos + G4ThreeVector(0, 0, 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5);
-        auto* physGroundPlane = new G4PVPlacement(nullptr, groundPlaneTranslate, log_groundPlane, "GroundPlane", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+        // Fix: Instantiate directly, mutate, and assign
+        auto* gpVis = new G4VisAttributes(G4Colour(0.0, 1.0, 1.0, 0.4));
+        gpVis->SetVisibility(true);
+        gpVis->SetForceSolid(true);
+        log_groundPlane->SetVisAttributes(gpVis);
 
-        new G4CMPLogicalBorderSurface("border_siliconChip_groundPlane", physSiliconChip, physGroundPlane, fSiAlInterface);
-        new G4CMPLogicalBorderSurface("border_groundPlane_siliconChip", physGroundPlane, physSiliconChip, fSiAlInterface);
-        if (detectorAssemblyPhysical) {
+        G4ThreeVector localGpPos(0, 0, 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5);
+        G4ThreeVector globalGpPos = userPos + (*baseRot)(localGpPos);
+
+        auto* physGroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalGpPos, log_groundPlane, "GroundPlane", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+
+        if (physSiliconChip && physGroundPlane) {
+          new G4CMPLogicalBorderSurface("border_siliconChip_groundPlane", physSiliconChip, physGroundPlane, fSiAlInterface);
+          new G4CMPLogicalBorderSurface("border_groundPlane_siliconChip", physGroundPlane, physSiliconChip, fSiAlInterface);
+        }
+        if (detectorAssemblyPhysical && physGroundPlane) {
           new G4CMPLogicalBorderSurface("border_env_groundPlane", detectorAssemblyPhysical, physGroundPlane, fAlVacInterface);
           new G4CMPLogicalBorderSurface("border_groundPlane_env", physGroundPlane, detectorAssemblyPhysical, fAlVacInterface);
         }
 
-        // Interconnect Elements Layout
+        // Transmission Lines
         if (dp_useTransmissionLine) {
           auto* tLine = new QuasiparticleTransmissionLine(nullptr, G4ThreeVector(0,0,0), "TransmissionLine", log_groundPlane, false, 0, LM, fLogicalLatticeContainer, fBorderContainer, mCheckOverlaps);
           for (const auto& subVol : tLine->GetListOfAllFundamentalSubVolumes()) {
@@ -734,19 +776,27 @@ namespace QArray::Geometry
             G4String volName = std::get<1>(subVol);
             auto* subPhys = std::get<2>(subVol);
 
+            if (!subPhys) continue;
+
             if (matName.find("Vacuum") != std::string::npos) {
-              new G4CMPLogicalBorderSurface("b_si_v_" + volName, physSiliconChip, subPhys, fSiVacInterface);
-              new G4CMPLogicalBorderSurface("b_v_si_" + volName, subPhys, physSiliconChip, fSiVacInterface);
+              if (physSiliconChip) {
+                new G4CMPLogicalBorderSurface("b_si_v_" + volName, physSiliconChip, subPhys, fSiVacInterface);
+                new G4CMPLogicalBorderSurface("b_v_si_" + volName, subPhys, physSiliconChip, fSiVacInterface);
+              }
               if (detectorAssemblyPhysical) {
                 new G4CMPLogicalBorderSurface("b_env_v_" + volName, detectorAssemblyPhysical, subPhys, fVacVacInterface);
                 new G4CMPLogicalBorderSurface("b_v_env_" + volName, subPhys, detectorAssemblyPhysical, fVacVacInterface);
               }
-              new G4CMPLogicalBorderSurface("b_gp_v_" + volName, physGroundPlane, subPhys, fAlVacInterface);
-              new G4CMPLogicalBorderSurface("b_v_gp_" + volName, subPhys, physGroundPlane, fAlVacInterface);
+              if (physGroundPlane) {
+                new G4CMPLogicalBorderSurface("b_gp_v_" + volName, physGroundPlane, subPhys, fAlVacInterface);
+                new G4CMPLogicalBorderSurface("b_v_gp_" + volName, subPhys, physGroundPlane, fAlVacInterface);
+              }
             }
             if (matName.find("Aluminum") != std::string::npos) {
-              new G4CMPLogicalBorderSurface("b_si_al_" + volName, physSiliconChip, subPhys, fSiAlInterface);
-              new G4CMPLogicalBorderSurface("b_al_si_" + volName, subPhys, physSiliconChip, fSiAlInterface);
+              if (physSiliconChip) {
+                new G4CMPLogicalBorderSurface("b_si_al_" + volName, physSiliconChip, subPhys, fSiAlInterface);
+                new G4CMPLogicalBorderSurface("b_al_si_" + volName, subPhys, physSiliconChip, fSiAlInterface);
+              }
               if (detectorAssemblyPhysical) {
                 new G4CMPLogicalBorderSurface("b_env_al_" + volName, detectorAssemblyPhysical, subPhys, fAlVacInterface);
                 new G4CMPLogicalBorderSurface("b_al_env_" + volName, subPhys, detectorAssemblyPhysical, fAlVacInterface);
@@ -755,7 +805,7 @@ namespace QArray::Geometry
           }
         }
 
-        // Resonator Matrix Arrays
+        // Resonators
         if (dp_useResonatorAssembly) {
           for (int iR = 0; iR < 6; ++iR) {
             G4ThreeVector resTranslate(0,0,0);
@@ -778,37 +828,44 @@ namespace QArray::Geometry
               G4String volName = std::get<1>(subVol);
               auto* subPhys = std::get<2>(subVol);
 
+              if (!subPhys) continue;
+
               if (matName.find("Vacuum") != std::string::npos) {
-                new G4CMPLogicalBorderSurface("b_si_vac_" + volName, physSiliconChip, subPhys, fSiVacInterface);
-                new G4CMPLogicalBorderSurface("b_vac_si_" + volName, subPhys, physSiliconChip, fSiVacInterface);
+                if (physSiliconChip) {
+                  new G4CMPLogicalBorderSurface("b_si_vac_" + volName, physSiliconChip, subPhys, fSiVacInterface);
+                  new G4CMPLogicalBorderSurface("b_vac_si_" + volName, subPhys, physSiliconChip, fSiVacInterface);
+                }
                 if (detectorAssemblyPhysical) {
                   new G4CMPLogicalBorderSurface("b_env_vac_" + volName, detectorAssemblyPhysical, subPhys, fVacVacInterface);
                   new G4CMPLogicalBorderSurface("b_vac_env_" + volName, subPhys, detectorAssemblyPhysical, fVacVacInterface);
                 }
               }
               if (matName.find("Aluminum") != std::string::npos) {
-                new G4CMPLogicalBorderSurface("b_si_al_" + volName, physSiliconChip, subPhys, fSiAlInterface);
-                new G4CMPLogicalBorderSurface("b_al_si_" + volName, subPhys, physSiliconChip, fSiAlInterface);
+                if (physSiliconChip) {
+                  new G4CMPLogicalBorderSurface("b_si_al_" + volName, physSiliconChip, subPhys, fSiAlInterface);
+                  new G4CMPLogicalBorderSurface("b_al_si_" + volName, subPhys, physSiliconChip, fSiAlInterface);
+                }
                 if (detectorAssemblyPhysical) {
                   new G4CMPLogicalBorderSurface("b_env_al_" + volName, detectorAssemblyPhysical, subPhys, fAlVacInterface);
-                  new G4CMPLogicalBorderSurface("b_al_env_" + volName, subPhys, detectorAssemblyPhysical, fAlVacInterface);
+                  new G4CMPLogicalBorderSurface("b_al_env_" + subPhys->GetName(), subPhys, detectorAssemblyPhysical, fAlVacInterface);
                 }
               }
               if (volName.find("tlCouplingConductor") != std::string::npos || volName == resonatorAssemblyName) {
-                new G4CMPLogicalBorderSurface("b_gp_al_" + volName, physGroundPlane, subPhys, fAlAlInterface);
-                new G4CMPLogicalBorderSurface("b_al_gp_" + volName, subPhys, physGroundPlane, fAlAlInterface);
+                if (physGroundPlane) {
+                  new G4CMPLogicalBorderSurface("b_gp_al_" + volName, physGroundPlane, subPhys, fAlAlInterface);
+                  new G4CMPLogicalBorderSurface("b_al_gp_" + volName, subPhys, physGroundPlane, fAlAlInterface);
+                }
               }
               if (volName.find("tlCouplingEmpty") != std::string::npos) {
-                new G4CMPLogicalBorderSurface("b_gp_vac_" + volName, physGroundPlane, subPhys, fAlVacInterface);
-                new G4CMPLogicalBorderSurface("b_vac_gp_" + volName, subPhys, physGroundPlane, fAlVacInterface);
+                if (physGroundPlane) {
+                  new G4CMPLogicalBorderSurface("b_gp_vac_" + volName, physGroundPlane, subPhys, fAlVacInterface);
+                  new G4CMPLogicalBorderSurface("b_vac_gp_" + volName, subPhys, physGroundPlane, fAlVacInterface);
+                }
               }
             }
           }
         }
       }
     }
-
-    // ... (Keep the remaining CADMesh scanning loops exactly as they were written)
   }
-
-} // namespace QArray::Geometry
+}
