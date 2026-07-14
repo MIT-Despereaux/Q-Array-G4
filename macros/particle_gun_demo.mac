@@ -111,11 +111,13 @@
 /gps/particle neutron
 /gps/pos/type Volume
 /gps/pos/shape Para
-/gps/pos/centre 0.0 -50.0 0.0 mm
+#/gps/pos/centre 0.0 -50.0 0.0 mm
+/gps/pos/centre 0.0 0.0 50.0 mm
 /gps/pos/halfx 0.1 mm
 /gps/pos/halfy 0.1 mm
 /gps/pos/halfz 0.1 mm
-/gps/direction 0 1 0
+#/gps/direction 0 1 0
+/gps/direction 0 0 -1
 /gps/ene/type Mono
 /gps/energy 0.75 keV
 

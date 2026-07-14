@@ -370,8 +370,6 @@ namespace QArray::Geometry
                       0,
                       mCheckOverlaps);
 
-    // Vacuum plug filling the HexBride bore — sibling of BrideLogical in
-    // fridgeLogical, mirroring the OVC / OVC-vacuum pattern.
     auto* brideBoreVacSolid = new G4Tubs("BrideBoreVacuum",
                                          0.,
                                          brideInnerRadius - brideVacEpsilon,
@@ -410,41 +408,22 @@ namespace QArray::Geometry
     // -----------------------------------------------------------------------
     // Lead bricks around the OVC
     // -----------------------------------------------------------------------
-    // Standard US lead brick: 8" (long) x 4" (mid) x 2" (short/height).
-    // All bricks lay flat — the 2" face is vertical.
     if (mAddPb)
     {
       auto* lead = nist->FindOrBuildMaterial("G4_Pb");
       const G4Colour leadColour(50 / 255., 155 / 255., 36 / 255.);
 
-      constexpr G4double pbLong  = 8. * 25.4 * mm;  // 203.2 mm — tangential
-      constexpr G4double pbMid   = 4. * 25.4 * mm;  // 101.6 mm — radial
-      constexpr G4double pbShort = 2. * 25.4 * mm;  //  50.8 mm — vertical
+      constexpr G4double pbLong  = 8. * 25.4 * mm;
+      constexpr G4double pbMid   = 4. * 25.4 * mm;
+      constexpr G4double pbShort = 2. * 25.4 * mm;
 
-      // OVC base in fridgeLogical coordinates.
-      // The ScreenOVC Bucket solid has a bottom disk below z=0 (local),
-      // so the true bottom of the OVC is one wall thickness below the inner bottom.
-      // Base bricks must start below this to avoid overlapping the flange.
       constexpr G4double ovcBaseZ_local   = kOvcInnerBottomZ - containerCenterZ;
       constexpr G4double ovcTrueBot_local = ovcBaseZ_local - kOvcWallThickness - 0.1 * mm;
-
-      // ---- Ring: 8 bricks × 8 layers around the OVC side ----
-      // All bricks oriented with 8" tangential (local y) and 4" radial (local x).
-      // G4Box(pbMid/2, pbLong/2, pbShort/2): local x = 4" radial, local y = 8" tangential.
-      // rotateZ(θ) points local x radially at angle θ.
-      //
-      // Set 1 — axial (0°, 90°, 180°, 270°): 5mm gap from OVC outer wall.
-      //
-      // Set 2 — diagonal (45°, 135°, 225°, 315°): placed as close as possible to Set 1.
-      //   SAT separating axis (0,1) for 45° brick vs 0° brick:
-      //     r2/√2 > pbLong/2 + (pbMid+pbLong)/(2√2) + gap = 101.6 + 107.8 + 5 = 214.4mm
-      //     → r2 > 303.2mm  →  use 305mm  (gap = 305/√2 − 209.4 = 6.2mm)
 
       constexpr G4double pbRingR1  = kOvcOuterRadius + 5. * mm + pbMid / 2.;
       constexpr G4double pbRingR2  = 305. * mm;
       constexpr G4int    pbNLayers = 8;
 
-      // Single shared logical — same physical brick for both sets.
       auto* pbRingBrickSolid   = new G4Box("PbRingBrick", pbMid / 2., pbLong / 2., pbShort / 2.);
       auto* pbRingBrickLogical = new G4LogicalVolume(pbRingBrickSolid, lead, "PbRingBrickLogical");
       pbRingBrickLogical->SetVisAttributes(Vis(leadColour));
@@ -453,12 +432,11 @@ namespace QArray::Geometry
       {
         const G4double layerCenterZ = ovcBaseZ_local + (iLayer + 0.5) * pbShort;
 
-        // Set 1: axial bricks at 0°, 90°, 180°, 270°
         for (G4int i = 0; i < 4; ++i)
         {
           const G4double angle = i * 90. * deg;
           auto* rot = new G4RotationMatrix();
-          rot->rotateZ(angle);  // at cardinal angles ±rotation is equivalent (box symmetry)
+          rot->rotateZ(angle);
           new G4PVPlacement(rot,
                             G4ThreeVector(pbRingR1 * std::cos(angle),
                                           pbRingR1 * std::sin(angle),
@@ -471,10 +449,6 @@ namespace QArray::Geometry
                             mCheckOverlaps);
         }
 
-        // Set 2: diagonal bricks at 45°, 135°, 225°, 315°
-        // rotateZ(θ) is an active clockwise rotation: local x̂ → (cosθ, −sinθ), ŷ → (sinθ, cosθ).
-        // At θ=45°, rotateZ(+45°): local ŷ (8") → (1/√2, 1/√2) = NE = radial → wrong.
-        // Using rotateZ(−45°): local ŷ (8") → (−1/√2, 1/√2) = tangential at 45° ✓.
         for (G4int i = 0; i < 4; ++i)
         {
           const G4double angle = (45. + i * 90.) * deg;
@@ -493,21 +467,15 @@ namespace QArray::Geometry
         }
       }
 
-      // ---- Base: rectangular layer below OVC, 2 layers ----
-      // Footprint: 7×4" = 711.2mm in x (long side), 6×4" = 609.6mm in y (short side).
-      // "6×4"" in y = 3 bricks × 8" each.  Bricks oriented 4"(x) × 8"(y) × 2"(z).
-      // Shorter total side (24" = 609.6mm) is parallel to y as requested.
-      constexpr G4int pbBaseNX = 7;  // 7 × 4" = 28" in x
-      constexpr G4int pbBaseNY = 3;  // 3 × 8" = 24" in y (= 6 × 4")
+      constexpr G4int pbBaseNX = 7;
+      constexpr G4int pbBaseNY = 3;
 
-      // Base brick is rotated vs ring brick: 4" in x, 8" in y, 2" in z.
       auto* pbBaseBrickSolid = new G4Box("PbBaseBrick", pbMid / 2., pbLong / 2., pbShort / 2.);
       auto* pbBaseBrickLogical = new G4LogicalVolume(pbBaseBrickSolid, lead, "PbBaseBrickLogical");
       pbBaseBrickLogical->SetVisAttributes(Vis(leadColour));
 
       for (G4int iLayer = 0; iLayer < 2; ++iLayer)
       {
-        // Layer 0 is directly below the OVC flange bottom; layer 1 is below that.
         const G4double layerCenterZ = ovcTrueBot_local - (iLayer + 0.5) * pbShort;
         for (G4int ix = 0; ix < pbBaseNX; ++ix)
         {
@@ -532,19 +500,6 @@ namespace QArray::Geometry
   }
 
   // ---------------------------------------------------------------------------
-  // BuildMeshComponents
-  //
-  // Loads each STL file listed in kMeshSpecs from mMeshDataPath and places it
-  // as a G4TessellatedSolid inside the appropriate parent logical volume.
-  // If a file is not found it is skipped with a warning -- the CSG-only
-  // geometry is never broken by a missing mesh.
-  //
-  // Placement convention:
-  //   Plate10mK bottom is z=0 in the cryostat frame.
-  //   ovcVacuumLogical origin is at its geometric center, z=+139.40 mm in the
-  //   cryostat frame.
-  // ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
   // BuildMeshComponents
   // ---------------------------------------------------------------------------
   void CryostatBuilder::BuildMeshComponents(const CryostatVolumes& volumes)
@@ -589,8 +544,13 @@ namespace QArray::Geometry
 
     auto meta = Metadata::GetInstance();
 
+    // =========================================================================
+    // THE "LAB" ROTATION: 
+    // To rotate the entire detector box relative to the cryostat, 
+    // simply apply a rotation matrix to this G4PVPlacement!
+    // =========================================================================
     G4VPhysicalVolume* detectorAssemblyPhysical = new G4PVPlacement(
-                      nullptr,
+                      nullptr, // <-- Replace 'nullptr' with a G4RotationMatrix* here if you want to rotate the whole box
                       G4ThreeVector(detectorOriginInCryostat.x(),
                                     detectorOriginInCryostat.y(),
                                     detectorOriginInCryostat.z() - ovcVacLocalCenterZ),
@@ -632,18 +592,44 @@ namespace QArray::Geometry
     else
     {
       // =================================================================
-      // MODE 1: MULTI-STAGE G4CMP DETECTOR CHIP ARRAY (FLAT TRANSFORM)
+      // MODE 1: MULTI-STAGE G4CMP DETECTOR CHIP ARRAY (ORIENTATION SWITCH)
       // =================================================================
       using namespace QuasiparticleDetectorParameters;
 
-      G4ThreeVector userPos(0. * mm, 0. * mm, 12.9 * mm); 
-      G4RotationMatrix* baseRot = new G4RotationMatrix();
-      baseRot->rotateX(90. * deg);
-      //baseRot->rotateX(0. * deg);
-      baseRot->rotateY(0. * deg);
-      baseRot->rotateZ(0. * deg);
+      // Read macro/metadata command flag for orientation layout toggle
 
-      G4cout << "[CryostatBuilder] Qubit Array Position: " << userPos << G4endl;
+      G4bool isHorizontal = meta->GetBool("/QR/geom/isHorizontal");
+
+      G4ThreeVector userPos;
+      G4RotationMatrix* baseRot = new G4RotationMatrix();
+      G4RotationMatrix* housingRot = nullptr;
+
+      if (isHorizontal)
+      {
+        // Horizontal Layout: Co-linear nested geometry transformation
+        //userPos = G4ThreeVector(0. * mm, 8000. * mm, 12.9 * mm); 
+        userPos = G4ThreeVector(0. * mm, 0. * mm, 12.9 * mm); 
+        baseRot->rotateX(0. * deg);
+        baseRot->rotateY(0. * deg);
+        baseRot->rotateZ(0. * deg);
+
+        housingRot = new G4RotationMatrix(*baseRot);
+        housingRot->rotateX(0. * deg); 
+      }
+      else
+      {
+        // Vertical Layout: Default orientation process as originally constructed
+        userPos = G4ThreeVector(0. * mm, 0. * mm, 12.9 * mm); 
+        baseRot->rotateX(90. * deg);
+        baseRot->rotateY(0. * deg);
+        baseRot->rotateZ(0. * deg);
+
+        housingRot = new G4RotationMatrix(*baseRot);
+        housingRot->rotateX(180. * deg); 
+      }
+
+      G4cout << "[CryostatBuilder] Qubit Array Configured Layout: " 
+             << (isHorizontal ? "Horizontal" : "Vertical") << " | Position: " << userPos << G4endl;
 
       auto* fSilicon  = nist->FindOrBuildMaterial("G4_Si");
       auto* fAluminum = nist->FindOrBuildMaterial("G4_Al");
@@ -657,42 +643,78 @@ namespace QArray::Geometry
       fLogicalLatticeContainer.emplace("Silicon",  LM->LoadLattice(fSilicon, "Si"));
       fLogicalLatticeContainer.emplace("Aluminum", LM->LoadLattice(fAluminum, "Al"));
       fLogicalLatticeContainer.emplace("Copper",   LM->LoadLattice(fCopper, "Cu"));
-      fLogicalLatticeContainer.emplace("Niobium",  LM->LoadLattice(fNiobium, "Nb")); // <-- ADD THIS LINE
+      fLogicalLatticeContainer.emplace("Niobium",  LM->LoadLattice(fNiobium, "Nb")); 
 
       const G4double GHz = 1e9 * hertz;
       const std::vector<G4double> anhCoeffs = {0, 0, 0, 0, 0, 1.51e-14};
       const std::vector<G4double> diffCoeffs, specCoeffs;
       const G4double anhCutoff = 520., reflCutoff = 350.;
 
-      auto* fSiAlInterface = new G4CMPSurfaceProperty("SiAlSurf", 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+      // =========================================================================
+      // G4CMP SURFACE BOUNDARY PHYSICS
+      // Constructor: (Name, PhAbs, PhRefl, PhTrans, PhBscat, QpAbs, QpRefl, QpTrans, QpBscat, eAbs, hAbs)
+      // =========================================================================
+
+      // Si/Al Interface: Phonons 50/50 transmit/reflect. QPs MUST 100% reflect back into Al.
+      auto* fSiAlInterface = new G4CMPSurfaceProperty("SiAlSurf", 
+          0.0, 0.5, 0.5, 0.0,  
+          0.0, 1.0, 0.0, 0.0,  
+          0.0, 1.0);
       fSiAlInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("SiAl", fSiAlInterface);
 
-      auto* fSiVacInterface = new G4CMPSurfaceProperty("SiVacSurf", 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+      // Si/Vac Interface: Phonons 100% reflect. QPs 100% reflect.
+      auto* fSiVacInterface = new G4CMPSurfaceProperty("SiVacSurf", 
+          0.0, 1.0, 0.0, 0.0,  
+          0.0, 1.0, 0.0, 0.0,  
+          0.0, 1.0);
       fSiVacInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("SiVac", fSiVacInterface);
 
-      auto* fSiCuInterface = new G4CMPSurfaceProperty("SiCuSurf", 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+      // Si/Cu Interface: Phonons 100% reflect. QPs 100% reflect.
+      // (Copper is passive, so phonons must bounce off the wall to stay inside the active chip)
+      auto* fSiCuInterface = new G4CMPSurfaceProperty("SiCuSurf", 
+          0.0, 1.0, 0.0, 0.0,  // <--- Changed to 1.0 Reflect, 0.0 Transmit
+          0.0, 1.0, 0.0, 0.0,  
+          0.0, 1.0);
       fSiCuInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("SiCu", fSiCuInterface);
 
-      auto* fCuVacInterface = new G4CMPSurfaceProperty("CuVacSurf", 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+      // Cu/Vac Interface
+      /*
+      auto* fCuVacInterface = new G4CMPSurfaceProperty("CuVacSurf", 
+          0.0, 1.0, 0.0, 0.0, 
+          1.0, 1.0, 0.0, 0.0, 
+          0.0, 1.0);
       fCuVacInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("CuVac", fCuVacInterface);
+      */
 
-      auto* fAlVacInterface = new G4CMPSurfaceProperty("AlVacSurf", 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+      // Al/Vac Interface
+      auto* fAlVacInterface = new G4CMPSurfaceProperty("AlVacSurf", 
+          0.0, 1.0, 0.0, 0.0, 
+          0.0, 1.0, 0.0, 0.0, 
+          0.0, 1.0);
       fAlVacInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("AlVac", fAlVacInterface);
 
-      auto* fAlAlInterface = new G4CMPSurfaceProperty("AlAlSurf", 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+      // Al/Al Interface: SAME MATERIAL. Phonons and QPs MUST 100% transmit.
+      auto* fAlAlInterface = new G4CMPSurfaceProperty("AlAlSurf", 
+          0.0, 0.0, 1.0, 0.0,  
+          0.0, 0.0, 1.0, 0.0,  
+          0.0, 0.0);
       fAlAlInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("AlAl", fAlAlInterface);
 
-      auto* fVacVacInterface = new G4CMPSurfaceProperty("VacVacSurf", 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+      // Vac/Vac Interface
+      auto* fVacVacInterface = new G4CMPSurfaceProperty("VacVacSurf", 
+          0.0, 1.0, 0.0, 0.0, 
+          0.0, 1.0, 0.0, 0.0, 
+          0.0, 1.0);
       fVacVacInterface->AddScatteringProperties(anhCutoff, reflCutoff, anhCoeffs, diffCoeffs, specCoeffs, GHz, GHz, GHz);
       fBorderContainer.emplace("VacVac", fVacVacInterface);
 
-// 4. Substrate Chip 
+      // 4. Substrate Chip 
       auto* solid_siliconChip = new G4Box("QubitChip_solid", 0.5 * dp_siliconChipDimX, 0.5 * dp_siliconChipDimY, 0.5 * dp_siliconChipDimZ);
       auto* log_siliconChip = new G4LogicalVolume(solid_siliconChip, fSilicon, "SiliconChip_log");
 
@@ -716,33 +738,37 @@ namespace QArray::Geometry
         new G4CMPLogicalBorderSurface("border_siliconChip_env", physSiliconChip, detectorAssemblyPhysical, fSiVacInterface);
         new G4CMPLogicalBorderSurface("border_env_siliconChip", detectorAssemblyPhysical, physSiliconChip, fSiVacInterface);
       }
-// 5. Guard Housing
+
+      // 5. Guard Housing
       G4VPhysicalVolume* physQubitHousing = nullptr;
       if (dp_useQubitHousing) {
         G4ThreeVector localHousingPos(0, 0, 0);
         G4ThreeVector globalHousingPos = userPos + (*baseRot)(localHousingPos);
 
-        auto* qubitHousing = new QuasiparticleQubitHousing(new G4RotationMatrix(*baseRot), globalHousingPos, "QubitHousing", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+        auto* qubitHousing = new QuasiparticleQubitHousing(housingRot, globalHousingPos, "QubitHousing", detectorAssemblyLogical, false, 0, mCheckOverlaps);
         physQubitHousing = qubitHousing->GetPhysicalVolume();
 
         // -------------------------------------------------------------
         // COPPER QUBIT HOUSING LATTICE REGISTRATION
         // -------------------------------------------------------------
+        /*
         if (LM && fLogicalLatticeContainer["Copper"] && physQubitHousing) {
             auto* cuLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Copper"]);
             cuLatticePhys->SetMillerOrientation(1,0,0);
             LM->RegisterLattice(physQubitHousing, cuLatticePhys);
         }
+        */
 
         if (physQubitHousing && physSiliconChip) {
           new G4CMPLogicalBorderSurface("border_siliconChip_qubitHousing", physSiliconChip, physQubitHousing, fSiCuInterface);
           new G4CMPLogicalBorderSurface("border_qubitHousing_siliconChip", physQubitHousing, physSiliconChip, fSiCuInterface);
-          if (detectorAssemblyPhysical) {
-            new G4CMPLogicalBorderSurface("border_qubitHousing_env", physQubitHousing, detectorAssemblyPhysical, fCuVacInterface);
-            new G4CMPLogicalBorderSurface("border_env_qubitHousing", detectorAssemblyPhysical, physQubitHousing, fCuVacInterface);
-          }
+          // if (detectorAssemblyPhysical) {
+          //   new G4CMPLogicalBorderSurface("border_qubitHousing_env", physQubitHousing, detectorAssemblyPhysical, fCuVacInterface);
+          //   new G4CMPLogicalBorderSurface("border_env_qubitHousing", detectorAssemblyPhysical, physQubitHousing, fCuVacInterface);
+          // }
         }
       }
+
       // 6. Ground Plane & Sub-Components
       if (dp_useGroundPlane) {
         auto* solid_groundPlane = new G4Box("GroundPlane_solid", 0.5 * dp_groundPlaneDimX, 0.5 * dp_groundPlaneDimY, 0.5 * dp_groundPlaneDimZ);
@@ -756,7 +782,7 @@ namespace QArray::Geometry
         G4ThreeVector localGpPos(0, 0, 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5);
         G4ThreeVector globalGpPos = userPos + (*baseRot)(localGpPos);
 
-auto* physGroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalGpPos, log_groundPlane, "GroundPlane", detectorAssemblyLogical, false, 0, mCheckOverlaps);
+        auto* physGroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), globalGpPos, log_groundPlane, "GroundPlane", detectorAssemblyLogical, false, 0, mCheckOverlaps);
 
         // -------------------------------------------------------------
         // NIOBIUM GROUND PLANE LATTICE REGISTRATION
@@ -764,7 +790,7 @@ auto* physGroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), global
         if (LM && fLogicalLatticeContainer["Niobium"]) {
             auto* nbLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Niobium"],
                                                         dp_polycryElScatMFP_Al, // Temporarily using Al parameters
-                                                        dp_scDelta0_Al,         // so the compiler passes
+                                                        dp_scDelta0_Al,         
                                                         dp_scTeff_Al,
                                                         dp_scDn_Al,
                                                         dp_scTauQPTrap_Al);
@@ -960,27 +986,27 @@ auto* physGroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), global
     // The STL Mesh Loading Loop
     // =========================================================================================
     for (const auto& spec : kMeshSpecs)
-        {
-          if (std::string(spec.filename) == "obj/Detector_Box.stl" && meta->GetBool("/QR/geom/useQubitArray"))
-          {
-            G4cout << "[CryostatBuilder] Skipping Detector_Box.stl because Qubit Array is enabled." << G4endl;
-            continue; 
-          }
+    {
+      if (std::string(spec.filename) == "obj/Detector_Box.stl" && meta->GetBool("/QR/geom/useQubitArray"))
+      {
+        G4cout << "[CryostatBuilder] Skipping Detector_Box.stl because Qubit Array is enabled." << G4endl;
+        continue; 
+      }
 
-          std::filesystem::path stlPath = std::filesystem::path("../src/Geometry") / spec.filename;
+      std::filesystem::path stlPath = std::filesystem::path("../src/Geometry") / spec.filename;
 
-          // =========================================================================================
-          // CRITICAL DEBUG: Print the absolute system path so you know exactly where it's looking
-          // =========================================================================================
-          G4cout << "[DEBUG-STL] Attempting to load mesh from absolute path: " 
-                << std::filesystem::absolute(stlPath).string() << G4endl;
+      // =========================================================================================
+      // CRITICAL DEBUG: Print the absolute system path so you know exactly where it's looking
+      // =========================================================================================
+      G4cout << "[DEBUG-STL] Attempting to load mesh from absolute path: " 
+             << std::filesystem::absolute(stlPath).string() << G4endl;
 
-          if (!std::filesystem::exists(stlPath))
-          {
-            G4cerr << "[CryostatBuilder] CRITICAL WARNING: Mesh file not found at path: " 
-                  << stlPath.string() << " -- Skipping placement!" << G4endl;
-            continue;
-          }
+      if (!std::filesystem::exists(stlPath))
+      {
+        G4cerr << "[CryostatBuilder] CRITICAL WARNING: Mesh file not found at path: " 
+               << stlPath.string() << " -- Skipping placement!" << G4endl;
+        continue;
+      }
 
       auto solid = CADMesh::TessellatedMesh::FromSTL(stlPath.string())->GetSolid();
       if (!solid) { continue; }

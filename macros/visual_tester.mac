@@ -6,7 +6,7 @@
 /control/verbose 1
 /run/verbose 1
 /event/verbose 0
-/tracking/verbose 2 
+/tracking/verbose 2   
 # Turned to 2 so you can see the secondary particles list in the console
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
@@ -16,12 +16,12 @@
 /QR/geom/addPb true
 
 /QR/geom/useQubitArray true
+#/QR/geom/isHorizontal true
 
 /QR/output/enable false
 /QR/output/writeSteps true
 /QR/output/writeAllEvents true
 /QR/output/addNtuple full full
-/QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch
 
 # =========================================================================
 # 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
@@ -31,17 +31,17 @@
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-/g4cmp/producePhonons 1.0
+/g4cmp/producePhonons 0.001
 # a 1000th of the normal amount just for sanities sake.
 
-/g4cmp/produceCharges 1.0
+/g4cmp/produceCharges 0.
 # gets rid of the holes and electrons as we only wanna look at qps
 
 # Group the 5 keV energy into 2.5 keV discrete visual paths.
 # This guarantees you will see exactly ~2 clean primary visual tracks 
 # on screen instead of a massive drive-clogging cloud.
 /g4cmp/samplingEnergy 10 eV
-#/g4cmp/minEPhonons 0.1 eV
+
 
 /g4cmp/sampleLuke 0.
 /g4cmp/minEPhonons 0.000001 eV   
@@ -52,9 +52,9 @@
 # 2. NOW INITIALIZE THE GEOMETRY AND PHYSICS TABLES
 # =========================================================================
 # Set production cuts to 0 so even meV/eV secondary ions are tracked
-/run/setCut 0.1 mm
-/run/setCutForAGivenParticle e- 0.1 mm
-/run/setCutForAGivenParticle proton 0.1 mm
+/run/setCut 0 mm
+/run/setCutForAGivenParticle e- 0 mm
+/run/setCutForAGivenParticle proton 0 mm
 
 /run/initialize
 
@@ -72,37 +72,37 @@
 
 /process/inactivate qpRadiatesPhonon
 /process/inactivate qpRecombination
-
-/process/inactivate G4CMPSecondaryProduction gamma
-/process/inactivate G4CMPSecondaryProduction neutron
-/process/activate G4CMPSecondaryProduction e-
-/process/activate G4CMPSecondaryProduction proton
-/process/activate G4CMPSecondaryProduction GenericIon
-/process/activate G4CMPSecondaryProduction alpha
-/process/activate G4CMPSecondaryProduction proton
+/process/activate G4CMPSecondaryProduction
 
 
 /process/inactivate phononDownconversion
 /process/activate qpLocalTrapping
 /process/activate TrackLimiter
 
-# >>> Configure sources below (Original working position)
-/QR/generator/mode gps
-/random/setSeeds 123456 567890
+# =========================================================================
+# 4. CONFIGURE VISUALIZATION AND PARTICLE GUN
+# =========================================================================
+/vis/open OGL 1200x1200-0+0
+/vis/viewer/set/autoRefresh false
+/vis/verbose errors
+/vis/viewer/set/globalLineWidthScale 2
+/vis/viewer/set/globalMarkerScale 2
+/vis/drawVolume
+/vis/scene/add/trajectories smooth
+/vis/geometry/set/visibility worldLogical 0 false
+/vis/geometry/set/colour labLogical 0 0.5 0.5 0.5 0.12
+/vis/viewer/set/viewpointVector 0.3 -1 0.7
+/vis/viewer/set/upVector 0 0 1
+/vis/viewer/set/auxiliaryEdge false
+#/vis/viewer/centreOn DetectorSnCubePhysical
+#/vis/viewer/centreOn DetectorBoxAssemblyPhysical
+/vis/viewer/centreOn SiliconChip
+/vis/viewer/zoom 8
+/vis/viewer/set/autoRefresh true
+/vis/verbose warnings
+/vis/scene/endOfEventAction accumulate
 
-# --- SINGLE PRIMARY TRACKER ---
-# This setup fires from outside directly through the crystal cube,
-# forcing it to leave a clean, traceable trail of solid-state secondaries.
-/gps/particle neutron
-/gps/pos/type Plane
-/gps/pos/shape Square
-/gps/pos/centre 0.0 0.0 20.0 mm
-/gps/pos/halfx 2.0 mm
-/gps/pos/halfy 2.0 mm
-/gps/direction 0 0 -1
-/gps/ene/type Mono
-#/gps/energy 0.75 keV
-/gps/energy 5 MeV
-
-# Fire 1 primary event
-/run/beamOn 1
+# <<< Configuration done
+/vis/viewer/rebuild
+/vis/viewer/refresh
+/vis/viewer/flush

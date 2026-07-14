@@ -285,5 +285,10 @@ namespace QArray
                                               "Toggle active target architecture: True = Qubit Matrix, False = Bulk Calibration Block",
                                               "useQubitArray");
       meta->Set("/QR/geom/useQubitArray", false); 
+
+      meta->AddParamCommand<G4UIcmdWithABool>("/QR/geom/isHorizontal",
+                                              "Toggle orientation: True = Horizonal, False = Vertical",
+                                              "isHorizontal");
+      meta->Set("/QR/geom/isHorizontal", true); 
     }
 }
