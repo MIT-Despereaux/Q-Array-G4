@@ -1,6 +1,9 @@
 #include "Geometry/CryostatBuilder.hh"
 #include "Geometry/Shapes.hh"
 
+#include "G4SDManager.hh"
+#include "SensitiveDetector.hh"
+
 #include "CADMesh.hh"
 
 #include "G4Box.hh"
@@ -636,6 +639,16 @@ namespace QArray::Geometry
       auto* fCopper   = nist->FindOrBuildMaterial("G4_Cu");
       auto* fNiobium  = nist->FindOrBuildMaterial("G4_Nb");
 
+      auto* sdm = G4SDManager::GetSDMpointer();
+      
+      // Create a detector for the Silicon
+      auto* siliconSD = new QArray::SensitiveDetector("SiliconSD", true, "SiliconHits");
+      sdm->AddNewDetector(siliconSD);
+
+      // Create a detector for the Aluminum structures
+      auto* aluminumSD = new QArray::SensitiveDetector("AluminumSD", true, "AluminumHits");
+      sdm->AddNewDetector(aluminumSD);
+
       std::map<std::string, G4CMPSurfaceProperty*> fBorderContainer;
       std::map<std::string, G4LatticeLogical*> fLogicalLatticeContainer;
       
@@ -717,6 +730,8 @@ namespace QArray::Geometry
       // 4. Substrate Chip 
       auto* solid_siliconChip = new G4Box("QubitChip_solid", 0.5 * dp_siliconChipDimX, 0.5 * dp_siliconChipDimY, 0.5 * dp_siliconChipDimZ);
       auto* log_siliconChip = new G4LogicalVolume(solid_siliconChip, fSilicon, "SiliconChip_log");
+      
+      log_siliconChip->SetSensitiveDetector(siliconSD);
 
       auto* siVis = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6));
       siVis->SetVisibility(true);
@@ -773,6 +788,8 @@ namespace QArray::Geometry
       if (dp_useGroundPlane) {
         auto* solid_groundPlane = new G4Box("GroundPlane_solid", 0.5 * dp_groundPlaneDimX, 0.5 * dp_groundPlaneDimY, 0.5 * dp_groundPlaneDimZ);
         auto* log_groundPlane = new G4LogicalVolume(solid_groundPlane, fNiobium, "GroundPlane_log");
+
+        log_groundPlane->SetSensitiveDetector(aluminumSD);
 
         auto* gpVis = new G4VisAttributes(G4Colour(0.0, 1.0, 1.0, 0.4));
         gpVis->SetVisibility(true);
@@ -833,6 +850,7 @@ namespace QArray::Geometry
             }
             if (matName.find("Aluminum") != std::string::npos) {
               
+              subPhys->GetLogicalVolume()->SetSensitiveDetector(aluminumSD);
               // -------------------------------------------------------------
               // ALUMINUM TRANSMISSION LINE LATTICE REGISTRATION
               // -------------------------------------------------------------

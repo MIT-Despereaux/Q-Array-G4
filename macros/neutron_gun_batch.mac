@@ -6,7 +6,7 @@
 /control/verbose 1
 /run/verbose 1
 /event/verbose 0
-/tracking/verbose 2 
+/tracking/verbose 0 
 # Turned to 2 so you can see the secondary particles list in the console
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
@@ -17,11 +17,12 @@
 
 /QR/geom/useQubitArray true
 
-/QR/output/enable false
+/QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch.csv
 /QR/output/writeSteps true
-/QR/output/writeAllEvents true
+/QR/output/writeAllEvents false
 /QR/output/addNtuple full full
-/QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch
+/QR/output/enable true
+
 
 # =========================================================================
 # 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
@@ -31,10 +32,10 @@
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-/g4cmp/producePhonons 1.0
+/g4cmp/producePhonons 0.001
 # a 1000th of the normal amount just for sanities sake.
 
-/g4cmp/produceCharges 1.0
+/g4cmp/produceCharges 0.001
 # gets rid of the holes and electrons as we only wanna look at qps
 
 # Group the 5 keV energy into 2.5 keV discrete visual paths.
@@ -105,4 +106,4 @@
 /gps/energy 5 MeV
 
 # Fire 1 primary event
-/run/beamOn 1
+/run/beamOn 10000
