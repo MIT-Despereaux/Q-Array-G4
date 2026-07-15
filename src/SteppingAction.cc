@@ -57,7 +57,7 @@ namespace QArray
       if (particleName.find("phonon") != std::string::npos)
       {
         // 0.35 meV matches the Cooper pair breaking threshold (2*Delta) for Aluminum
-        if (track->GetKineticEnergy() < 0.35 * meV)
+        if (track->GetKineticEnergy() < 0.35 * 1e-9 * MeV)
         {
           track->SetTrackStatus(fStopAndKill); // Drop particle from track collection stack
           return;                              // Halt further step handling immediately
