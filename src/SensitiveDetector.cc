@@ -178,8 +178,6 @@ namespace QArray
     hit->vx = trackInfo->mOriginalPosition;
     hit->vp = trackInfo->mOriginalMomentum;
     hit->primaryVertexParticle = trackInfo->particleDefinition->GetParticleName();
-    // G4cout << "HitData::FillInitialVertex [vx]: " << hit->vx << G4endl;
-    // G4cout << "HitData::FillInitialVertex [vp]: " << hit->vp << G4endl;
     return;
   }
 
@@ -204,6 +202,30 @@ namespace QArray
     FillInitialVertex(hit, step);
 
     mHitCollection->insert(hit);
+
+    // -------------------------------------------------------------------------
+    // DETECTOR LOGGING VERBOSITY FOR TRACING MOVEMENTS
+    // -------------------------------------------------------------------------
+    G4Track* track = step->GetTrack();
+    G4String pName = track->GetDefinition()->GetParticleName();
+    G4double t = step->GetPostStepPoint()->GetGlobalTime() / ns; // nanoseconds
+    G4ThreeVector pos = step->GetPostStepPoint()->GetPosition() / mm; // mm
+    G4double ke = step->GetPostStepPoint()->GetKineticEnergy() / eV; // eV
+    G4String volName = step->GetPreStepPoint()->GetPhysicalVolume()->GetName();
+
+    if (pName.find("BogoliubovQP") != std::string::npos)
+    {
+      G4cout << "[QP STEP REGISTERED] TrackID: " << track->GetTrackID()
+             << " | Time: " << t << " ns | Pos: " << pos 
+             << " mm | KE: " << ke << " eV | Vol: " << volName << G4endl;
+    }
+    else
+    {
+      G4cout << "[BACKGROUND HIT] Particle: " << pName 
+             << " | Time: " << t << " ns | Pos: " << pos 
+             << " mm | Vol: " << volName << G4endl;
+    }
+
     return true;
   }
 
@@ -213,9 +235,56 @@ namespace QArray
 
   bool SensitiveDetector::Accept(const G4Step *step)
   {
-    // default take anything with >0 edep
-    G4double edep = step->GetTotalEnergyDeposit() + step->GetNonIonizingEnergyDeposit();
-    return step && edep > fStepThreshold;
+    if (!step) return false;
+
+    G4Track* track = step->GetTrack();
+    G4String particleName = track->GetDefinition()->GetParticleName();
+
+    // 1. FILTER OUT ALL PHONONS IMMEDIATELY
+    if (particleName.find("phonon") != std::string::npos)
+    {
+      return false;
+    }
+
+    // 2. DETECTOR VOLUME FILTER
+    // Exclude passive bulk areas (Silicon substrate & outer housing assembly)
+    G4VPhysicalVolume* physVol = step->GetPreStepPoint()->GetPhysicalVolume();
+    if (!physVol) return false;
+    
+    G4String volName = physVol->GetName();
+    if (volName.find("SiliconChip") != std::string::npos || 
+        volName.find("DetectorBoxAssembly") != std::string::npos)
+    {
+      return false;
+    }
+
+    // 3. TARGET PARTICLE FILTER RULES
+    bool isQuasiparticle = (particleName.find("qp") != std::string::npos || 
+                            particleName.find("quasiparticle") != std::string::npos);
+
+    if (isQuasiparticle)
+    {
+      // Accept every single step of QPs inside our active superconducting detector volumes
+      // so we can reconstruct their continuous paths over time.
+      return true;
+    }
+
+    // 4. BACKGROUND PARTICLES (Neutrons, Gammas, Electrons, etc.)
+    // Only register backgrounds when they first strike/enter the active volume.
+    if (step->IsFirstStepInVolume())
+    {
+      if (fStepThreshold > 0.0)
+      {
+        G4double edep = step->GetTotalEnergyDeposit() + step->GetNonIonizingEnergyDeposit();
+        if (edep < fStepThreshold)
+        {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    return false;
   }
 
   void SensitiveDetector::DefineCommands()
@@ -246,41 +315,4 @@ namespace QArray
     setWriteDeepCopyNoCmd.SetParameterName("deepcopy", true);
     setWriteDeepCopyNoCmd.SetDefaultValue("false");
   }
-}
-
-// FluxCounter::FluxCounter(const G4String &name, bool killTracks,
-//                          const std::set<G4VPhysicalVolume *> &restrvols) : SensitiveDetector(name, 0, 0),
-//                                                                            fKillTracks(killTracks),
-//                                                                            fRestrictVols(restrvols)
-// {
-//   mMessenger->AddParameter(fKillTracks, "killtracks",
-//                            "Kill tracks crossing the boundary");
-// }
-
-// FluxCounter::~FluxCounter()
-// {
-// }
-
-// bool FluxCounter::Accept(const G4Step *step)
-// {
-//   bool boundary = (step->GetPreStepPoint()->GetStepStatus() == fGeomBoundary ||
-//                    step->GetPostStepPoint()->GetStepStatus() == fGeomBoundary);
-//   bool volmatch = true;
-//   if (boundary && !fRestrictVols.empty())
-//   {
-//     volmatch = fRestrictVols.count(step->GetPostStepPoint()->GetPhysicalVolume());
-//   }
-
-//   return boundary && volmatch;
-// }
-
-// G4bool FluxCounter::ProcessHits(G4Step *step, G4TouchableHistory *history)
-// {
-//   if (SensitiveDetector::ProcessHits(step, history))
-//   {
-//     if (fKillTracks)
-//       step->GetTrack()->SetTrackStatus(fStopAndKill);
-//     return true;
-//   }
-//   return false;
-// }
+} // namespace QArray

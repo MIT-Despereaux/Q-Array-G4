@@ -3,10 +3,11 @@
 
 /run/numberOfThreads 1
 
-/control/verbose 1
-/run/verbose 1
+/control/verbose 0
+/run/verbose 0
 /event/verbose 0
-/tracking/verbose 0 
+/tracking/verbose 0
+/process/verbose 0
 # Turned to 2 so you can see the secondary particles list in the console
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
@@ -18,21 +19,21 @@
 /QR/geom/useQubitArray true
 
 /QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch.csv
-/QR/output/writeSteps true
+/QR/output/writeSteps false
 /QR/output/writeAllEvents false
-/QR/output/addNtuple full full
+/QR/output/addNtuple full minimal
 /QR/output/enable true
 
 
 # =========================================================================
 # 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
 # =========================================================================
-/g4cmp/phononBounces 5
-/g4cmp/qpBounces 5
+/g4cmp/phononBounces 3
+/g4cmp/qpBounces 3
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-/g4cmp/producePhonons 0.001
+/g4cmp/producePhonons 0.000001
 # a 1000th of the normal amount just for sanities sake.
 
 /g4cmp/produceCharges 0.001
@@ -71,11 +72,11 @@
 /process/activate scPairBreaking
 # Allowing phonons to break quasiparticles.
 
-/process/inactivate qpRadiatesPhonon
-/process/inactivate qpRecombination
+/process/activate qpRadiatesPhonon
+/process/activate qpRecombination
 
-/process/inactivate G4CMPSecondaryProduction gamma
-/process/inactivate G4CMPSecondaryProduction neutron
+/process/activate G4CMPSecondaryProduction gamma
+/process/activate G4CMPSecondaryProduction neutron
 /process/activate G4CMPSecondaryProduction e-
 /process/activate G4CMPSecondaryProduction proton
 /process/activate G4CMPSecondaryProduction GenericIon
@@ -90,20 +91,24 @@
 # >>> Configure sources below (Original working position)
 /QR/generator/mode gps
 /random/setSeeds 123456 567890
-
+/gps/particle gamma
 # --- SINGLE PRIMARY TRACKER ---
 # This setup fires from outside directly through the crystal cube,
 # forcing it to leave a clean, traceable trail of solid-state secondaries.
-/gps/particle neutron
-/gps/pos/type Plane
-/gps/pos/shape Square
-/gps/pos/centre 0.0 0.0 20.0 mm
-/gps/pos/halfx 2.0 mm
-/gps/pos/halfy 2.0 mm
+# 1. Move the gun higher up (10 cm) to make sure it is above the chip
+/gps/pos/type Point
+/gps/pos/centre 0.0 0.0 6.0 mm
+
+# 2. Widen the beam to 10cm x 10cm to blanket the center of the fridge
+/gps/pos/halfx 50.0 mm
+/gps/pos/halfy 50.0 mm
 /gps/direction 0 0 -1
+
+# 3. Give the neutrons a specific energy (e.g., 2 MeV) so they have punch
 /gps/ene/type Mono
-#/gps/energy 0.75 keV
-/gps/energy 5 MeV
+#/gps/ene/mono 2.0 MeV
+/gps/ene/mono 3 eV
+
 
 # Fire 1 primary event
-/run/beamOn 1000
+/run/beamOn 1
