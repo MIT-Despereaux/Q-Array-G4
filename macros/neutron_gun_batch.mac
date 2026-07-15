@@ -106,4 +106,4 @@
 /gps/energy 5 MeV
 
 # Fire 1 primary event
-/run/beamOn 10000
+/run/beamOn 1000

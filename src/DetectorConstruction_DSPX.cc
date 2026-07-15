@@ -18,6 +18,10 @@
 #include "G4UIcmdWithAnInteger.hh"
 #include "G4VisAttributes.hh"
 
+#include "G4SDManager.hh"
+#include "SensitiveDetector.hh"
+#include "G4LogicalVolumeStore.hh"
+
 #include <cctype>
 
 #ifdef USE_G4CMP
@@ -181,7 +185,9 @@ namespace QArray
         LM->RegisterLattice(physSiliconChip, crystalSilicon);
       }
 
-      // 2. Map copper housing structure
+      // 2. Map copper housing structure 
+      // *** COMMENTED OUT TO PREVENT PHONON CRASH IN MACROSCOPIC METAL ***
+      /*
       auto* physQubitHousing = store->GetVolume("QubitHousing", false);
       if (physQubitHousing) {
         auto* latHousing = LM->LoadLattice(physQubitHousing->GetLogicalVolume()->GetMaterial(), "Cu");
@@ -189,6 +195,7 @@ namespace QArray
         crystalHousing->SetMillerOrientation(1, 0, 0);
         LM->RegisterLattice(physQubitHousing, crystalHousing);
       }
+      */
 
       // 3. Map dynamic superconducting ground plane
       auto* physGroundPlane = store->GetVolume("GroundPlane", false);
@@ -212,7 +219,37 @@ namespace QArray
       }
     }
 #endif
-  }
+
+    auto* sdm = G4SDManager::GetSDMpointer();
+
+    // 1. Create the Detectors
+    auto* siliconSD = new QArray::SensitiveDetector("SiliconSD", true, "SiliconHits");
+    sdm->AddNewDetector(siliconSD);
+
+    auto* aluminumSD = new QArray::SensitiveDetector("AluminumSD", true, "AluminumHits");
+    sdm->AddNewDetector(aluminumSD);
+
+    // 2. Fetch the Logical Volume Store
+    auto* lvStore = G4LogicalVolumeStore::GetInstance();
+
+    // 3. Attach to Silicon
+    auto* log_siliconChip = lvStore->GetVolume("SiliconChip_log", false);
+    if (log_siliconChip) {
+        SetSensitiveDetector("SiliconChip_log", siliconSD); 
+    }
+
+    // 4. Attach to Aluminum structures via iteration
+    for (auto* lv : *lvStore) 
+    {
+        G4String name = lv->GetName();
+        if (name.find("GroundPlane_log") != std::string::npos ||
+           (name.find("TransmissionLine") != std::string::npos && name.find("Aluminum") != std::string::npos) ||
+           (name.find("ResonatorAssembly") != std::string::npos && name.find("Aluminum") != std::string::npos)) 
+        {
+            lv->SetSensitiveDetector(aluminumSD);
+        }
+    }
+  } // <-- Notice there is only one closing bracket here now!
 
   void DetectorConstruction::ConstructFridge()
   {
@@ -290,5 +327,5 @@ namespace QArray
                                               "Toggle orientation: True = Horizonal, False = Vertical",
                                               "isHorizontal");
       meta->Set("/QR/geom/isHorizontal", true); 
-    }
-}
+    } 
+} // <-- THIS IS THE FINAL CLOSING BRACKET OF THE FILE
