@@ -13,6 +13,11 @@
 #include "G4RunManager.hh"
 #include "G4LogicalVolume.hh"
 
+#include "Metadata.hh"
+#include "G4Track.hh"
+#include "G4ParticleDefinition.hh"
+#include "G4SystemOfUnits.hh" 
+
 namespace QArray
 {
   SteppingAction::SteppingAction(EventAction *eventAction)
@@ -22,6 +27,47 @@ namespace QArray
 
   void SteppingAction::UserSteppingAction(const G4Step *step)
   {
+    if (!step) return;
+
+    // -------------------------------------------------------------------------
+    // 1. DYNAMIC MACRO QUERY VIA METADATA REGISTRY
+    // -------------------------------------------------------------------------
+    auto meta = Metadata::GetInstance();
+    bool killLowEnergyPhonons = false;
+
+    // Safely parse the parameter out of the nlohmann::json instance
+    try 
+    {
+      killLowEnergyPhonons = meta->GetJSON("killLowEnergyPhonons").get<bool>();
+    } 
+    catch (...) 
+    {
+      killLowEnergyPhonons = false; // Fallback default if key isn't loaded yet
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. THE PHONON REAPER
+    // -------------------------------------------------------------------------
+    if (killLowEnergyPhonons)
+    {
+      G4Track* track = step->GetTrack();
+      G4String particleName = track->GetDefinition()->GetParticleName();
+
+      // Intercept any G4CMP custom acoustic phonon variations
+      if (particleName.find("phonon") != std::string::npos)
+      {
+        // 0.35 meV matches the Cooper pair breaking threshold (2*Delta) for Aluminum
+        if (track->GetKineticEnergy() < 0.35 * meV)
+        {
+          track->SetTrackStatus(fStopAndKill); // Drop particle from track collection stack
+          return;                              // Halt further step handling immediately
+        }
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // Legacy template scoring blocks (Left intact as requested)
+    // -------------------------------------------------------------------------
     // if (!fScoringVolume)
     // {
     //   const auto detConstruction = static_cast<const DetectorConstruction *>(
@@ -29,23 +75,6 @@ namespace QArray
     //   fScoringVolume = detConstruction->GetScoringVolume();
     // }
 
-    // Also print the prestep point coordinate if the z coordinate goes beyond limits
-    // if (abs(step->GetPreStepPoint()->GetPosition().z()) > 9900 
-    // || abs(step->GetPreStepPoint()->GetPosition().x()) > 9900
-    // || abs(step->GetPreStepPoint()->GetPosition().y()) > 9900)
-    // {
-    //   G4cout << "PreStepPoint coordinate: " << step->GetPreStepPoint()->GetPosition() << G4endl;
-    //   G4LogicalVolume *volume = step->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume();
-    //   // Print out the volumne name
-    //   G4cout << "Volume name: " << volume->GetName() << G4endl;
-    // }
-
-    // // check if we are in scoring volume
-    // if (volume != fScoringVolume)
-    //   return;
-
-    // // collect energy deposited in this step
-    // G4double edepStep = step->GetTotalEnergyDeposit();
-    // fEventAction->AddEdep(edepStep);
+    // if (abs(step->GetPreStepPoint()->GetPosition().z()) > 9900 ...
   }
 }

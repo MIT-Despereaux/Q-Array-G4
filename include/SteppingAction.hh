@@ -15,6 +15,7 @@ namespace QArray
   class SteppingAction : public G4UserSteppingAction
   {
   public:
+    void SetKillLowEnergyPhonons(G4bool flag) { fKillLowEnergyPhonons = flag; }
     SteppingAction(EventAction *eventAction);
     ~SteppingAction() override = default;
 
@@ -24,6 +25,7 @@ namespace QArray
   private:
     EventAction *fEventAction = nullptr;
     G4LogicalVolume *fScoringVolume = nullptr;
+    G4bool fKillLowEnergyPhonons;
   };
 
 }

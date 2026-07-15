@@ -327,5 +327,10 @@ namespace QArray
                                               "Toggle orientation: True = Horizonal, False = Vertical",
                                               "isHorizontal");
       meta->Set("/QR/geom/isHorizontal", true); 
+
+      meta->AddParamCommand<G4UIcmdWithABool>("/QR/physics/killLowEnergyPhonons",
+                                              "Toggle <2*Gap phonons existing: True = reaper, False = No reaper",
+                                              "killLowEnergyPhonons");
+      meta->Set("/QR/physics/killLowEnergyPhonons", false); 
     } 
 } // <-- THIS IS THE FINAL CLOSING BRACKET OF THE FILE

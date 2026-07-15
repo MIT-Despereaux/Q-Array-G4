@@ -4,9 +4,9 @@
 /run/numberOfThreads 1
 
 /control/verbose 0
-/run/verbose 1
-/event/verbose 1
-/tracking/verbose 2
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
 /process/verbose 0
 # Turned to 2 so you can see the secondary particles list in the console
 
@@ -17,6 +17,7 @@
 /QR/geom/addPb true
 
 /QR/geom/useQubitArray true
+/QR/physics/killLowEnergyPhonons true
 
 /QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch.csv
 # swap this to .root when using cluster
@@ -29,12 +30,12 @@
 # =========================================================================
 # 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
 # =========================================================================
-/g4cmp/phononBounces 50
-/g4cmp/qpBounces 50
+/g4cmp/phononBounces 5
+/g4cmp/qpBounces 5
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-/g4cmp/producePhonons 0.05
+/g4cmp/producePhonons 0.00001                                                                                                           
 #/g4cmp/producePhonons 1.0
 
 /g4cmp/produceCharges 0.001
