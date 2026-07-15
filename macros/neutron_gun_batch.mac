@@ -19,7 +19,7 @@
 /QR/geom/useQubitArray true
 
 /QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch.csv
-/QR/output/writeSteps false
+/QR/output/writeSteps true
 /QR/output/writeAllEvents false
 /QR/output/addNtuple full minimal
 /QR/output/enable true
@@ -33,7 +33,7 @@
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-/g4cmp/producePhonons 0.000001
+/g4cmp/producePhonons 0.001
 # a 1000th of the normal amount just for sanities sake.
 
 /g4cmp/produceCharges 0.001
@@ -100,8 +100,8 @@
 /gps/pos/centre 0.0 0.0 6.0 mm
 
 # 2. Widen the beam to 10cm x 10cm to blanket the center of the fridge
-/gps/pos/halfx 50.0 mm
-/gps/pos/halfy 50.0 mm
+/gps/pos/halfx 1.0 mm
+/gps/pos/halfy 1.0 mm
 /gps/direction 0 0 -1
 
 # 3. Give the neutrons a specific energy (e.g., 2 MeV) so they have punch
@@ -111,4 +111,4 @@
 
 
 # Fire 1 primary event
-/run/beamOn 1
+/run/beamOn 1000

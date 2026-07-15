@@ -233,7 +233,7 @@ namespace QArray
   {
   }
 
-  bool SensitiveDetector::Accept(const G4Step *step)
+bool SensitiveDetector::Accept(const G4Step *step)
   {
     if (!step) return false;
 
@@ -259,13 +259,13 @@ namespace QArray
     }
 
     // 3. TARGET PARTICLE FILTER RULES
-    bool isQuasiparticle = (particleName.find("qp") != std::string::npos || 
-                            particleName.find("quasiparticle") != std::string::npos);
+    // G4CMP uses "BogoliubovQP" for superconducting quasiparticles
+    bool isQuasiparticle = (particleName.find("BogoliubovQP") != std::string::npos);
 
     if (isQuasiparticle)
     {
-      // Accept every single step of QPs inside our active superconducting detector volumes
-      // so we can reconstruct their continuous paths over time.
+      // Accept every single step of BogoliubovQPs inside our active superconducting detector volumes
+      // so we can reconstruct their continuous paths/diffusion over time.
       return true;
     }
 
@@ -286,6 +286,8 @@ namespace QArray
 
     return false;
   }
+
+
 
   void SensitiveDetector::DefineCommands()
   {
