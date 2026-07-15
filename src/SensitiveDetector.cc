@@ -238,13 +238,31 @@ bool SensitiveDetector::Accept(const G4Step *step)
     if (!step) return false;
 
     G4Track* track = step->GetTrack();
-    G4String particleName = track->GetDefinition()->GetParticleName();
+    G4int stepNum = track->GetCurrentStepNumber();
 
-    // 1. FILTER OUT ALL PHONONS IMMEDIATELY
-    if (particleName.find("phonon") != std::string::npos)
+    // -------------------------------------------------------------------------
+    // THE HEARTBEAT MONITOR: Detect runaway particles without lagging the console
+    // -------------------------------------------------------------------------
+    // If a particle survives for 5,000 steps, it is likely caught in a loop or massive diffusion.
+    // This prints exactly 1 line every 5,000 steps, keeping I/O extremely low while warning you.
+    if (stepNum > 0 && stepNum % 5000 == 0)
     {
-      return false;
+      G4String pName = track->GetDefinition()->GetParticleName();
+      G4String vName = step->GetPreStepPoint()->GetPhysicalVolume()->GetName();
+      
+      G4cout << "\n[HEARTBEAT WARNING] Possible Hang Detected! "
+             << "Track ID: " << track->GetTrackID() 
+             << " | Particle: " << pName 
+             << " | Current Step: " << stepNum 
+             << " | Trapped in Volume: " << vName << G4endl;
     }
+
+    // ... (Keep your existing phonon and volume filters below this) ...
+    G4String particleName = track->GetDefinition()->GetParticleName();
+    if (particleName.find("phonon") != std::string::npos) { 
+      return false; 
+    }
+    // ...
 
     // 2. DETECTOR VOLUME FILTER
     // Exclude passive bulk areas (Silicon substrate & outer housing assembly)
@@ -264,9 +282,17 @@ bool SensitiveDetector::Accept(const G4Step *step)
 
     if (isQuasiparticle)
     {
-      // Accept every single step of BogoliubovQPs inside our active superconducting detector volumes
-      // so we can reconstruct their continuous paths/diffusion over time.
-      return true;
+      // PATH A: Only accept the very first step (birth) and the very last step (death/recombination)
+      // This skips the millions of nanometer diffusion steps in between.
+      bool isBirth = (track->GetCurrentStepNumber() == 1);
+      bool isDeath = (track->GetTrackStatus() == fStopAndKill);
+
+      if (isBirth || isDeath)
+      {
+        return true;
+      }
+      return false; 
+      // for CLUSTER CHANGE TO TRUE
     }
 
     // 4. BACKGROUND PARTICLES (Neutrons, Gammas, Electrons, etc.)
