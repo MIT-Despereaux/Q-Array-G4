@@ -51,6 +51,18 @@ namespace QArray
     if (killLowEnergyPhonons)
     {
       G4Track* track = step->GetTrack();
+      // -------------------------------------------------------------------------
+      // THE ANTI-HANG SAFEGUARD (RUNAWAY TRACK LIMITER)
+      // -------------------------------------------------------------------------
+      // 10,000 steps is usually more than enough for a legitimate solid-state cascade.
+      // Anything higher is almost certainly trapped in an infinite geometric loop.
+      if (track->GetCurrentStepNumber() > 10000)
+      {
+        // Vaporize the runaway particle
+        track->SetTrackStatus(fStopAndKill); 
+        return;                              
+      }
+      
       G4String particleName = track->GetDefinition()->GetParticleName();
 
       // Intercept any G4CMP custom acoustic phonon variations

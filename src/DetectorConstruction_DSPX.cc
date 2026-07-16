@@ -220,37 +220,45 @@ namespace QArray
     }
 #endif
 
+// 1. Fetch the Logical Volume Store and SD Manager
+    auto* lvStore = G4LogicalVolumeStore::GetInstance();
     auto* sdm = G4SDManager::GetSDMpointer();
 
-    // 1. Create the Detectors
+    // 2. Keep your existing Silicon setup (assuming it works fine)
     auto* siliconSD = new QArray::SensitiveDetector("SiliconSD", true, "SiliconHits");
     sdm->AddNewDetector(siliconSD);
-
-    auto* aluminumSD = new QArray::SensitiveDetector("AluminumSD", true, "AluminumHits");
-    sdm->AddNewDetector(aluminumSD);
-
-    // 2. Fetch the Logical Volume Store
-    auto* lvStore = G4LogicalVolumeStore::GetInstance();
-
-    // 3. Attach to Silicon
     auto* log_siliconChip = lvStore->GetVolume("SiliconChip_log", false);
     if (log_siliconChip) {
-        SetSensitiveDetector("SiliconChip_log", siliconSD); 
+        log_siliconChip->SetSensitiveDetector(siliconSD);
     }
 
-    // 4. Attach to Aluminum structures via iteration
+    // 3. Dynamically assign unique SDs to all Ground, Transmission, and Resonator volumes
     for (auto* lv : *lvStore) 
     {
         G4String name = lv->GetName();
-        if (name.find("GroundPlane_log") != std::string::npos ||
-           (name.find("TransmissionLine") != std::string::npos && name.find("Aluminum") != std::string::npos) ||
-           (name.find("ResonatorAssembly") != std::string::npos && name.find("Aluminum") != std::string::npos)) 
+        
+        // Skip SiliconChip_log since we just handled it
+        if (name == "SiliconChip_log") continue;
+
+        // If the logical volume name contains any of our target keywords...
+        if (name.find("GroundPlane") != std::string::npos ||
+            name.find("TransmissionLine") != std::string::npos ||
+            name.find("ResonatorAssembly") != std::string::npos) 
         {
-            lv->SetSensitiveDetector(aluminumSD);
+            // Make sure we haven't already assigned an SD to this volume
+            if (lv->GetSensitiveDetector() == nullptr) 
+            {
+                // Create a completely unique SD specifically for this logical volume
+                G4String sdName = name + "_SD";
+                G4String hcName = name + "_Hits";
+                
+                auto* uniqueSD = new QArray::SensitiveDetector(sdName, true, hcName);
+                sdm->AddNewDetector(uniqueSD);
+                lv->SetSensitiveDetector(uniqueSD);
+            }
         }
     }
-  } // <-- Notice there is only one closing bracket here now!
-
+  }
   void DetectorConstruction::ConstructFridge()
   {
     Geometry::CryostatBuilder builder;

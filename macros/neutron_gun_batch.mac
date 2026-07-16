@@ -17,12 +17,12 @@
 /QR/geom/addPb true
 
 /QR/geom/useQubitArray true
-/QR/physics/killLowEnergyPhonons true
+#/QR/physics/killLowEnergyPhonons true
 
 /QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch.csv
 # swap this to .root when using cluster
 /QR/output/writeSteps true
-/QR/output/writeAllEvents false
+/QR/output/writeAllEvents true
 /QR/output/addNtuple full minimal
 /QR/output/enable true
 
@@ -35,7 +35,7 @@
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-/g4cmp/producePhonons 0.00001                                                                                                           
+/g4cmp/producePhonons 0.000001                                                                                                           
 #/g4cmp/producePhonons 1.0
 
 /g4cmp/produceCharges 0.001
@@ -48,7 +48,8 @@
 #/g4cmp/minEPhonons 0.1 eV
 
 /g4cmp/sampleLuke 0.
-/g4cmp/minEPhonons 0.000001 eV   
+#/g4cmp/minEPhonons 0.000001 eV   
+/g4cmp/minEPhonons 0.00035 eV
 /g4cmp/eTrappingMFP 50 um
 /g4cmp/hTrappingMFP 50 um
 
@@ -86,7 +87,7 @@
 /process/activate G4CMPSecondaryProduction proton
 
 
-/process/inactivate phononDownconversion
+/process/activate phononDownconversion
 /process/activate qpLocalTrapping
 /process/activate TrackLimiter
 
