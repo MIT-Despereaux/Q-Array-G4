@@ -94,7 +94,9 @@
 # >>> Configure sources below (Original working position)
 /QR/generator/mode gps
 /random/setSeeds 123456 567890
-/gps/particle e-
+#/gps/particle e-
+/gps/particle gamma
+
 # --- SINGLE PRIMARY TRACKER ---
 # This setup fires from outside directly through the crystal cube,
 # forcing it to leave a clean, traceable trail of solid-state secondaries.

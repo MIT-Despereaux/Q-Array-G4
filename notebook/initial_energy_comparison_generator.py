@@ -29,20 +29,20 @@ def load_simulated_energies(filename):
     return np.array(energies_mev)
 
 # Load your simulated gammas (adjust filename if needed)
-sim_energies = load_simulated_energies('./output/initial_data/primary_gammas.csv')
+sim_energies = load_simulated_energies('./output/initial_data/primary_neutrons.csv')
 
 # 2. Load the reference spectrum data
 #ref_df = pd.read_csv('./scripts/Gamma_Spectrum_v2.csv')
 # 2. Load the reference spectrum data
-ref_df = pd.read_csv('./scripts/Gamma_Spectrum_v2.csv')
+ref_df = pd.read_csv('./scripts/ISO_neutron_spectrum.csv')
 ref_df.columns = [c.strip() for c in ref_df.columns]  # Clean up any accidental spaces
 
 E_ref = ref_df.iloc[:, 0].values  # First column: Energy points
 B_ref = ref_df.iloc[:, 1].values  # Second column: Weights/Rates
 
 # 3. Normalize the reference data by sum to yield fractional weights
-B_ref_fractional = B_ref / np.sum(B_ref)
-#B_ref_fractional = B_ref
+#B_ref_fractional = B_ref / np.sum(B_ref)
+B_ref_fractional = B_ref
 
 # 4. Generate the Comparison Plot
 plt.figure(figsize=(10, 6))
@@ -52,10 +52,10 @@ sim_weights = np.ones_like(sim_energies) / len(sim_energies)
 
 # Plot Simulated Data
 plt.hist(sim_energies, bins=E_ref, weights=sim_weights, alpha=0.35, 
-         color='royalblue', edgecolor='blue', label='Simulated Data (Fraction of Total)')
+         color='#ed7b7b', edgecolor='#ed7b7b', label='Simulated Data (Fraction of Total)')
 
 # Plot Reference Data on top
-plt.plot(E_ref, B_ref_fractional, color='crimson', linewidth=2, 
+plt.plot(E_ref, B_ref_fractional, color='royalblue', linewidth=2, 
          zorder=10, label='Reference Spectrum (Fractional Weights)')
 
 # 5. Formatting the Plot
@@ -67,5 +67,5 @@ plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend(loc='upper right')
 
 # ---- SAVING FEATURE RESTORED ----
-plt.savefig('./notebook/image/gamma_comparison_primary.png', dpi=300)
+plt.savefig('./notebook/image/neutron_rose_graph.png', transparent=True, format="png", dpi=300)
 plt.show()

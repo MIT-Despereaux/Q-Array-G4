@@ -179,6 +179,7 @@ def plot_data(tracks):
              bbox=dict(boxstyle='round,pad=1', facecolor='#fafafa', alpha=0.95, edgecolor='#cccccc'))
 
     plt.suptitle(f"G4CMP Quasiparticle Tracking ({SCALE_TYPE.upper()} color scale)", fontsize=16, weight='bold', y=0.96)
+    plt.savefig("quasiparticle_histogram.png", transparent=True, format="png", dpi=300)
     plt.show()
 
 if __name__ == "__main__":
