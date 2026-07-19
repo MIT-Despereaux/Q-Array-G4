@@ -8,11 +8,11 @@
 #SBATCH --mail-user=tclassen@mit.edu
 
 #SBATCH --time=4-00:00:00
-#SBATCH -N 1                  # 1 node
+#SBATCH -N 1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8     # 8 CPUs allocated to that single task
-#SBATCH --mem=16G             # adjust as needed
-#SBATCH --partition=mit_normal     # your 
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16G
+#SBATCH --partition=mit_normal
 
 # Set up environment
 module load cmake
