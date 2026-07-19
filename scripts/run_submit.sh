@@ -20,5 +20,5 @@ module load gcc/12.2.0
 module load miniforge
 
 # Run your application
-cd project/build-dspx/
+cd /home/tclassen/projects/build-dspx
 ./main ../macros/neutron_gun_batch.mac
