@@ -7,7 +7,7 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=tclassen@mit.edu
 
-#SBATCH --time=4-00:00:00
+#SBATCH --time=12:00:00
 #SBATCH -N 1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
