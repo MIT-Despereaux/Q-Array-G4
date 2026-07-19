@@ -21,4 +21,5 @@ module load miniforge
 
 # Run your application
 cd /home/tclassen/projects/build-dspx
+export G4CMP_CRYSTAL_MAPS="/home/tclassen/dependencies/g4cmp-install/share/G4CMP/CrystalMaps"
 ./main ../macros/neutron_gun_batch.mac
