@@ -1,7 +1,7 @@
 # Centered DSPX cosmic-ray visualization. Run with an executable configured using:
 #   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
 
-/run/numberOfThreads 1
+/run/numberOfThreads 8
 
 /control/verbose 0
 /run/verbose 0
@@ -48,8 +48,12 @@
 #/g4cmp/minEPhonons 0.1 eV
 
 /g4cmp/sampleLuke 0.
+#/g4cmp/maxLukePhonons 100000
+
 #/g4cmp/minEPhonons 0.000001 eV   
 /g4cmp/minEPhonons 0.00035 eV
+/g4cmp/recordMinETracks false
+/g4cmp/combiningStepLength 50 um
 /g4cmp/eTrappingMFP 50 um
 /g4cmp/hTrappingMFP 50 um
 
@@ -95,14 +99,15 @@
 /QR/generator/mode gps
 /random/setSeeds 123456 567890
 #/gps/particle e-
-/gps/particle gamma
+/gps/particle neutron
+#/gps/particle gamma
 
 # --- SINGLE PRIMARY TRACKER ---
 # This setup fires from outside directly through the crystal cube,
 # forcing it to leave a clean, traceable trail of solid-state secondaries.
 # 1. Move the gun higher up (10 cm) to make sure it is above the chip
 /gps/pos/type Point
-/gps/pos/centre 0.0 0.0 6.0 mm
+/gps/pos/centre -0.025 0.025 6.0 mm
 
 # 2. Widen the beam to 10cm x 10cm to blanket the center of the fridge
 /gps/pos/halfx 5.0 mm
@@ -111,9 +116,9 @@
 
 # 3. Give the neutrons a specific energy (e.g., 2 MeV) so they have punch
 /gps/ene/type Mono
-#/gps/ene/mono 5.0 MeV
-/gps/ene/mono 10 keV
+/gps/ene/mono 5.0 MeV
+#/gps/ene/mono 5 keV
 
 
 # Fire 1 primary event
-/run/beamOn 1
+/run/beamOn 1000
