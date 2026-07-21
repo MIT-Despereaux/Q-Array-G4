@@ -68,3 +68,9 @@ void QuasiparticleTransmissionLine::ConstructTransmissionLine(
     // Track for SD assignment
     fFundamentalVolumeList.push_back(std::make_tuple("Aluminum", pName, fPhys_output));
 }
+
+std::vector<std::tuple<std::string, G4String, G4VPhysicalVolume*>> 
+QuasiparticleTransmissionLine::GetListOfAllFundamentalSubVolumes()
+{
+    return fFundamentalVolumeList;
+}

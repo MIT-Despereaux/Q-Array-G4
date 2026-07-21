@@ -2,6 +2,7 @@
 #include "QuasiparticleDetectorParameters.hh"
 #include "G4Box.hh"
 #include "G4Tubs.hh"
+#include "G4Trd.hh"
 #include "G4UnionSolid.hh"
 #include "G4SubtractionSolid.hh"
 #include "G4LogicalVolume.hh"
@@ -83,11 +84,11 @@ void QuasiparticleResonatorAssembly::ConstructResonatorAssembly(
         G4ThreeVector(-(170.0+1090.0)*CLHEP::um, -2345.0*CLHEP::um, 0)
     };
 
-    for (size_t k = 0; k < gatePositions.size(); ++k) {
+for (size_t k = 0; k < gatePositions.size(); ++k) {
         G4String gateName = pName + "_Gate_" + std::to_string(k);
+        
         // Build Pad identical to transmission line tapers
         G4Trd* gatePad = new G4Trd(gateName + "Metal", 150.0*CLHEP::um/2.0, 10.0*CLHEP::um/2.0, dp_groundPlaneDimZ/2.0, dp_groundPlaneDimZ/2.0, 200.0*CLHEP::um/2.0);
-        
         G4LogicalVolume* log_Gate = new G4LogicalVolume(gatePad, aluminum, gateName + "_Log");
         
         // Proper orientation facing transmission line (y=0)
@@ -96,6 +97,16 @@ void QuasiparticleResonatorAssembly::ConstructResonatorAssembly(
             rotGate->rotateZ(CLHEP::pi); // Point downwards
         }
         
-        new G4PVPlacement(rotGate, gatePositions[k], log_Gate, gateName + "_Phys", pMotherLogical, pMany, pCopyNo, pSurfChk);
+        // Capture pointer to physical volume here:
+        G4VPhysicalVolume* gatePhys = new G4PVPlacement(rotGate, gatePositions[k], log_Gate, gateName + "_Phys", pMotherLogical, pMany, pCopyNo, pSurfChk);
+
+        // Track physical volume for G4CMP boundary physics
+        fFundamentalVolumeList.push_back(std::make_tuple("Aluminum", gateName, gatePhys));
     }
+}
+
+std::vector<std::tuple<std::string, G4String, G4VPhysicalVolume*>> 
+QuasiparticleResonatorAssembly::GetListOfAllFundamentalSubVolumes()
+{
+    return fFundamentalVolumeList;
 }
