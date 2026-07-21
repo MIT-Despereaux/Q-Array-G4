@@ -866,17 +866,19 @@ namespace QArray::Geometry
 
         // Resonators
         if (dp_useResonatorAssembly) {
-          for (int iR = 0; iR < 6; ++iR) {
+          for (int iR = 0; iR < 8; ++iR) {
             G4ThreeVector resTranslate(0,0,0);
             G4RotationMatrix* rotAssembly = nullptr;
-            if (iR <= 2) {
-              resTranslate = G4ThreeVector(dp_resonatorLateralSpacing * (iR - 1) + dp_centralResonatorOffsetX,
-                                           0.5 * dp_resonatorAssemblyBaseAlDimY + 0.5 * dp_transmissionLineCavityFullWidth + dp_largeEpsilon, 0.0);
+            
+            // X positioning separated by 1050 (4 on top, 4 on bottom)
+            G4double xOffset = -1575.0 * CLHEP::um + (iR % 4) * 1050.0 * CLHEP::um; 
+            
+            if (iR < 4) {
+              resTranslate = G4ThreeVector(xOffset, 430.0 * CLHEP::um, 0.0);
             } else {
-              resTranslate = G4ThreeVector(dp_resonatorLateralSpacing * (iR - 4) - dp_centralResonatorOffsetX,
-                                           -1.0 * (0.5 * dp_resonatorAssemblyBaseAlDimY + 0.5 * dp_transmissionLineCavityFullWidth + dp_largeEpsilon), 0.0);
+              resTranslate = G4ThreeVector(xOffset, -430.0 * CLHEP::um, 0.0);
               rotAssembly = new G4RotationMatrix();
-              rotAssembly->rotateZ(180.0 * deg);
+              rotAssembly->rotateZ(180.0 * CLHEP::deg);
             }
 
             G4String resonatorAssemblyName = "ResonatorAssembly_" + std::to_string(iR);
@@ -942,7 +944,7 @@ namespace QArray::Geometry
         // -------------------------------------------------------------
         // 7. Gate Contact Pads (Global Placement on the Chip)
         // -------------------------------------------------------------
-        std::vector<G4TwoVector> padPolygon;
+std::vector<G4TwoVector> padPolygon;
         padPolygon.push_back(G4TwoVector(-5.0*CLHEP::um, 0.0));
         padPolygon.push_back(G4TwoVector( 5.0*CLHEP::um, 0.0));
         padPolygon.push_back(G4TwoVector( 75.0*CLHEP::um, 200.0*CLHEP::um));
@@ -952,31 +954,31 @@ namespace QArray::Geometry
 
         auto* gatePadSolid = new G4ExtrudedSolid("GatePadSolid", padPolygon, dp_groundPlaneDimZ/2.0, G4TwoVector(0,0), 1.0, G4TwoVector(0,0), 1.0);
         
-        // We use the fAluminum pointer already defined at the top of your layout block
         auto* log_GatePad = new G4LogicalVolume(gatePadSolid, fAluminum, "GatePad_log");
-
         auto* gateVis = new G4VisAttributes(G4Colour(0.8, 0.8, 0.8, 0.8));
         gateVis->SetVisibility(true);
         gateVis->SetForceSolid(true);
         log_GatePad->SetVisAttributes(gateVis);
 
+        // Locked Y axis to 2355 as specified
         std::vector<G4ThreeVector> gatePositions = {
-            G4ThreeVector(170.0*CLHEP::um, 2345.0*CLHEP::um, 0), G4ThreeVector(-170.0*CLHEP::um, 2345.0*CLHEP::um, 0),
-            G4ThreeVector(1260.0*CLHEP::um, 2345.0*CLHEP::um, 0), G4ThreeVector(-1260.0*CLHEP::um, 2345.0*CLHEP::um, 0),
-            G4ThreeVector(170.0*CLHEP::um, -2345.0*CLHEP::um, 0), G4ThreeVector(-170.0*CLHEP::um, -2345.0*CLHEP::um, 0),
-            G4ThreeVector(1260.0*CLHEP::um, -2345.0*CLHEP::um, 0), G4ThreeVector(-1260.0*CLHEP::um, -2345.0*CLHEP::um, 0)
+            G4ThreeVector(170.0*CLHEP::um, 2355.0*CLHEP::um, 0), G4ThreeVector(-170.0*CLHEP::um, 2355.0*CLHEP::um, 0),
+            G4ThreeVector(1260.0*CLHEP::um, 2355.0*CLHEP::um, 0), G4ThreeVector(-1260.0*CLHEP::um, 2355.0*CLHEP::um, 0),
+            G4ThreeVector(170.0*CLHEP::um, -2355.0*CLHEP::um, 0), G4ThreeVector(-170.0*CLHEP::um, -2355.0*CLHEP::um, 0),
+            G4ThreeVector(1260.0*CLHEP::um, -2355.0*CLHEP::um, 0), G4ThreeVector(-1260.0*CLHEP::um, -2355.0*CLHEP::um, 0)
         };
 
         for (size_t k = 0; k < gatePositions.size(); ++k) {
             G4String gateName = "Chip_Gate_" + std::to_string(k);
             G4RotationMatrix* rotGate = new G4RotationMatrix();
+            
             if (gatePositions[k].y() > 0) {
+                rotGate->rotateZ(0.0 * CLHEP::deg);
+            } else {
                 rotGate->rotateZ(180.0 * CLHEP::deg);
             }
             
-            // Placing them inside the ground plane to match your resonator coordinate hierarchy
             auto* physGatePad = new G4PVPlacement(rotGate, gatePositions[k], log_GatePad, gateName + "_Phys", log_groundPlane, false, 0, mCheckOverlaps);
-
             // -------------------------------------------------------------
             // ALUMINUM GATE PAD LATTICE REGISTRATION
             // -------------------------------------------------------------

@@ -1,57 +1,44 @@
-# Centered DSPX cosmic-ray visualization. Run with an executable configured using:
-#   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
+# Centered DSPX cosmic-ray visualization. Run with:
+# cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
 
 /run/numberOfThreads 1
 
-/control/verbose 1
-/run/verbose 1
+# 1. TURN OFF VERBOSITY
+/control/verbose 0
+/run/verbose 0
 /event/verbose 0
-/tracking/verbose 2   
-# Turned to 2 so you can see the secondary particles list in the console
+/tracking/verbose 0   
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
 /QR/geom/globalOffset -2.5381 -1.0645 -1.38125 m
 /QR/geom/constructLab true
 /QR/geom/constructFridge true
-/QR/geom/addPb true
-
+/QR/geom/addPb false
 /QR/geom/useQubitArray true
-#/QR/geom/isHorizontal true
 
+# 2. DISABLE ALL DATA OUTPUT
 /QR/output/enable false
-/QR/output/writeSteps true
-/QR/output/writeAllEvents true
-/QR/output/addNtuple full full
+/QR/output/writeSteps false
+/QR/output/writeAllEvents false
+# Comment out the ntuple line entirely so it doesn't even allocate the memory
+# /QR/output/addNtuple full full
 
 # =========================================================================
 # 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
 # =========================================================================
 /g4cmp/phononBounces 5
 /g4cmp/qpBounces 5
-
-# CRITICAL CHANGE: We turn production back ON so the primary particle 
-# can generate phonons/QPs inside the cube.
 /g4cmp/producePhonons 0.001
-# a 1000th of the normal amount just for sanities sake.
-
 /g4cmp/produceCharges 0.
-# gets rid of the holes and electrons as we only wanna look at qps
-
-# Group the 5 keV energy into 2.5 keV discrete visual paths.
-# This guarantees you will see exactly ~2 clean primary visual tracks 
-# on screen instead of a massive drive-clogging cloud.
 /g4cmp/samplingEnergy 10 eV
-
-
 /g4cmp/sampleLuke 0.
 /g4cmp/minEPhonons 0.000001 eV   
 /g4cmp/eTrappingMFP 50 um
 /g4cmp/hTrappingMFP 50 um
 
 # =========================================================================
-# 2. NOW INITIALIZE THE GEOMETRY AND PHYSICS TABLES
+# 2. INITIALIZE GEOMETRY & PHYSICS
 # =========================================================================
-# Set production cuts to 0 so even meV/eV secondary ions are tracked
 /run/setCut 0 mm
 /run/setCutForAGivenParticle e- 0 mm
 /run/setCutForAGivenParticle proton 0 mm
@@ -59,50 +46,46 @@
 /run/initialize
 
 # =========================================================================
-# 3. POST-INITIALIZATION (Now in 'Idle' State - Safe to Activate Processes)
+# 3. POST-INITIALIZATION PROCESSES
 # =========================================================================
-
-# Tell the neutron engine to explicitly spawn the recoil nucleus
 /physics_engine/neutron/energyLimit 0 eV
-
-# We inactivate these so the lines created by the electron do not 
-# undergo secondary infinite feedback splitting.
 /process/activate scPairBreaking
-# Allowing phonons to break quasiparticles.
-
 /process/inactivate qpRadiatesPhonon
 /process/inactivate qpRecombination
 /process/activate G4CMPSecondaryProduction
-
-
 /process/inactivate phononDownconversion
 /process/activate qpLocalTrapping
 /process/activate TrackLimiter
 
 # =========================================================================
-# 4. CONFIGURE VISUALIZATION AND PARTICLE GUN
+# 4. CONFIGURE VISUALIZATION
 # =========================================================================
-/vis/open OGL 1200x1200-0+0
+#/vis/open OGL 1200x1200-0+0
+/vis/open RayTracer
 /vis/viewer/set/autoRefresh false
 /vis/verbose errors
-/vis/viewer/set/globalLineWidthScale 2
-/vis/viewer/set/globalMarkerScale 2
-/vis/drawVolume
-/vis/scene/add/trajectories smooth
-/vis/geometry/set/visibility worldLogical 0 false
-/vis/geometry/set/colour labLogical 0 0.5 0.5 0.5 0.12
+/vis/viewer/set/auxiliaryEdge false
+
+# CRITICAL FIX FOR MULTI-UNIONS: Lower the polygon count on curved surfaces
+/vis/viewer/set/lineSegmentsPerCircle 12
+
+# 2. COLOR THE SUSPECTS (Using exact C++ Logical Volume names)
+/vis/geometry/set/colour GroundPlane_log 0 0.9 0.8 0.1 1.0
+/vis/geometry/set/forceSolid GroundPlane_log 0 true
+
+/vis/geometry/set/colour TransmissionLine_Log 0 1.0 0.1 0.1 1.0
+/vis/geometry/set/forceSolid TransmissionLine_Log 0 true
+
+/vis/geometry/set/colour ResonatorAssembly_0_Log 0 0.1 0.7 1.0 1.0
+/vis/geometry/set/forceSolid ResonatorAssembly_0_Log 0 true
+
+# 3. THE DIAGNOSTIC TEST: Draw ONLY the Ground Plane physical volume
+# This forces Geant4 to evaluate the MultiUnions but completely ignores the STLs.
+/vis/drawVolume GroundPlane
+
+# 4. RENDER
 /vis/viewer/set/viewpointVector 0.3 -1 0.7
 /vis/viewer/set/upVector 0 0 1
-/vis/viewer/set/auxiliaryEdge false
-#/vis/viewer/centreOn DetectorSnCubePhysical
-#/vis/viewer/centreOn DetectorBoxAssemblyPhysical
-/vis/viewer/centreOn SiliconChip
-/vis/viewer/zoom 8
+/vis/viewer/zoom 2
 /vis/viewer/set/autoRefresh true
-/vis/verbose warnings
-/vis/scene/endOfEventAction accumulate
-
-# <<< Configuration done
-/vis/viewer/rebuild
 /vis/viewer/refresh
-/vis/viewer/flush
