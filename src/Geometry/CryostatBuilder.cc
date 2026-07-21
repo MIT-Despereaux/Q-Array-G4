@@ -41,6 +41,8 @@
 #include "G4LatticeLogical.hh"
 #include "G4PhysicalVolumeStore.hh"
 
+#include "G4ExtrudedSolid.hh"
+
 namespace QArray::Geometry
 {
   namespace
@@ -937,7 +939,67 @@ namespace QArray::Geometry
             }
           }
         }
-      }
+        // -------------------------------------------------------------
+        // 7. Gate Contact Pads (Global Placement on the Chip)
+        // -------------------------------------------------------------
+        std::vector<G4TwoVector> padPolygon;
+        padPolygon.push_back(G4TwoVector(-5.0*CLHEP::um, 0.0));
+        padPolygon.push_back(G4TwoVector( 5.0*CLHEP::um, 0.0));
+        padPolygon.push_back(G4TwoVector( 75.0*CLHEP::um, 200.0*CLHEP::um));
+        padPolygon.push_back(G4TwoVector( 75.0*CLHEP::um, 400.0*CLHEP::um));
+        padPolygon.push_back(G4TwoVector(-75.0*CLHEP::um, 400.0*CLHEP::um));
+        padPolygon.push_back(G4TwoVector(-75.0*CLHEP::um, 200.0*CLHEP::um));
+
+        auto* gatePadSolid = new G4ExtrudedSolid("GatePadSolid", padPolygon, dp_groundPlaneDimZ/2.0, G4TwoVector(0,0), 1.0, G4TwoVector(0,0), 1.0);
+        
+        // We use the fAluminum pointer already defined at the top of your layout block
+        auto* log_GatePad = new G4LogicalVolume(gatePadSolid, fAluminum, "GatePad_log");
+        
+        log_GatePad->SetSensitiveDetector(chipSD);
+
+        auto* gateVis = new G4VisAttributes(G4Colour(0.8, 0.8, 0.8, 0.8));
+        gateVis->SetVisibility(true);
+        gateVis->SetForceSolid(true);
+        log_GatePad->SetVisAttributes(gateVis);
+
+        std::vector<G4ThreeVector> gatePositions = {
+            G4ThreeVector(170.0*CLHEP::um, 2345.0*CLHEP::um, 0), G4ThreeVector(-170.0*CLHEP::um, 2345.0*CLHEP::um, 0),
+            G4ThreeVector(1260.0*CLHEP::um, 2345.0*CLHEP::um, 0), G4ThreeVector(-1260.0*CLHEP::um, 2345.0*CLHEP::um, 0),
+            G4ThreeVector(170.0*CLHEP::um, -2345.0*CLHEP::um, 0), G4ThreeVector(-170.0*CLHEP::um, -2345.0*CLHEP::um, 0),
+            G4ThreeVector(1260.0*CLHEP::um, -2345.0*CLHEP::um, 0), G4ThreeVector(-1260.0*CLHEP::um, -2345.0*CLHEP::um, 0)
+        };
+
+        for (size_t k = 0; k < gatePositions.size(); ++k) {
+            G4String gateName = "Chip_Gate_" + std::to_string(k);
+            G4RotationMatrix* rotGate = new G4RotationMatrix();
+            if (gatePositions[k].y() > 0) {
+                rotGate->rotateZ(180.0 * CLHEP::deg);
+            }
+            
+            // Placing them inside the ground plane to match your resonator coordinate hierarchy
+            auto* physGatePad = new G4PVPlacement(rotGate, gatePositions[k], log_GatePad, gateName + "_Phys", log_groundPlane, false, 0, mCheckOverlaps);
+
+            // -------------------------------------------------------------
+            // ALUMINUM GATE PAD LATTICE REGISTRATION
+            // -------------------------------------------------------------
+            if (LM && fLogicalLatticeContainer["Aluminum"]) {
+                auto* alLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Aluminum"],
+                                                            dp_polycryElScatMFP_Al,
+                                                            dp_scDelta0_Al,
+                                                            dp_scTeff_Al,
+                                                            dp_scDn_Al,
+                                                            dp_scTauQPTrap_Al);
+                alLatticePhys->SetMillerOrientation(1,0,0);
+                LM->RegisterLattice(physGatePad, alLatticePhys);
+            }
+            
+            // G4CMP Logical Border Surfaces (Matches how you track QP boundaries for resonators)
+            if (physGroundPlane) {
+                new G4CMPLogicalBorderSurface("b_gp_gate_" + gateName, physGroundPlane, physGatePad, fAlAlInterface);
+                new G4CMPLogicalBorderSurface("b_gate_gp_" + gateName, physGatePad, physGroundPlane, fAlAlInterface);
+            }
+        }
+      } // <--- THIS IS THE EXISTING CLOSING BRACE FOR: if (dp_useGroundPlane)
     }
 
     // =========================================================================================

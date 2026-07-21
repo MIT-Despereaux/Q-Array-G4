@@ -2,9 +2,11 @@
 #include "QuasiparticleDetectorParameters.hh"
 #include "G4Box.hh"
 #include "G4Tubs.hh"
-#include "G4Trd.hh"
-#include "G4UnionSolid.hh"
-#include "G4SubtractionSolid.hh"
+#include "G4ExtrudedSolid.hh"
+#include "G4MultiUnion.hh"
+#include "G4Transform3D.hh"
+#include "G4RotationMatrix.hh"
+#include "G4ThreeVector.hh"
 #include "G4LogicalVolume.hh"
 #include "G4PVPlacement.hh"
 #include "G4Material.hh"
@@ -30,79 +32,59 @@ void QuasiparticleResonatorAssembly::ConstructResonatorAssembly(
     std::map<std::string,G4CMPSurfaceProperty*> borderContainer, G4bool pSurfChk)
 {
     G4NistManager* nist = G4NistManager::Instance();
-    G4Material* vacuum = nist->FindOrBuildMaterial("G4_Galactic");
     G4Material* aluminum = nist->FindOrBuildMaterial("G4_Al");
 
-    // 8 Resonator Loop
-    G4double startX = -((dp_numResonators - 1) * dp_resSpacingX) / 2.0; // Centered across X
-    G4double startY = dp_resDistanceToTLGap + (22.0*CLHEP::um / 2.0) + (3.0*CLHEP::um); // Transmission line gap edge + ground separation
+    // 1. Native "+" Cross Solid
+    std::vector<G4TwoVector> crossPolygon;
+    G4double w = 30.0 * CLHEP::um / 2.0; 
+    G4double l = 240.0 * CLHEP::um / 2.0;
 
-    for (int i = 0; i < dp_numResonators; ++i) 
-    {
-        G4double currentX = startX + (i * dp_resSpacingX);
-        G4String resName = pName + "_Res_" + std::to_string(i);
+    crossPolygon.push_back(G4TwoVector(-w, -l));
+    crossPolygon.push_back(G4TwoVector( w, -l));
+    crossPolygon.push_back(G4TwoVector( w, -w));
+    crossPolygon.push_back(G4TwoVector( l, -w));
+    crossPolygon.push_back(G4TwoVector( l,  w));
+    crossPolygon.push_back(G4TwoVector( w,  w));
+    crossPolygon.push_back(G4TwoVector( w,  l));
+    crossPolygon.push_back(G4TwoVector(-w,  l));
+    crossPolygon.push_back(G4TwoVector(-w,  w));
+    crossPolygon.push_back(G4TwoVector(-l,  w));
+    crossPolygon.push_back(G4TwoVector(-l, -w));
+    crossPolygon.push_back(G4TwoVector(-w, -w));
 
-        // 1. Straights (7 total: lengths 300 except top which is 200)
-        for (int j = 0; j < 7; ++j) 
-        {
-            G4double len = (j == 6) ? dp_resTopStraightLength : dp_resStraightLength;
-            G4Box* straight = new G4Box(resName + "_straight_" + std::to_string(j), dp_resTraceWidth/2.0, len/2.0, dp_groundPlaneDimZ/2.0);
-            
-            // Build gaps logic
-            G4Box* gap = new G4Box(resName + "_gap_" + std::to_string(j), (dp_resTraceWidth + 2*dp_resGapWidth)/2.0, len/2.0, dp_groundPlaneDimZ/2.0);
-            // NOTE: the first straight (j=0) terminates on the ground plane, so we trim its bottom gap thickness to 0 at the interface.
-            
-            // Place straights directly in the mother logical (ground plane / vacuum layer)
-            // Staggering X positions based on the 45um inner radius curves
+    G4ExtrudedSolid* plusCross = new G4ExtrudedSolid("PlusCross", crossPolygon, dp_groundPlaneDimZ/2.0, G4TwoVector(0,0), 1.0, G4TwoVector(0,0), 1.0);
+
+    // 2. Single Resonator Construction (G4MultiUnion)
+    G4Box* strSeg = new G4Box("ResStr", 10.0*CLHEP::um/2.0, 300.0*CLHEP::um/2.0, dp_groundPlaneDimZ/2.0);
+    G4Tubs* topArc = new G4Tubs("ResTArc", 45.0*CLHEP::um, 55.0*CLHEP::um, dp_groundPlaneDimZ/2.0, 0*CLHEP::deg, 180.0*CLHEP::deg);
+    G4Tubs* botArc = new G4Tubs("ResBArc", 45.0*CLHEP::um, 55.0*CLHEP::um, dp_groundPlaneDimZ/2.0, 180.0*CLHEP::deg, 180.0*CLHEP::deg);
+
+    G4MultiUnion* singleRes = new G4MultiUnion(pName + "_Solid");
+    
+    // Straight start segment at local origin
+    singleRes->AddNode(*strSeg, G4Transform3D(G4RotationMatrix(), G4ThreeVector(0, 0, 0)));
+
+    for (int j = 0; j < 6; ++j) {
+        G4double cx = j * 100.0 * CLHEP::um + 50.0 * CLHEP::um;
+        if (j % 2 == 0) { 
+            singleRes->AddNode(*topArc, G4Transform3D(G4RotationMatrix(), G4ThreeVector(cx, 150.0*CLHEP::um, 0)));
+            singleRes->AddNode(*strSeg, G4Transform3D(G4RotationMatrix(), G4ThreeVector(cx + 50.0*CLHEP::um, 0, 0)));
+        } else { 
+            singleRes->AddNode(*botArc, G4Transform3D(G4RotationMatrix(), G4ThreeVector(cx, -150.0*CLHEP::um, 0)));
+            singleRes->AddNode(*strSeg, G4Transform3D(G4RotationMatrix(), G4ThreeVector(cx + 50.0*CLHEP::um, 0, 0)));
         }
-
-        // 2. Cross and Capacitor
-        // Cross dimensions: 240 length x 30 width
-        G4Box* crossV = new G4Box("CrossV", dp_crossWidth/2.0, dp_crossLength/2.0, dp_groundPlaneDimZ/2.0);
-        G4Box* crossH = new G4Box("CrossH", dp_crossLength/2.0, dp_crossWidth/2.0, dp_groundPlaneDimZ/2.0);
-        G4UnionSolid* crossIsland = new G4UnionSolid(resName + "_Cross", crossV, crossH);
-        
-        // Gap for cross: 300x90
-        G4Box* crossGapV = new G4Box("CrossGapV", 90.0*CLHEP::um/2.0, 300.0*CLHEP::um/2.0, dp_groundPlaneDimZ/2.0);
-        G4Box* crossGapH = new G4Box("CrossGapH", 300.0*CLHEP::um/2.0, 90.0*CLHEP::um/2.0, dp_groundPlaneDimZ/2.0);
-        G4UnionSolid* crossGap = new G4UnionSolid(resName + "_CrossGap", crossGapV, crossGapH);
-
-        // Capacitor: |_| shape around the cross
-        // Construct using 3 combined boxes and union them to the resonator line
     }
 
-    // 3. Gate Contact Pads (Completely new geometry requested)
-    // Locations: +/- 2345 vertical from 0,0. Horizontal separations: 170 and (170+1090)
-    std::vector<G4ThreeVector> gatePositions = {
-        G4ThreeVector(170.0*CLHEP::um, 2345.0*CLHEP::um, 0),
-        G4ThreeVector(-170.0*CLHEP::um, 2345.0*CLHEP::um, 0),
-        G4ThreeVector((170.0+1090.0)*CLHEP::um, 2345.0*CLHEP::um, 0),
-        G4ThreeVector(-(170.0+1090.0)*CLHEP::um, 2345.0*CLHEP::um, 0),
-        G4ThreeVector(170.0*CLHEP::um, -2345.0*CLHEP::um, 0),
-        G4ThreeVector(-170.0*CLHEP::um, -2345.0*CLHEP::um, 0),
-        G4ThreeVector((170.0+1090.0)*CLHEP::um, -2345.0*CLHEP::um, 0),
-        G4ThreeVector(-(170.0+1090.0)*CLHEP::um, -2345.0*CLHEP::um, 0)
-    };
+    singleRes->AddNode(*plusCross, G4Transform3D(G4RotationMatrix(), G4ThreeVector(650.0*CLHEP::um, 270.0*CLHEP::um, 0)));
+    singleRes->Voxelize();
 
-for (size_t k = 0; k < gatePositions.size(); ++k) {
-        G4String gateName = pName + "_Gate_" + std::to_string(k);
-        
-        // Build Pad identical to transmission line tapers
-        G4Trd* gatePad = new G4Trd(gateName + "Metal", 150.0*CLHEP::um/2.0, 10.0*CLHEP::um/2.0, dp_groundPlaneDimZ/2.0, dp_groundPlaneDimZ/2.0, 200.0*CLHEP::um/2.0);
-        G4LogicalVolume* log_Gate = new G4LogicalVolume(gatePad, aluminum, gateName + "_Log");
-        
-        // Proper orientation facing transmission line (y=0)
-        G4RotationMatrix* rotGate = new G4RotationMatrix();
-        if (gatePositions[k].y() > 0) {
-            rotGate->rotateZ(CLHEP::pi); // Point downwards
-        }
-        
-        // Capture pointer to physical volume here:
-        G4VPhysicalVolume* gatePhys = new G4PVPlacement(rotGate, gatePositions[k], log_Gate, gateName + "_Phys", pMotherLogical, pMany, pCopyNo, pSurfChk);
-
-        // Track physical volume for G4CMP boundary physics
-        fFundamentalVolumeList.push_back(std::make_tuple("Aluminum", gateName, gatePhys));
-    }
+    // 3. Placement (Exactly one per class instantiation)
+    G4LogicalVolume* log_Resonator = new G4LogicalVolume(singleRes, aluminum, pName + "_Log");
+    
+    // We pass tLate and pRot directly from the parent, no extra offsets needed
+    G4VPhysicalVolume* resPhys = new G4PVPlacement(pRot, tLate, log_Resonator, pName + "_Phys", pMotherLogical, pMany, pCopyNo, pSurfChk);
+    
+    fFundamentalVolumeList.push_back(std::make_tuple("Aluminum", pName, resPhys));
 }
 
 std::vector<std::tuple<std::string, G4String, G4VPhysicalVolume*>> 
