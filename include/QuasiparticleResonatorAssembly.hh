@@ -94,6 +94,12 @@ class QuasiparticleResonatorAssembly
                                  G4LatticeManager * LM,
                                  std::map<std::string,G4LatticeLogical*> logicalLatticeContainer,
                                  std::map<std::string,G4CMPSurfaceProperty*> borderContainer);
+    
+    void MakeGatePads(G4String pName,
+                                 G4LogicalVolume* log_baseAlLayer,
+                                 G4LatticeManager * LM,
+                                 std::map<std::string,G4LatticeLogical*> logicalLatticeContainer,
+                                 std::map<std::string,G4CMPSurfaceProperty*> borderContainer);
 
     std::vector<std::tuple<std::string,G4String,G4VPhysicalVolume*> >
     GetListOfAllFundamentalSubVolumes();

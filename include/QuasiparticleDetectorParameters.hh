@@ -18,6 +18,36 @@
 
 namespace QuasiparticleDetectorParameters
 {
+  // [Insert into QuasiparticleDetectorParameters.hh inside the namespace]
+
+  //----------------------------------------------------------------
+  // Transmission Line (Updated for new geometry)
+  constexpr double dp_tlLength = 4308.0 * CLHEP::um;
+  constexpr double dp_tlWidth = 10.0 * CLHEP::um;
+  constexpr double dp_tlGap = 6.0 * CLHEP::um;
+  constexpr double dp_tlCurveInnerRadius = 45.0 * CLHEP::um;
+  constexpr double dp_tlPadStraightExtra = 300.0 * CLHEP::um;
+  
+  constexpr double dp_taperMetalWidthOuter = 150.0 * CLHEP::um;
+  constexpr double dp_taperMetalWidthInner = 10.0 * CLHEP::um;
+  constexpr double dp_taperGapWidthOuter = 410.0 * CLHEP::um;
+  constexpr double dp_taperGapWidthInner = 22.0 * CLHEP::um;
+
+  //----------------------------------------------------------------
+  // 8-Resonator Assembly Parameters
+  constexpr int dp_numResonators = 8;
+  constexpr double dp_resSpacingX = 1050.0 * CLHEP::um;
+  constexpr double dp_resTraceWidth = 10.0 * CLHEP::um;
+  constexpr double dp_resGapWidth = 6.0 * CLHEP::um;
+  constexpr double dp_resStraightLength = 300.0 * CLHEP::um;
+  constexpr double dp_resTopStraightLength = 200.0 * CLHEP::um;
+  constexpr double dp_resHalfCircleInnerRad = 45.0 * CLHEP::um;
+  constexpr double dp_resDistanceToTLGap = 430.0 * CLHEP::um;
+  
+  // "+" Island and Capacitor
+  constexpr double dp_crossLength = 240.0 * CLHEP::um;
+  constexpr double dp_crossWidth = 30.0 * CLHEP::um;
+  constexpr double dp_crossGap = 30.0 * CLHEP::um;
   //----------------------------------------------------------------
   //Overall World
   constexpr double dp_worldSize = 6.0 * CLHEP::cm;
