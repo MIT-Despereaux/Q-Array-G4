@@ -54,17 +54,21 @@ void QuasiparticleResonatorAssembly::ConstructResonatorAssembly(
 
     G4ExtrudedSolid* plusCross = new G4ExtrudedSolid("PlusCross", crossPolygon, dp_groundPlaneDimZ/2.0, G4TwoVector(0,0), 1.0, G4TwoVector(0,0), 1.0);
 
-    // 2. Single Resonator Construction (G4MultiUnion)
+// 2. Single Resonator Construction (G4MultiUnion)
     G4Box* strSeg = new G4Box("ResStr", 10.0*CLHEP::um/2.0, 300.0*CLHEP::um/2.0, dp_groundPlaneDimZ/2.0);
     G4Tubs* topArc = new G4Tubs("ResTArc", 45.0*CLHEP::um, 55.0*CLHEP::um, dp_groundPlaneDimZ/2.0, 0*CLHEP::deg, 180.0*CLHEP::deg);
     G4Tubs* botArc = new G4Tubs("ResBArc", 45.0*CLHEP::um, 55.0*CLHEP::um, dp_groundPlaneDimZ/2.0, 180.0*CLHEP::deg, 180.0*CLHEP::deg);
 
+    // NEW: Quarter circle continuing the pattern (sweeping 90 degrees from the left side down to the bottom)
+    G4Tubs* botQuarterArc = new G4Tubs("ResBQuarterArc", 45.0*CLHEP::um, 55.0*CLHEP::um, dp_groundPlaneDimZ/2.0, 180.0*CLHEP::deg, 90.0*CLHEP::deg);
+
     G4MultiUnion* singleRes = new G4MultiUnion(pName + "_Solid");
-    
+
     // Straight start segment at local origin
     singleRes->AddNode(*strSeg, G4Transform3D(G4RotationMatrix(), G4ThreeVector(0, 0, 0)));
 
-    for (int j = 0; j < 6; ++j) {
+    // Changed loop from 6 to 7 to add the 7th half-circle
+    for (int j = 0; j < 7; ++j) {
         G4double cx = j * 100.0 * CLHEP::um + 50.0 * CLHEP::um;
         if (j % 2 == 0) { 
             singleRes->AddNode(*topArc, G4Transform3D(G4RotationMatrix(), G4ThreeVector(cx, 150.0*CLHEP::um, 0)));
@@ -75,7 +79,13 @@ void QuasiparticleResonatorAssembly::ConstructResonatorAssembly(
         }
     }
 
-    singleRes->AddNode(*plusCross, G4Transform3D(G4RotationMatrix(), G4ThreeVector(650.0*CLHEP::um, 270.0*CLHEP::um, 0)));
+    // Add the final quarter circle on the opposing side
+    // The 7th segment (j=6) was a topArc. The next theoretical arc (j=7) is a botArc centered at cx = 750 um.
+    singleRes->AddNode(*botQuarterArc, G4Transform3D(G4RotationMatrix(), G4ThreeVector(750.0*CLHEP::um, -150.0*CLHEP::um, 0)));
+
+    // Capacitor cross temporarily commented out per instructions to ignore it for now
+    // singleRes->AddNode(*plusCross, G4Transform3D(G4RotationMatrix(), G4ThreeVector(650.0*CLHEP::um, 270.0*CLHEP::um, 0)));
+
     singleRes->Voxelize();
 
     // 3. Placement (Exactly one per class instantiation)

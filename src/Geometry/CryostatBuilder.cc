@@ -868,22 +868,26 @@ namespace QArray::Geometry
         if (dp_useResonatorAssembly) {
           for (int iR = 0; iR < 8; ++iR) {
             G4ThreeVector resTranslate(0,0,0);
-            G4RotationMatrix* rotAssembly = nullptr;
+            // Instantiate a rotation matrix for ALL resonators so we can point them vertically
+            G4RotationMatrix* rotAssembly = new G4RotationMatrix();
             
             // X positioning separated by 1050 (4 on top, 4 on bottom)
             G4double xOffset = -1575.0 * CLHEP::um + (iR % 4) * 1050.0 * CLHEP::um; 
             
             if (iR < 4) {
+              // +y half of the chip
               resTranslate = G4ThreeVector(xOffset, 430.0 * CLHEP::um, 0.0);
+              rotAssembly->rotateZ(90.0 * CLHEP::deg); // Face +y
             } else {
+              // -y half of the chip
               resTranslate = G4ThreeVector(xOffset, -430.0 * CLHEP::um, 0.0);
-              rotAssembly = new G4RotationMatrix();
-              rotAssembly->rotateZ(180.0 * CLHEP::deg);
+              rotAssembly->rotateZ(-90.0 * CLHEP::deg); // Face -y
             }
 
             G4String resonatorAssemblyName = "ResonatorAssembly_" + std::to_string(iR);
             auto* resonatorAssembly = new QuasiparticleResonatorAssembly(rotAssembly, resTranslate, resonatorAssemblyName, log_groundPlane, false, 0, LM, fLogicalLatticeContainer, fBorderContainer, mCheckOverlaps);
 
+        // ... (leave the border surface tracking loop completely intact below this)
             for (const auto& subVol : resonatorAssembly->GetListOfAllFundamentalSubVolumes()) {
               G4String matName = std::get<0>(subVol);
               G4String volName = std::get<1>(subVol);
