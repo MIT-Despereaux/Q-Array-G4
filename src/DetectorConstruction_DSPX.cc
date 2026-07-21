@@ -241,9 +241,11 @@ namespace QArray
         if (name == "SiliconChip_log") continue;
 
         // If the logical volume name contains any of our target keywords...
+        // If the logical volume name contains any of our target keywords...
         if (name.find("GroundPlane") != std::string::npos ||
             name.find("TransmissionLine") != std::string::npos ||
-            name.find("ResonatorAssembly") != std::string::npos) 
+            name.find("ResonatorAssembly") != std::string::npos ||
+            name.find("Chip_Gate") != std::string::npos) // <-- ADD THIS  
         {
             // Make sure we haven't already assigned an SD to this volume
             if (lv->GetSensitiveDetector() == nullptr) 

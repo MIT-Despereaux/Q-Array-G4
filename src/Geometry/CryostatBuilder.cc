@@ -954,8 +954,6 @@ namespace QArray::Geometry
         
         // We use the fAluminum pointer already defined at the top of your layout block
         auto* log_GatePad = new G4LogicalVolume(gatePadSolid, fAluminum, "GatePad_log");
-        
-        log_GatePad->SetSensitiveDetector(chipSD);
 
         auto* gateVis = new G4VisAttributes(G4Colour(0.8, 0.8, 0.8, 0.8));
         gateVis->SetVisibility(true);
