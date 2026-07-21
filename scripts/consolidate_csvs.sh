@@ -4,11 +4,10 @@
 #   ./consolidate_csvs.sh [consolidate|leave]
 #
 # Modes:
-#   consolidate (default) : Delete empty CSVs & merge data files into MASTER_CONSOLIDATED.csv
+#   consolidate (default) : Delete empty CSVs, merge data into RUN_NAME_MASTER.csv files, and delete raw chunks
 #   leave                 : Delete empty CSVs & leave individual data files as-is
 
 TARGET_DIR="../output/g4sim/q_array_cmp"
-CONSOLIDATED_FILE="${TARGET_DIR}/MASTER_CONSOLIDATED.csv"
 
 # Parse optional argument (defaults to 'consolidate' if not provided)
 MODE=$(echo "${1:-consolidate}" | tr '[:upper:]' '[:lower:]')
@@ -16,7 +15,7 @@ MODE=$(echo "${1:-consolidate}" | tr '[:upper:]' '[:lower:]')
 case "$MODE" in
     consolidate|c|-c|--consolidate|a)
         DO_CONSOLIDATE=true
-        echo "=== Mode: Remove empty files AND CONSOLIDATE data files ==="
+        echo "=== Mode: Remove empty files AND CONSOLIDATE into Run Masters ==="
         ;;
     leave|keep|l|-l|--leave|b)
         DO_CONSOLIDATE=false
@@ -25,7 +24,7 @@ case "$MODE" in
     *)
         echo "Error: Invalid argument '$1'"
         echo "Usage: $0 [consolidate|leave]"
-        echo "  consolidate : Delete empty CSVs & merge data files into MASTER_CONSOLIDATED.csv"
+        echo "  consolidate : Merge data files into respective run masters and clean up"
         echo "  leave       : Delete empty CSVs & keep separate data files"
         exit 1
         ;;
@@ -37,17 +36,17 @@ echo "------------------------------------------"
 TOTAL_FILES=0
 EMPTY_FILES=0
 DATA_FILES=0
-HEADER_SAVED=0
+declare -A MASTER_CREATED # Array to track which master files we create
 
-# Clean up any previous master file before consolidating
+# Clean up any previous master files before consolidating to prevent duplicate appending
 if [ "$DO_CONSOLIDATE" = true ]; then
-    rm -f "$CONSOLIDATED_FILE"
+    rm -f "${TARGET_DIR}"/*_MASTER.csv
 fi
 
 for file in "${TARGET_DIR}"/*.csv; do
-    # Skip if no CSV files exist or if it's the master file
     [ -e "$file" ] || continue
-    [ "$file" == "$CONSOLIDATED_FILE" ] && continue
+    # Skip if it is already a master file (just in case)
+    if [[ "$file" == *"_MASTER.csv" ]]; then continue; fi
     
     ((TOTAL_FILES++))
 
@@ -63,14 +62,23 @@ for file in "${TARGET_DIR}"/*.csv; do
         ((DATA_FILES++))
         
         if [ "$DO_CONSOLIDATE" = true ]; then
-            echo " [DATA -> MASTER] $(basename "$file") ($DATA_ROWS data rows)"
-            # Save header from the first non-empty file
-            if [ $HEADER_SAVED -eq 0 ]; then
-                grep '^#' "$file" > "$CONSOLIDATED_FILE"
-                HEADER_SAVED=1
+            # Extract everything BEFORE "-csv_nt_" to get the base run name
+            RUN_NAME=$(basename "$file" | sed -E 's/-csv_nt_.*//')
+            MASTER_FILE="${TARGET_DIR}/${RUN_NAME}_MASTER.csv"
+
+            # Save header from the first file of this run
+            if [ ! -f "$MASTER_FILE" ]; then
+                grep '^#' "$file" > "$MASTER_FILE"
+                MASTER_CREATED["$RUN_NAME"]=1
+                echo " [NEW MASTER] Created ${RUN_NAME}_MASTER.csv"
             fi
-            # Append data rows to master file
-            grep -v '^#' "$file" >> "$CONSOLIDATED_FILE"
+            
+            # Append data rows to the run's master file
+            grep -v '^#' "$file" >> "$MASTER_FILE"
+            echo " [DATA -> ${RUN_NAME}_MASTER] $(basename "$file") ($DATA_ROWS data rows)"
+            
+            # Delete the raw chunk file so only the consolidated master remains
+            rm "$file"
         else
             echo " [KEPT SEPARATE]  $(basename "$file") ($DATA_ROWS data rows)"
         fi
@@ -79,14 +87,12 @@ done
 
 echo "=========================================="
 echo "SUMMARY:"
-echo "  Total CSV files checked:  $TOTAL_FILES"
-echo "  Empty files deleted:      $EMPTY_FILES"
-echo "  Files with data kept:     $DATA_FILES"
+echo "  Total raw files checked:      $TOTAL_FILES"
+echo "  Empty files deleted:          $EMPTY_FILES"
 if [ "$DO_CONSOLIDATE" = true ]; then
-    if [ $HEADER_SAVED -eq 1 ]; then
-        echo "  Consolidated file:        $CONSOLIDATED_FILE"
-    else
-        echo "  Result: No data rows found across any files."
-    fi
+    echo "  Data files merged & deleted:  $DATA_FILES"
+    echo "  Master files created:         ${#MASTER_CREATED[@]}"
+else
+    echo "  Files with data kept:         $DATA_FILES"
 fi
 echo "=========================================="
