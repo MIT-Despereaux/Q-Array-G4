@@ -197,16 +197,18 @@ namespace QArray
       }
       */
 
-      // 3. Map dynamic superconducting ground plane
-      auto* physGroundPlane = store->GetVolume("GroundPlane", false);
-      if (physGroundPlane) {
-        using namespace QuasiparticleDetectorParameters;
-        auto* latGround = LM->LoadLattice(physGroundPlane->GetLogicalVolume()->GetMaterial(), "Al");
-        auto* crystalGround = new G4LatticePhysical(latGround, dp_polycryElScatMFP_Al, dp_scDelta0_Al, dp_scTeff_Al, dp_scDn_Al, dp_scTauQPTrap_Al);
-        crystalGround->SetMillerOrientation(1, 0, 0);
-        LM->RegisterLattice(physGroundPlane, crystalGround);
+      // 3. Map dynamic superconducting ground plane(s) - UPDATED FOR MULTIPLE EXTRUDED VOLUMES
+      for (auto* physVol : *store) {
+          G4String pName = physVol->GetName();
+          // This will match "GroundPlane", "GroundPlane_Extruded_Phys_0", etc.
+          if (pName.find("GroundPlane") != std::string::npos) {
+              using namespace QuasiparticleDetectorParameters;
+              auto* latGround = LM->LoadLattice(physVol->GetLogicalVolume()->GetMaterial(), "Al");
+              auto* crystalGround = new G4LatticePhysical(latGround, dp_polycryElScatMFP_Al, dp_scDelta0_Al, dp_scTeff_Al, dp_scDn_Al, dp_scTauQPTrap_Al);
+              crystalGround->SetMillerOrientation(1, 0, 0);
+              LM->RegisterLattice(physVol, crystalGround);
+          }
       }
-    }
     else
     {
       // Classic Calibration Run Fallback Mode
