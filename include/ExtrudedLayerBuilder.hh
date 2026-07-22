@@ -8,6 +8,7 @@
 class G4LogicalVolume;
 class G4Material;
 class G4VSensitiveDetector;
+class G4VPhysicalVolume; // <--- Add this line here
 
 class ExtrudedLayerBuilder
 {
