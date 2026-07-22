@@ -39,7 +39,7 @@ endif()
 
 # Now find the Geant4 package with the determined components
 find_package(Geant4 REQUIRED ${GEANT4_COMPONENTS})
-
+find_package(nlohmann_json REQUIRED)
 # Find G4CMP dynamically (Users will provide the path via CMAKE_PREFIX_PATH)
 find_package(G4CMP REQUIRED)
 
@@ -171,7 +171,7 @@ endif()
 # Add the executable, and link it to the Geant4 and G4CMP libraries
 #
 add_executable(main main.cc ${sources} ${headers})
-target_link_libraries(main ${Geant4_LIBRARIES} ${G4CMP_LIBRARIES})
+target_link_libraries(main ${Geant4_LIBRARIES} ${G4CMP_LIBRARIES} nlohmann_json::nlohmann_json)
 target_compile_definitions(main PRIVATE QARRAY_DETECTOR_GEOMETRY_${QARRAY_DETECTOR_GEOMETRY})
 if(WITH_CRY)
   add_dependencies(main cry)

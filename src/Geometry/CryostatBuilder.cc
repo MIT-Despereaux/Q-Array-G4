@@ -44,6 +44,7 @@
 #include "G4ExtrudedSolid.hh"
 
 #include "ExtrudedLayerBuilder.hh" // Include your new builder
+#include "GdsJsonParser.hh"
 
 // =========================================================================
 // GEOMETRY TEST SWITCH
@@ -1025,7 +1026,7 @@ std::vector<G4TwoVector> padPolygon;
         }
       } // <--- THIS IS THE EXISTING CLOSING BRACE FOR: if (dp_useGroundPlane)
 #else
-// -------------------------------------------------------------------------
+      // -------------------------------------------------------------------------
       // NEW EXTRUDED CHIP SETUP (JSON Mode with G4CMP Physics Integration)
       // -------------------------------------------------------------------------
       G4cout << "\n==================================================" << G4endl;
@@ -1033,21 +1034,27 @@ std::vector<G4TwoVector> padPolygon;
       G4cout << "==================================================\n" << G4endl;
 
       ExtrudedLayerBuilder extrudedBuilder;
-      extrudedBuilder.SetMaterial(fAluminum);
+      extrudedBuilder.SetMaterial(fAluminum); // Using the material defined earlier
       
       G4double extrudedZOffset = 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5;
       extrudedBuilder.SetZOffset(extrudedZOffset);
       extrudedBuilder.SetNamePrefix("GroundPlane_Extruded");
 
-      // Parse JSON
+      // 1. Initialize and run your newly implemented parser
       std::string jsonPath = "../output/extracted_chip_5_0.json";
-      ExtrudedData geoData = LoadJSONGeometry(jsonPath);
+      GdsJsonParser jsonParser;
+      
+      if (!jsonParser.LoadFile(jsonPath)) {
+          G4cerr << "[CryostatBuilder] CRITICAL ERROR: Could not parse Extruded Chip JSON." << G4endl;
+      }
 
-      // Build physical volumes
+      // 2. Build physical volumes using the parsed polygons and thickness
       std::vector<G4VPhysicalVolume*> extrudedPhysVols = 
-          extrudedBuilder.BuildLayer(detectorAssemblyLogical, geoData.polygons, geoData.thickness);
+          extrudedBuilder.BuildLayer(detectorAssemblyLogical, 
+                                     jsonParser.GetPolygons(), 
+                                     jsonParser.GetThickness());
 
-      // CRITICAL PHYSICS FIX: Attach G4CMP Logical Border Surfaces to EVERY extruded piece
+      // 3. CRITICAL PHYSICS FIX: Attach G4CMP Logical Border Surfaces to EVERY extruded piece
       for (size_t idx = 0; idx < extrudedPhysVols.size(); ++idx) {
           auto* physExtruded = extrudedPhysVols[idx];
           std::string prefix = "ext_" + std::to_string(idx);

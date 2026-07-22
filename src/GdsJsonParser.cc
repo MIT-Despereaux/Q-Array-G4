@@ -1,10 +1,9 @@
 #include "GdsJsonParser.hh"
 #include <fstream>
 #include <iostream>
-
+#include <nlohmann/json.hpp>
 // Include the nlohmann JSON library (make sure json.hpp is in your include path)
-#include "json.hh" 
-using json = nlohmann::json;
+using GdsJson = nlohmann::json;
 
 GdsJsonParser::GdsJsonParser() : fThickness(0.0) {}
 GdsJsonParser::~GdsJsonParser() {}
@@ -17,7 +16,7 @@ bool GdsJsonParser::LoadFile(const std::string& filepath)
         return false;
     }
 
-    json j;
+    GdsJson j;
     try {
         file >> j;
         
@@ -42,7 +41,7 @@ bool GdsJsonParser::LoadFile(const std::string& filepath)
             fPolygons.push_back(polygon);
         }
     } 
-    catch (json::exception& e) {
+    catch (GdsJson::exception& e) {
         std::cerr << "GdsJsonParser Error: " << e.what() << std::endl;
         return false;
     }

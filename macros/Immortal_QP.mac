@@ -1,0 +1,110 @@
+# Centered DSPX cosmic-ray visualization. Run with an executable configured using:
+#   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
+
+/run/numberOfThreads 1
+
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 2
+/process/verbose 0
+# Turned to 2 so you can see the secondary particles list in the console
+
+# Shift the complete lab/fridge assembly so the Sn cube is at world origin.
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38125 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+
+/QR/geom/useQubitArray true
+#/QR/physics/killLowEnergyPhonons true
+
+/QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch.csv
+# swap this to .root when using cluster
+/QR/output/writeSteps true
+/QR/output/writeAllEvents true
+/QR/output/addNtuple full full
+/QR/output/enable true
+
+
+# =========================================================================
+# 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
+# =========================================================================
+/g4cmp/phononBounces 5
+/g4cmp/qpBounces 1000000000
+
+# CRITICAL CHANGE: We turn production back ON so the primary particle 
+# can generate phonons/QPs inside the cube.
+/g4cmp/producePhonons 0.000001                                                                                                           
+#/g4cmp/producePhonons 1.0
+
+/g4cmp/produceCharges 0.001
+# gets rid of the holes and electrons as we only wanna look at qps
+
+# Group the 5 keV energy into 2.5 keV discrete visual paths.
+# This guarantees you will see exactly ~2 clean primary visual tracks 
+# on screen instead of a massive drive-clogging cloud.
+/g4cmp/samplingEnergy 10 eV
+#/g4cmp/minEPhonons 0.1 eV
+
+/g4cmp/sampleLuke 0.
+#/g4cmp/maxLukePhonons 100000
+
+#/g4cmp/minEPhonons 0.000001 eV   
+/g4cmp/minEPhonons 0.00035 eV
+/g4cmp/recordMinETracks false
+/g4cmp/combiningStepLength 100 um
+/g4cmp/eTrappingMFP 50 um
+/g4cmp/hTrappingMFP 50 um
+
+# =========================================================================
+# 2. NOW INITIALIZE THE GEOMETRY AND PHYSICS TABLES
+# =========================================================================
+# Set production cuts to 0 so even meV/eV secondary ions are tracked
+/run/setCut 0.1 mm
+/run/setCutForAGivenParticle e- 0.1 mm
+/run/setCutForAGivenParticle proton 0.1 mm
+
+/run/initialize
+
+# =========================================================================
+# 3. POST-INITIALIZATION (Now in 'Idle' State - Safe to Activate Processes)
+# =========================================================================
+
+# Tell the neutron engine to explicitly spawn the recoil nucleus
+/physics_engine/neutron/energyLimit 0 eV
+
+/process/inactivate scPairBreaking
+/process/inactivate qpRadiatesPhonon
+/process/inactivate qpRecombination
+/process/inactivate G4CMPSecondaryProduction
+/process/inactivate phononDownconversion
+/process/inactivate qpLocalTrapping
+
+/process/activate qpDiffusion 
+/process/activate TrackLimiter
+
+# >>> Configure sources below (Original working position)
+/QR/generator/mode gps
+/random/setSeeds @Seed1@ @Seed2@
+/gps/particle BogoliubovQP
+
+
+# --- SINGLE PRIMARY TRACKER ---
+# This setup fires from outside directly through the crystal cube,
+# forcing it to leave a clean, traceable trail of solid-state secondaries.
+# 1. Move the gun higher up (10 cm) to make sure it is above the chip
+/gps/pos/type Point
+/gps/pos/centre -0.025 0.025 6.0 mm
+
+# 2. Widen the beam to 10cm x 10cm to blanket the center of the fridge
+/gps/pos/halfx 0.1 mm
+/gps/pos/halfy 0.1 mm
+/gps/direction @X@ @Y@ 0
+
+# 3. Give the neutrons a specific energy (e.g., 2 MeV) so they have punch
+/gps/ene/type Mono
+/gps/energy 0.0369 eV
+
+# Fire 1 primary event
+/run/beamOn 1

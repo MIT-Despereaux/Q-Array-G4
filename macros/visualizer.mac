@@ -4,9 +4,9 @@
 /run/numberOfThreads 1
 
 # 1. TURN OFF VERBOSITY
-/control/verbose 0
-/run/verbose 0
-/event/verbose 0
+/control/verbose 2
+/run/verbose 2
+/event/verbose 1
 /tracking/verbose 0   
 
 # Shift the complete lab/fridge assembly so the Sn cube is at world origin.
@@ -60,39 +60,22 @@
 # =========================================================================
 # 4. CONFIGURE VISUALIZATION
 # =========================================================================
-/vis/open OGL 1200x1200-0+0
-#/vis/open RayTracer
+#/vis/open OGL 1200x1200-0+0
+# =========================================================================
+# 4. CONFIGURE VISUALIZATION
+# =========================================================================
+/vis/open RayTracer
 /vis/viewer/set/autoRefresh false
 /vis/verbose errors
-/vis/viewer/set/auxiliaryEdge false
 
-# CRITICAL FIX FOR MULTI-UNIONS: Lower the polygon count on curved surfaces
-/vis/viewer/set/lineSegmentsPerCircle 12
+# THE DIAGNOSTIC TEST: Draw ONLY a safe, small logical volume.
+# Replace this name with the exact Logical Volume name of polygon 0 or 1.
+/vis/drawVolume GroundPlane_Extruded_Logical_0 
 
-# 2. COLOR THE SUSPECTS (Using exact C++ Logical Volume names)
-
-# 3. THE DIAGNOSTIC TEST: Draw ONLY the Ground Plane physical volume
-# This forces Geant4 to evaluate the MultiUnions but completely ignores the STLs.
-/vis/drawVolume
-
-# -------------------------------------------------------------------------
-# VISUAL STYLING: Switch from Wireframe to Solid Surface
-# -------------------------------------------------------------------------
-/vis/viewer/set/style surface
-/vis/viewer/set/hiddenMarker true
-
-# -------------------------------------------------------------------------
-# VISIBILITY: Hide the bulky surrounding volumes
-# (Geant4 uses Logical Volume names for these commands)
-# -------------------------------------------------------------------------
-/vis/geometry/set/visibility World 0 false
-/vis/geometry/set/visibility fridgeLogical 0 false
-/vis/geometry/set/visibility ExperimentalPaddle_LV 0 false
-/vis/geometry/set/visibility RicochetBoxPlatform_LV 0 false
-
-# 4. RENDER
+# POSITION THE CAMERA
 /vis/viewer/set/viewpointVector 0.3 -1 0.7
 /vis/viewer/set/upVector 0 0 1
 /vis/viewer/zoom 2
-/vis/viewer/set/autoRefresh true
+
+# TRIGGER THE RENDER (Creates the JPEG)
 /vis/viewer/refresh
