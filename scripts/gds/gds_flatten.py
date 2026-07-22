@@ -82,17 +82,34 @@ def extract_chip_geometry(gds_path, layer, datatype, region_coords, output_path)
     
     print(f"[*] Post-merge, there are {len(merged_polygons)} distinct disjoint polygons.")
     
-    # Extract points for JSON serialization
-    export_data = []
+    # Calculate region center to zero-center the extracted shapes
+    center_x = (min_x + max_x) / 2.0
+    center_y = (min_y + max_y) / 2.0
+    
+    print(f"[*] Re-centering extracted polygons relative to center: ({center_x}, {center_y})")
+    
+    # Extract points for JSON serialization (Zero-centered)
+    export_polygons = []
     for poly in merged_polygons:
-        # poly.points is a numpy array; convert to a standard python list of [x, y] lists
-        export_data.append(poly.points.tolist())
+        # Subtract region center so (0,0) is at the center of the extracted block
+        centered_pts = [[pt[0] - center_x, pt[1] - center_y] for pt in poly.points]
+        export_polygons.append(centered_pts)
         
-    # Save out to a JSON file so it can be parsed by your C++ auto-generator
+    # Structured JSON Object (Self-documenting and generalizable)
+    json_output = {
+        "metadata": {
+            "source_gds": os.path.basename(gds_path),
+            "layer": layer,
+            "datatype": datatype,
+            "units": "um",
+            "thickness_nm": 200.0,
+            "bounding_box_um": [min_x, max_x, min_y, max_y]
+        },
+        "polygons": export_polygons
+    }
+
     with open(output_path, 'w') as f:
-        json.dump(export_data, f, indent=4)
-        
-    print(f"[*] Successfully saved extracted polygons to {output_path}")
+        json.dump(json_output, f, indent=4)
 
 
 if __name__ == "__main__":

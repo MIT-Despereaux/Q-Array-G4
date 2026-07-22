@@ -43,6 +43,15 @@
 
 #include "G4ExtrudedSolid.hh"
 
+#include "ExtrudedLayerBuilder.hh" // Include your new builder
+
+// =========================================================================
+// GEOMETRY TEST SWITCH
+// Set to 1: Builds the NEW Extruded Layer setup
+// Set to 0: Builds the OLD Ground Plane, Resonators, TLs, and Gate Pads
+#define USE_EXTRUDED_CHIP_TEST 1
+// =========================================================================
+
 namespace QArray::Geometry
 {
   namespace
@@ -775,6 +784,7 @@ namespace QArray::Geometry
       }
 
       // 6. Ground Plane & Sub-Components
+#if !USE_EXTRUDED_CHIP_TEST
       if (dp_useGroundPlane) {
         auto* solid_groundPlane = new G4Box("GroundPlane_solid", 0.5 * dp_groundPlaneDimX, 0.5 * dp_groundPlaneDimY, 0.5 * dp_groundPlaneDimZ);
         auto* log_groundPlane = new G4LogicalVolume(solid_groundPlane, fNiobium, "GroundPlane_log");
@@ -1014,6 +1024,44 @@ std::vector<G4TwoVector> padPolygon;
             }
         }
       } // <--- THIS IS THE EXISTING CLOSING BRACE FOR: if (dp_useGroundPlane)
+#else
+// -------------------------------------------------------------------------
+      // NEW EXTRUDED CHIP SETUP (JSON Mode with G4CMP Physics Integration)
+      // -------------------------------------------------------------------------
+      G4cout << "\n==================================================" << G4endl;
+      G4cout << "[CryostatBuilder] BUILD MODE: Extruded Layer from JSON" << G4endl;
+      G4cout << "==================================================\n" << G4endl;
+
+      ExtrudedLayerBuilder extrudedBuilder;
+      extrudedBuilder.SetMaterial(fAluminum);
+      
+      G4double extrudedZOffset = 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5;
+      extrudedBuilder.SetZOffset(extrudedZOffset);
+      extrudedBuilder.SetNamePrefix("GroundPlane_Extruded");
+
+      // Parse JSON
+      std::string jsonPath = "../output/extracted_chip_5_0.json";
+      ExtrudedData geoData = LoadJSONGeometry(jsonPath);
+
+      // Build physical volumes
+      std::vector<G4VPhysicalVolume*> extrudedPhysVols = 
+          extrudedBuilder.BuildLayer(detectorAssemblyLogical, geoData.polygons, geoData.thickness);
+
+      // CRITICAL PHYSICS FIX: Attach G4CMP Logical Border Surfaces to EVERY extruded piece
+      for (size_t idx = 0; idx < extrudedPhysVols.size(); ++idx) {
+          auto* physExtruded = extrudedPhysVols[idx];
+          std::string prefix = "ext_" + std::to_string(idx);
+
+          if (physSiliconChip && physExtruded) {
+              new G4CMPLogicalBorderSurface("b_si_al_" + prefix, physSiliconChip, physExtruded, fSiAlInterface);
+              new G4CMPLogicalBorderSurface("b_al_si_" + prefix, physExtruded, physSiliconChip, fSiAlInterface);
+          }
+          if (detectorAssemblyPhysical && physExtruded) {
+              new G4CMPLogicalBorderSurface("b_env_al_" + prefix, detectorAssemblyPhysical, physExtruded, fAlVacInterface);
+              new G4CMPLogicalBorderSurface("b_al_env_" + prefix, physExtruded, detectorAssemblyPhysical, fAlVacInterface);
+          }
+      }
+#endif
     }
 
     // =========================================================================================
