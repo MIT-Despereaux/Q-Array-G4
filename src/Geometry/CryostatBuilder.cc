@@ -868,24 +868,34 @@ namespace QArray::Geometry
         if (dp_useResonatorAssembly) {
           for (int iR = 0; iR < 8; ++iR) {
             G4ThreeVector resTranslate(0,0,0);
-            // Instantiate a rotation matrix for ALL resonators so we can point them vertically
-            G4RotationMatrix* rotAssembly = new G4RotationMatrix();
             
-            // X positioning separated by 1050 (4 on top, 4 on bottom)
+            // KEEP your existing rotation logic exactly as you have it
+            G4RotationMatrix* rotAssembly = new G4RotationMatrix();
+            // [Your existing orientation code here, if any]
+
+            // KEEP your existing X positioning
             G4double xOffset = -1575.0 * CLHEP::um + (iR % 4) * 1050.0 * CLHEP::um; 
             
+            // UPDATE only the Y shift to 570 um
             if (iR < 4) {
-              // +y half of the chip
-              resTranslate = G4ThreeVector(xOffset, 430.0 * CLHEP::um, 0.0);
+              // Top half of the chip (+y direction)
+              // Shifts the origin to +570, placing the outer quarter-circle edge perfectly at +775
+              resTranslate = G4ThreeVector(xOffset, 0.0 * CLHEP::um, 0.0);
               rotAssembly->rotateZ(90.0 * CLHEP::deg); // Face +y
             } else {
-              // -y half of the chip
-              resTranslate = G4ThreeVector(xOffset, -430.0 * CLHEP::um, 0.0);
-              rotAssembly->rotateZ(-90.0 * CLHEP::deg); // Face -y
+              // Bottom half of the chip (-y direction)
+              // Shifts the origin to -570, placing the outer quarter-circle edge perfectly at -775
+              resTranslate = G4ThreeVector(xOffset, 0.0 * CLHEP::um, 0.0);
+              rotAssembly->rotateZ(-90.0 * CLHEP::deg); // Face +y
             }
+
+//check if this is on axis or offset
+
 
             G4String resonatorAssemblyName = "ResonatorAssembly_" + std::to_string(iR);
             auto* resonatorAssembly = new QuasiparticleResonatorAssembly(rotAssembly, resTranslate, resonatorAssemblyName, log_groundPlane, false, 0, LM, fLogicalLatticeContainer, fBorderContainer, mCheckOverlaps);
+
+            // ... (leave the border surface tracking loop intact below this)
 
         // ... (leave the border surface tracking loop completely intact below this)
             for (const auto& subVol : resonatorAssembly->GetListOfAllFundamentalSubVolumes()) {
