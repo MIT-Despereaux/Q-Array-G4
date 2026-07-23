@@ -2,35 +2,59 @@
 """
 gds_extract_chip.py
 
-Extracts a specific region of a GDS file on a specific layer/datatype, 
-merges the polygons to prevent Geant4 volume overlaps, and saves the 
-vertex data to a JSON file for downstream Geant4/g4cmp geometry generation.
+Extracts a region of a GDS file, merges polygons, aggressively slices them 
+into a fine grid to prevent Geant4 concave triangulation hangs, and cleans 
+collinear/microscopic vertices before exporting to JSON.
 """
 
 import gdstk
 import json
 import os
 import csv
+import math
 
 def get_bounding_box(coords):
-    """Calculate min and max X/Y from a list of (X,Y) coordinates."""
     x_coords = [p[0] for p in coords]
     y_coords = [p[1] for p in coords]
     return min(x_coords), max(x_coords), min(y_coords), max(y_coords)
 
-def load_coords_from_csv(csv_path):
+def clean_polygon(points, dist_tol=1e-4, area_tol=1e-6):
     """
-    Generalizable function for future use: 
-    Reads a CSV file containing X, Y coordinates and returns a list of tuples.
+    Cleans a polygon by removing microscopically close points and 
+    mathematically collinear vertices to prevent Geant4 infinite loops.
     """
-    coords = []
-    if os.path.exists(csv_path):
-        with open(csv_path, 'r') as f:
-            reader = csv.reader(f)
-            for row in reader:
-                if row: # Skip empty rows
-                    coords.append((float(row[0]), float(row[1])))
-    return coords
+    if len(points) < 3:
+        return points
+        
+    # 1. Remove adjacent duplicate/microscopically close points
+    deduped = [points[0]]
+    for pt in points[1:]:
+        if math.hypot(pt[0] - deduped[-1][0], pt[1] - deduped[-1][1]) > dist_tol:
+            deduped.append(pt)
+            
+    # Check first and last points
+    if len(deduped) > 1 and math.hypot(deduped[-1][0] - deduped[0][0], deduped[-1][1] - deduped[0][1]) <= dist_tol:
+        deduped.pop()
+        
+    if len(deduped) < 3:
+        return []
+
+    # 2. Remove collinear points using the triangle area method
+    cleaned = []
+    n = len(deduped)
+    for i in range(n):
+        p1 = deduped[i-1]
+        p2 = deduped[i]
+        p3 = deduped[(i+1)%n]
+        
+        # Calculate determinant (2x triangle area)
+        area = abs(p1[0]*(p2[1] - p3[1]) + p2[0]*(p3[1] - p1[1]) + p3[0]*(p1[1] - p2[1]))
+        
+        # If the area is greater than tolerance, the points form a valid corner
+        if area > area_tol:
+            cleaned.append(p2)
+            
+    return cleaned
 
 def extract_chip_geometry(gds_path, layer, datatype, region_coords, output_path):
     min_x, max_x, min_y, max_y = get_bounding_box(region_coords)
@@ -42,60 +66,73 @@ def extract_chip_geometry(gds_path, layer, datatype, region_coords, output_path)
     lib = gdstk.read_gds(gds_path)
     top_cell = lib.top_level()[0]
     
-    print("[*] Flattening cell hierarchy to resolve SREFs/AREFs...")
+    print("[*] Flattening cell hierarchy...")
     top_cell.flatten()
     
-    # Resolves: ValueError: Filtering is only enabled if both layer and datatype are set.
     print(f"[*] Extracting polygons for Layer {layer}, Datatype {datatype}...")
     polygons = top_cell.get_polygons(layer=layer, datatype=datatype)
     
-    print(f"[*] Filtering polygons within bounding box: X[{min_x}, {max_x}], Y[{min_y}, {max_y}]")
     filtered_polygons = []
-    
     for poly in polygons:
         poly_bb = poly.bounding_box()
-        if poly_bb is None:
-            continue
+        if poly_bb is None: continue
             
         p_min_x, p_min_y = poly_bb[0]
         p_max_x, p_max_y = poly_bb[1]
         
-        # Check if the polygon's bounding box overlaps with our target region
-        overlap_x = (p_min_x <= max_x) and (p_max_x >= min_x)
-        overlap_y = (p_min_y <= max_y) and (p_max_y >= min_y)
-        
-        if overlap_x and overlap_y:
+        if (p_min_x <= max_x) and (p_max_x >= min_x) and (p_min_y <= max_y) and (p_max_y >= min_y):
             filtered_polygons.append(poly)
             
-    print(f"[*] Found {len(filtered_polygons)} polygons in the specified region.")
-    
-    if len(filtered_polygons) == 0:
-        print("[!] No polygons found. Exiting.")
-        return
+    print(f"[*] Found {len(filtered_polygons)} polygons in region.")
+    if not filtered_polygons: return
 
-    # CRITICAL GEANT4 FIX: Merge overlapping polygons using a boolean OR.
-    # In GDS design, metals are often drawn overlapping to ensure electrical continuity.
-    # If exported directly to Geant4, overlapping G4ExtrudedSolids will cause navigation 
-    # track errors and particles will get "stuck". We must merge them into disjoint shapes first.
-    print("[*] Merging overlapping polygons to prevent Geant4 volume overlap errors...")
+    print("[*] Merging overlapping polygons...")
     merged_polygons = gdstk.boolean(filtered_polygons, [], "or")
     
-    print(f"[*] Post-merge, there are {len(merged_polygons)} distinct disjoint polygons.")
+    # -------------------------------------------------------------------------
+    # HIGH-DENSITY DICING: 25x25 grid to break concave shapes into rectangles
+    # -------------------------------------------------------------------------
+    print("[*] Dicing layout into a high-density grid to prevent Geant4 voxelization hangs...")
+    diced_polygons = []
     
-    # Calculate region center to zero-center the extracted shapes
+    grid_x_count = 25
+    grid_y_count = 25
+    
+    step_x = (max_x - min_x) / grid_x_count
+    step_y = (max_y - min_y) / grid_y_count
+    
+    for i in range(grid_x_count):
+        for j in range(grid_y_count):
+            tile_min_x = min_x + i * step_x
+            tile_max_x = min_x + (i + 1) * step_x
+            tile_min_y = min_y + j * step_y
+            tile_max_y = min_y + (j + 1) * step_y
+            
+            tile_rect = gdstk.rectangle((tile_min_x, tile_min_y), (tile_max_x, tile_max_y))
+            tile_intersection = gdstk.boolean(merged_polygons, tile_rect, "and")
+            diced_polygons.extend(tile_intersection)
+            
+    print(f"[*] Post-dicing, geometry split into {len(diced_polygons)} chunks.")
+    
     center_x = (min_x + max_x) / 2.0
     center_y = (min_y + max_y) / 2.0
     
-    print(f"[*] Re-centering extracted polygons relative to center: ({center_x}, {center_y})")
-    
-    # Extract points for JSON serialization (Zero-centered)
+    print("[*] Cleaning and re-centering extracted polygons...")
     export_polygons = []
-    for poly in merged_polygons:
-        # Subtract region center so (0,0) is at the center of the extracted block
+    
+    for poly in diced_polygons:
+        # 1. Zero-center the points
         centered_pts = [[pt[0] - center_x, pt[1] - center_y] for pt in poly.points]
-        export_polygons.append(centered_pts)
         
-    # Structured JSON Object (Self-documenting and generalizable)
+        # 2. Aggressively clean floating-point artifacts and collinearities
+        cleaned_pts = clean_polygon(centered_pts)
+        
+        # 3. Only keep valid polygons
+        if len(cleaned_pts) >= 3:
+            export_polygons.append(cleaned_pts)
+            
+    print(f"[*] Final export count after cleaning: {len(export_polygons)} valid chunks.")
+        
     json_output = {
         "metadata": {
             "source_gds": os.path.basename(gds_path),
@@ -111,18 +148,13 @@ def extract_chip_geometry(gds_path, layer, datatype, region_coords, output_path)
     with open(output_path, 'w') as f:
         json.dump(json_output, f, indent=4)
 
-
 if __name__ == "__main__":
-    # 1. Define inputs
     gds_file = "RQB1_gap_eng_paper.gds"
     output_file = "../../output/extracted_chip_5_0.json"
     
-    # 2. Define target layer and datatype
     target_layer = 5
     target_datatype = 0
     
-    # 3. Define the region of interest
-    # Grouped as a list of tuples to keep it generalizable for future CSV ingestion
     region = [
         (-75, -5525), 
         (-75, -10225), 
@@ -130,10 +162,4 @@ if __name__ == "__main__":
         (-5075, -10255)
     ]
     
-    # Example of how a CSV could be loaded in the future:
-    # csv_file = "chip_coordinates.csv"
-    # if os.path.exists(csv_file):
-    #     region = load_coords_from_csv(csv_file)
-    
-    # 4. Execute extraction
     extract_chip_geometry(gds_file, target_layer, target_datatype, region, output_file)

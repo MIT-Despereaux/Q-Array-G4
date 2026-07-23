@@ -45,17 +45,28 @@ std::vector<G4VPhysicalVolume*> ExtrudedLayerBuilder::BuildLayer(
 
     fCreatedLogicals.clear(); 
 
+    G4cout << "\n[DEBUG-EXTRUDED] Starting creation of " << polygons.size() << " diced chunks..." << G4endl;
+
     for (auto polygon : polygons) {
         EnsureClockwiseWinding(polygon);
 
+        G4cout << "[DEBUG-EXTRUDED] Chunk " << counter << " | Vertices: " << polygon.size() << " | Creating Solid..." << std::flush;
+        
         G4String solidName = fNamePrefix + "_Solid_" + std::to_string(counter);
         G4ExtrudedSolid* solid = new G4ExtrudedSolid(
             solidName, polygon, halfThickness, offset, 1.0, offset, 1.0);
+            
+        G4cout << " DONE." << G4endl;
 
+        G4cout << "[DEBUG-EXTRUDED] Chunk " << counter << " | Creating Logical Volume..." << std::flush;
         G4String logicName = fNamePrefix + "_Logic_" + std::to_string(counter);
         G4LogicalVolume* logic = new G4LogicalVolume(solid, fMaterial, logicName);
         fCreatedLogicals.push_back(logic);
+        G4cout << " DONE." << G4endl;
 
+        // CRITICAL FIX: The last parameter here is the overlap checker. 
+        // We are hardcoding it to 'false' to prevent infinite hangs on complex extruded shapes.
+        G4cout << "[DEBUG-EXTRUDED] Chunk " << counter << " | Placing Physical Volume (Overlap Check: OFF)..." << std::flush;
         G4String physName = fNamePrefix + "_Phys_" + std::to_string(counter);
         G4VPhysicalVolume* phys = new G4PVPlacement(
             0, 
@@ -65,12 +76,16 @@ std::vector<G4VPhysicalVolume*> ExtrudedLayerBuilder::BuildLayer(
             motherVolume, 
             false, 
             counter, 
-            true 
+            false // <--- SET TO FALSE
         );
+        G4cout << " DONE." << G4endl;
         
         placedPhysVolumes.push_back(phys);
         counter++;
     }
+    
+    G4cout << "[DEBUG-EXTRUDED] Successfully built all " << counter << " extruded chunks.\n" << G4endl;
+    
     return placedPhysVolumes;
 }
 
