@@ -45,6 +45,7 @@
 
 #include "ExtrudedLayerBuilder.hh" // Include your new builder
 #include "GdsJsonParser.hh"
+#include "G4LatticePhysical.hh" // <-- ADD THIS LINE
 
 // =========================================================================
 // GEOMETRY TEST SWITCH
@@ -1054,10 +1055,24 @@ std::vector<G4TwoVector> padPolygon;
                                      jsonParser.GetPolygons(), 
                                      jsonParser.GetThickness());
 
-      // 3. CRITICAL PHYSICS FIX: Attach G4CMP Logical Border Surfaces to EVERY extruded piece
+// 3. CRITICAL PHYSICS FIX: Attach G4CMP Logical Border Surfaces to EVERY extruded piece
       for (size_t idx = 0; idx < extrudedPhysVols.size(); ++idx) {
           auto* physExtruded = extrudedPhysVols[idx];
           std::string prefix = "ext_" + std::to_string(idx);
+
+          // -------------------------------------------------------------
+          // NEW: ALUMINUM EXTRUDED CHUNK LATTICE REGISTRATION
+          // -------------------------------------------------------------
+          if (LM && fLogicalLatticeContainer["Aluminum"]) {
+              auto* alLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Aluminum"],
+                                                          dp_polycryElScatMFP_Al,
+                                                          dp_scDelta0_Al,
+                                                          dp_scTeff_Al,
+                                                          dp_scDn_Al,
+                                                          dp_scTauQPTrap_Al);
+              alLatticePhys->SetMillerOrientation(1,0,0);
+              LM->RegisterLattice(physExtruded, alLatticePhys);
+          }
 
           if (physSiliconChip && physExtruded) {
               new G4CMPLogicalBorderSurface("b_si_al_" + prefix, physSiliconChip, physExtruded, fSiAlInterface);
@@ -1066,6 +1081,20 @@ std::vector<G4TwoVector> padPolygon;
           if (detectorAssemblyPhysical && physExtruded) {
               new G4CMPLogicalBorderSurface("b_env_al_" + prefix, detectorAssemblyPhysical, physExtruded, fAlVacInterface);
               new G4CMPLogicalBorderSurface("b_al_env_" + prefix, physExtruded, detectorAssemblyPhysical, fAlVacInterface);
+          }
+      }
+// 4. STITCH GDS CHUNKS: Create seamless boundaries between all extruded pieces
+// We loop through all pairs to ensure QPs can diffuse across the fragmented GDS polygons
+      for (size_t i = 0; i < extrudedPhysVols.size(); ++i) {
+          for (size_t j = 0; j < extrudedPhysVols.size(); ++j) {
+              if (i == j) continue; // Skip self
+              
+              // Define the boundary for crossing from chunk i to chunk j
+              std::string bname = "b_al_al_" + std::to_string(i) + "_" + std::to_string(j);
+              new G4CMPLogicalBorderSurface(bname, 
+                                            extrudedPhysVols[i], 
+                                            extrudedPhysVols[j], 
+                                            fAlAlInterface);
           }
       }
 #endif
