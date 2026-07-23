@@ -24,8 +24,8 @@ module load miniforge
 source /home/tclassen/dependencies/geant4-install/bin/geant4.sh
 cd /home/tclassen/projects/build-dspx
 export G4CMP_CRYSTAL_MAPS="/home/tclassen/dependencies/g4cmp-install/share/G4CMP/CrystalMaps"
-
-CSV=../macros/launch_points.csv
+ln -sfn /home/tclassen/dependencies/g4cmp-install/share/G4CMP/CrystalMaps/* ./
+CSV=/home/tclassen/projects/scripts/launch_points.csv
 
 # Read the CSV (Offset by 2 to skip the header row)
 LINE=$(sed -n "$((SLURM_ARRAY_TASK_ID+2))p" "$CSV")
