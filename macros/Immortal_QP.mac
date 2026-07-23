@@ -96,7 +96,7 @@
 # forcing it to leave a clean, traceable trail of solid-state secondaries.
 # 1. Move the gun higher up (10 cm) to make sure it is above the chip
 /gps/pos/type Point
-/gps/pos/centre 0. 0. 5.000145 mm
+/gps/pos/centre 0. 0. -5.000145 mm
 #/gps/pos/centre 0 0.5 5.0 mm
 
 # 2. Widen the beam to 10cm x 10cm to blanket the center of the fridge
@@ -110,3 +110,13 @@
 
 # Fire 1 primary event
 /run/beamOn 1
+
+# =========================================================================
+# 4. VISUALIZATION (No beam, just geometry)
+# =========================================================================
+#/vis/open OGL
+#/vis/drawVolume
+#/vis/viewer/set/autoRefresh true
+#/vis/scene/add/axes 0 0 0 10 mm
+#/vis/viewer/set/viewpointThetaPhi 70 20
+#/vis/viewer/set/style surface
