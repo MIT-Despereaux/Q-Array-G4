@@ -1031,38 +1031,40 @@ std::vector<G4TwoVector> padPolygon;
       // NEW EXTRUDED CHIP SETUP (JSON Mode with G4CMP Physics Integration)
       // -------------------------------------------------------------------------
       G4cout << "\n==================================================" << G4endl;
-      G4cout << "[CryostatBuilder] BUILD MODE: Extruded Layer from JSON" << G4endl;
+      G4cout << "[CryostatBuilder] BUILD MODE: Unified Extruded Layer" << G4endl;
       G4cout << "==================================================\n" << G4endl;
 
-      ExtrudedLayerBuilder extrudedBuilder;
-      extrudedBuilder.SetMaterial(fAluminum); // Using the material defined earlier
-      
-      G4double extrudedZOffset = 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5;
-      extrudedBuilder.SetZOffset(extrudedZOffset);
-      extrudedBuilder.SetNamePrefix("GroundPlane_Extruded");
-
-      // 1. Initialize and run your newly implemented parser
+      // 1. Initialize and run the JSON parser
       std::string jsonPath = "../output/extracted_chip_5_0.json";
       GdsJsonParser jsonParser;
-      
       if (!jsonParser.LoadFile(jsonPath)) {
           G4cerr << "[CryostatBuilder] CRITICAL ERROR: Could not parse Extruded Chip JSON." << G4endl;
       }
 
-      // 2. Build physical volumes using the parsed polygons and thickness
-      std::vector<G4VPhysicalVolume*> extrudedPhysVols = 
-          extrudedBuilder.BuildLayer(detectorAssemblyLogical, 
-                                     jsonParser.GetPolygons(), 
-                                     jsonParser.GetThickness());
+      // 2. Calculate placement using YOUR macro-controlled rotations
+      G4double extrudedLocalZ = 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5;
+      G4ThreeVector localExtrudedPos(0, 0, extrudedLocalZ);
+      G4ThreeVector globalExtrudedPos = userPos + (*baseRot)(localExtrudedPos);
 
-// 3. CRITICAL PHYSICS FIX: Attach G4CMP Logical Border Surfaces to EVERY extruded piece
-      for (size_t idx = 0; idx < extrudedPhysVols.size(); ++idx) {
-          auto* physExtruded = extrudedPhysVols[idx];
-          std::string prefix = "ext_" + std::to_string(idx);
+      // 3. Configure the Builder
+      ExtrudedLayerBuilder extrudedBuilder;
+      extrudedBuilder.SetMaterial(fAluminum); 
+      extrudedBuilder.SetPosition(globalExtrudedPos);
+      extrudedBuilder.SetRotation(new G4RotationMatrix(*baseRot)); // Maintain orientation toggle!
+      extrudedBuilder.SetNamePrefix("GroundPlane_Extruded");
 
-          // -------------------------------------------------------------
-          // NEW: ALUMINUM EXTRUDED CHUNK LATTICE REGISTRATION
-          // -------------------------------------------------------------
+      // 4. Build the Single Unified Physical Volume
+      G4VPhysicalVolume* physExtruded = extrudedBuilder.BuildUnifiedLayer(
+          detectorAssemblyLogical, 
+          jsonParser.GetPolygons(), 
+          jsonParser.GetThickness()
+      );
+
+      // 5. CRITICAL PHYSICS FIX: Attach Lattices and Surfaces to the unified chunk
+// ... [Existing code inside the #else block] ...
+      // 5. CRITICAL PHYSICS FIX: Attach Lattices and Surfaces to the unified chunk
+      if (physExtruded) {
+          // Lattice Registration
           if (LM && fLogicalLatticeContainer["Aluminum"]) {
               auto* alLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Aluminum"],
                                                           dp_polycryElScatMFP_Al,
@@ -1074,29 +1076,33 @@ std::vector<G4TwoVector> padPolygon;
               LM->RegisterLattice(physExtruded, alLatticePhys);
           }
 
-          if (physSiliconChip && physExtruded) {
-              new G4CMPLogicalBorderSurface("b_si_al_" + prefix, physSiliconChip, physExtruded, fSiAlInterface);
-              new G4CMPLogicalBorderSurface("b_al_si_" + prefix, physExtruded, physSiliconChip, fSiAlInterface);
+          // Single pair of G4CMP Logical Border Surfaces! No N^2 looping required.
+          if (physSiliconChip) {
+              new G4CMPLogicalBorderSurface("b_si_al_unified", physSiliconChip, physExtruded, fSiAlInterface);
+              new G4CMPLogicalBorderSurface("b_al_si_unified", physExtruded, physSiliconChip, fSiAlInterface);
           }
-          if (detectorAssemblyPhysical && physExtruded) {
-              new G4CMPLogicalBorderSurface("b_env_al_" + prefix, detectorAssemblyPhysical, physExtruded, fAlVacInterface);
-              new G4CMPLogicalBorderSurface("b_al_env_" + prefix, physExtruded, detectorAssemblyPhysical, fAlVacInterface);
-          }
-      }
-// 4. STITCH GDS CHUNKS: Create seamless boundaries between all extruded pieces
-// We loop through all pairs to ensure QPs can diffuse across the fragmented GDS polygons
-      for (size_t i = 0; i < extrudedPhysVols.size(); ++i) {
-          for (size_t j = 0; j < extrudedPhysVols.size(); ++j) {
-              if (i == j) continue; // Skip self
-              
-              // Define the boundary for crossing from chunk i to chunk j
-              std::string bname = "b_al_al_" + std::to_string(i) + "_" + std::to_string(j);
-              new G4CMPLogicalBorderSurface(bname, 
-                                            extrudedPhysVols[i], 
-                                            extrudedPhysVols[j], 
-                                            fAlAlInterface);
+          if (detectorAssemblyPhysical) {
+              new G4CMPLogicalBorderSurface("b_env_al_unified", detectorAssemblyPhysical, physExtruded, fAlVacInterface);
+              new G4CMPLogicalBorderSurface("b_al_env_unified", physExtruded, detectorAssemblyPhysical, fAlVacInterface);
           }
       }
+
+      // =========================================================================
+      // 6. ADD THIS: ASSIGN SENSITIVE DETECTOR
+      // =========================================================================
+      // Fetch the SD Manager
+      G4SDManager* sdManager = G4SDManager::GetSDMpointer();
+      
+      // Look up the SD by the exact name expected in your log outputs
+      G4VSensitiveDetector* extrudedSD = sdManager->FindSensitiveDetector("GroundPlane_Extruded_Logic_SD", false);
+      
+      if (extrudedSD) {
+          extrudedBuilder.AssignSensitiveDetector(extrudedSD);
+          G4cout << "[CryostatBuilder] Successfully assigned Sensitive Detector to Extruded Layer." << G4endl;
+      } else {
+          G4cout << "[CryostatBuilder] WARNING: GroundPlane_Extruded_Logic_SD not found in SDManager!" << G4endl;
+      }
+      // =========================================================================
 #endif
     }
 

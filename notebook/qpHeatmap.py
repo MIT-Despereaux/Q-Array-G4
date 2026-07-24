@@ -17,7 +17,7 @@ OUTPUT_DIR = "/home/tclassen/projects/output"     # Directory where PNGs will be
 
 X_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
 Y_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
-GRID_RES = (500, 500)
+GRID_RES = (250, 250)
 
 # Dictionary for fast unit conversion to millimeters (mm)
 UNIT_TO_MM = {
