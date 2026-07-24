@@ -15,9 +15,12 @@ import matplotlib.colors as mcolors
 INPUT_DIR = "/home/tclassen/projects/build-dspx/logs"       # Directory containing your .log run files
 OUTPUT_DIR = "/home/tclassen/projects/output"     # Directory where PNGs will be saved
 
+#INPUT_DIR = "../build-dspx/"       # Directory containing your .log run files
+#OUTPUT_DIR = "../output"     # Directory where PNGs will be saved
+
 X_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
 Y_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
-GRID_RES = (250, 250)
+GRID_RES = (1000, 1000)
 
 # Dictionary for fast unit conversion to millimeters (mm)
 UNIT_TO_MM = {
@@ -165,41 +168,6 @@ def plot_quasiparticle_heatmap(heatmap, x_edges, y_edges, save_path, title_name)
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
     plt.close(fig)
-    """
-    Visualizes the accumulator grid with coolwarm colormap on a linear scale.
-    Unvisited regions (0) are left unmasked to naturally appear as dark blue.
-    """
-    # Use the updated Matplotlib 3.7+ colormap call to avoid deprecation warnings
-    cmap = matplotlib.colormaps['coolwarm'].copy()
-    
-    fig, ax = plt.subplots(figsize=(10, 8), dpi=150)
-    extent = [x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]]
-    
-    # Use standard linear normalization instead of LogNorm. 
-    # vmin is forced to 0 so the unvisited background is dark blue.
-    vmax_val = heatmap.max() if heatmap.max() > 0 else 1.0
-    norm = mcolors.Normalize(vmin=0, vmax=vmax_val)
-        
-    im = ax.imshow(
-        heatmap.T, 
-        extent=extent, 
-        origin='lower', 
-        cmap=cmap, 
-        norm=norm, 
-        interpolation='nearest',
-        aspect='equal'
-    )
-    
-    cbar = fig.colorbar(im, ax=ax, pad=0.02)
-    cbar.set_label('Distance Traveled (Proxy for Dwell Time in mm)', rotation=270, labelpad=20, fontsize=12)
-    
-    ax.set_xlabel('X Position (mm)', fontsize=12)
-    ax.set_ylabel('Y Position (mm)', fontsize=12)
-    ax.set_title(f'Quasiparticle Heatmap (Linear): {title_name}', fontsize=14, fontweight='bold')
-    
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300)
-    plt.close(fig)  # Free memory on cluster
 
 # ==========================================
 # EXECUTION
