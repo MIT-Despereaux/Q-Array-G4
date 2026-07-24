@@ -60,17 +60,17 @@
 # =========================================================================
 # 4. CONFIGURE VISUALIZATION
 # =========================================================================
-#/vis/open OGL 1200x1200-0+0
+/vis/open OGL 1200x1200-0+0
 # =========================================================================
 # 4. CONFIGURE VISUALIZATION
 # =========================================================================
-/vis/open RayTracer
+#/vis/open RayTracer
 /vis/viewer/set/autoRefresh false
 /vis/verbose errors
 
 # THE DIAGNOSTIC TEST: Draw ONLY a safe, small logical volume.
 # Replace this name with the exact Logical Volume name of polygon 0 or 1.
-/vis/drawVolume GroundPlane_Extruded_Logical_0 
+/vis/drawVolume GroundPlane_Extruded_Logic 
 
 # POSITION THE CAMERA
 /vis/viewer/set/viewpointVector 0.3 -1 0.7
