@@ -1,16 +1,23 @@
 import os
+import glob
 import multiprocessing as mp
 import numpy as np
+
+# 1. CRITICAL FOR CLUSTERS: Disable GUI display before importing pyplot
+import matplotlib
+matplotlib.use('Agg') 
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
 # ==========================================
 # CONFIGURATION
 # ==========================================
-LOG_FILE = "geant4_g4cmp_track.log"
+INPUT_DIR = "/home/tclassen/projects/build-dspx/logs"       # Directory containing your .log run files
+OUTPUT_DIR = "/home/tclassen/projects/output"     # Directory where PNGs will be saved
+
 X_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
 Y_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
-GRID_RES = (1000, 1000)
+GRID_RES = (500, 500)
 
 # Dictionary for fast unit conversion to millimeters (mm)
 UNIT_TO_MM = {
@@ -113,25 +120,30 @@ def generate_heatmap_parallel(file_path, x_bounds, y_bounds, grid_res):
     with mp.Pool(num_cores) as pool:
         for local_result in pool.imap_unordered(process_chunk, tasks):
             master_heatmap += local_result
-            print("A worker finished its chunk.")
             
     return master_heatmap, x_edges, y_edges
 
-def plot_quasiparticle_heatmap(heatmap, x_edges, y_edges):
+def plot_quasiparticle_heatmap(heatmap, x_edges, y_edges, save_path, title_name):
     """
-    Visualizes the accumulator grid with coolwarm colormap.
+    Visualizes the accumulator grid with coolwarm colormap on a LOG scale.
+    Unvisited regions (0) are masked but colored dark blue to match the bottom of the colormap.
     """
-    # Mask unvisited regions to keep them white
+    cmap = matplotlib.colormaps['coolwarm'].copy()
+    
+    # We must mask 0s because log(0) is mathematically undefined
     heatmap_masked = np.ma.masked_where(heatmap == 0, heatmap)
     
-    cmap = plt.cm.get_cmap('coolwarm').copy()
-    cmap.set_bad(color='white')
+    # Trick: Set the "bad" (masked 0s) color to the absolute bottom color of coolwarm (dark blue)
+    cmap.set_bad(color=cmap(0.0))
     
     fig, ax = plt.subplots(figsize=(10, 8), dpi=150)
     extent = [x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]]
     
-    # Logarithmic colormap
-    norm = mcolors.LogNorm(vmin=heatmap_masked.min(), vmax=heatmap_masked.max())
+    # Revert to LogNorm using the minimum non-zero value
+    if heatmap_masked.count() > 0:
+        norm = mcolors.LogNorm(vmin=heatmap_masked.min(), vmax=heatmap_masked.max())
+    else:
+        norm = mcolors.Normalize()
         
     im = ax.imshow(
         heatmap_masked.T, 
@@ -144,30 +156,88 @@ def plot_quasiparticle_heatmap(heatmap, x_edges, y_edges):
     )
     
     cbar = fig.colorbar(im, ax=ax, pad=0.02)
-    cbar.set_label('Time Spent Correlation', rotation=270, labelpad=20, fontsize=12)
+    cbar.set_label('Distance Traveled (Proxy for Dwell Time in mm)', rotation=270, labelpad=20, fontsize=12)
     
     ax.set_xlabel('X Position (mm)', fontsize=12)
     ax.set_ylabel('Y Position (mm)', fontsize=12)
-    ax.set_title('Quasiparticle Dwell Distance Heatmap', fontsize=14, fontweight='bold')
+    ax.set_title(f'Quasiparticle Heatmap (Log): {title_name}', fontsize=14, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig('quasiparticle_distance_heatmap.png', dpi=300)
-    plt.show()
+    plt.savefig(save_path, dpi=300)
+    plt.close(fig)
+    """
+    Visualizes the accumulator grid with coolwarm colormap on a linear scale.
+    Unvisited regions (0) are left unmasked to naturally appear as dark blue.
+    """
+    # Use the updated Matplotlib 3.7+ colormap call to avoid deprecation warnings
+    cmap = matplotlib.colormaps['coolwarm'].copy()
+    
+    fig, ax = plt.subplots(figsize=(10, 8), dpi=150)
+    extent = [x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]]
+    
+    # Use standard linear normalization instead of LogNorm. 
+    # vmin is forced to 0 so the unvisited background is dark blue.
+    vmax_val = heatmap.max() if heatmap.max() > 0 else 1.0
+    norm = mcolors.Normalize(vmin=0, vmax=vmax_val)
+        
+    im = ax.imshow(
+        heatmap.T, 
+        extent=extent, 
+        origin='lower', 
+        cmap=cmap, 
+        norm=norm, 
+        interpolation='nearest',
+        aspect='equal'
+    )
+    
+    cbar = fig.colorbar(im, ax=ax, pad=0.02)
+    cbar.set_label('Distance Traveled (Proxy for Dwell Time in mm)', rotation=270, labelpad=20, fontsize=12)
+    
+    ax.set_xlabel('X Position (mm)', fontsize=12)
+    ax.set_ylabel('Y Position (mm)', fontsize=12)
+    ax.set_title(f'Quasiparticle Heatmap (Linear): {title_name}', fontsize=14, fontweight='bold')
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close(fig)  # Free memory on cluster
 
 # ==========================================
 # EXECUTION
 # ==========================================
 if __name__ == "__main__":
-    # Ensure the script runs properly under Windows/Linux multiprocessing
     mp.freeze_support()
     
-    if os.path.exists(LOG_FILE):
-        heatmap, x_edges, y_edges = generate_heatmap_parallel(
-            LOG_FILE, 
-            x_bounds=X_LIMITS, 
-            y_bounds=Y_LIMITS, 
-            grid_res=GRID_RES
-        )
-        plot_quasiparticle_heatmap(heatmap, x_edges, y_edges)
+    # Make sure output directory exists
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    # Find all .log files in input folder
+    log_files = sorted(glob.glob(os.path.join(INPUT_DIR, "*.log")))
+    
+    if not log_files:
+        print(f"No '.log' files found in directory '{INPUT_DIR}'. Please check your path.")
     else:
-        print(f"Log file '{LOG_FILE}' not found.")
+        print(f"Found {len(log_files)} run files to process.\n")
+        
+        for idx, file_path in enumerate(log_files, 1):
+            file_basename = os.path.splitext(os.path.basename(file_path))[0]
+            output_png_path = os.path.join(OUTPUT_DIR, f"{file_basename}_heatmap.png")
+            
+            print(f"[{idx}/{len(log_files)}] Processing file: {file_path}")
+            
+            heatmap, x_edges, y_edges = generate_heatmap_parallel(
+                file_path, 
+                x_bounds=X_LIMITS, 
+                y_bounds=Y_LIMITS, 
+                grid_res=GRID_RES
+            )
+            
+            plot_quasiparticle_heatmap(
+                heatmap, 
+                x_edges, 
+                y_edges, 
+                save_path=output_png_path, 
+                title_name=file_basename
+            )
+            print(f" Saved heatmap to: {output_png_path}\n")
+            
+        print("All heatmaps generated successfully.")
