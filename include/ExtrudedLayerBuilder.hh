@@ -24,6 +24,8 @@ class ExtrudedLayerBuilder
     void SetRotation(G4RotationMatrix* rotation);
     void SetNamePrefix(const G4String& name);
     
+    G4LogicalVolume* GetLogicalVolume() const { return fUnifiedLogical; }
+    
     // Unifies all polygon solids into a single compound Physical Volume
     G4VPhysicalVolume* BuildUnifiedLayer(
         G4LogicalVolume* motherVolume, 

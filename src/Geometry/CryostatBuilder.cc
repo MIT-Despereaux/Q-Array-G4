@@ -731,8 +731,9 @@ namespace QArray::Geometry
       fBorderContainer.emplace("VacVac", fVacVacInterface);
 
       // 4. Substrate Chip 
-      auto* solid_siliconChip = new G4Box("QubitChip_solid", 0.5 * dp_siliconChipDimX, 0.5 * dp_siliconChipDimY, 0.5 * dp_siliconChipDimZ);
-      auto* log_siliconChip = new G4LogicalVolume(solid_siliconChip, fSilicon, "SiliconChip_log");
+      G4double exactSiX = 5.0 * mm;
+      G4double exactSiY = 5.0 * mm;
+      auto* solid_siliconChip = new G4Box("QubitChip_solid", exactSiX / 2.0, exactSiY / 2.0, 0.5 * dp_siliconChipDimZ);      auto* log_siliconChip = new G4LogicalVolume(solid_siliconChip, fSilicon, "SiliconChip_log");
       
       auto* siVis = new G4VisAttributes(G4Colour(0.5, 0.5, 0.5, 0.6));
       siVis->SetVisibility(true);
@@ -1042,7 +1043,8 @@ std::vector<G4TwoVector> padPolygon;
       }
 
       // 2. Calculate placement using YOUR macro-controlled rotations
-      G4double extrudedLocalZ = 0.5 * dp_housingDimZ + dp_eps + dp_groundPlaneDimZ * 0.5;
+      G4double jsonThickness = jsonParser.GetThickness();
+      G4double extrudedLocalZ = 0.5 * dp_housingDimZ + dp_eps + (jsonThickness / 2.0);
       G4ThreeVector localExtrudedPos(0, 0, extrudedLocalZ);
       G4ThreeVector globalExtrudedPos = userPos + (*baseRot)(localExtrudedPos);
 

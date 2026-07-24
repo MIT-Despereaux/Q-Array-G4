@@ -1,0 +1,81 @@
+# =========================================================================
+# Centered DSPX cosmic-ray visualization / QP Injection
+# =========================================================================
+
+/run/numberOfThreads 1
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 1
+/process/verbose 0
+
+/QR/geom/globalOffset -2.5381 -1.0645 -1.38125 m
+/QR/geom/constructLab true
+/QR/geom/constructFridge true
+/QR/geom/addPb true
+/QR/geom/useQubitArray true
+
+# -------------------------------------------------------------------------
+# CRITICAL FIX: Parameterized output filename so array jobs don't clobber
+# -------------------------------------------------------------------------
+/QR/output/filename ../output/g4sim/q_array_cmp/dspx_g4cmp_batch_TASK_ID.root
+/QR/output/writeSteps true
+/QR/output/writeAllEvents true
+/QR/output/addNtuple full full
+/QR/output/enable true
+
+# =========================================================================
+# PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
+# =========================================================================
+/g4cmp/phononBounces 5
+/g4cmp/qpBounces 1000000000
+/g4cmp/producePhonons 0.000001                                                                                                           
+/g4cmp/samplingEnergy 10 eV
+/g4cmp/sampleLuke 0.
+/g4cmp/minEPhonons 0.00035 eV
+/g4cmp/recordMinETracks false
+/g4cmp/combiningStepLength 100 um
+/g4cmp/eTrappingMFP 50 um
+/g4cmp/hTrappingMFP 50 um
+
+/run/setCutForAGivenParticle e- 0.1 mm
+/run/setCutForAGivenParticle proton 0.1 mm
+
+/run/initialize
+
+# =========================================================================
+# POST-INITIALIZATION
+# =========================================================================
+/physics_engine/neutron/energyLimit 0 eV
+
+/process/inactivate scPairBreaking
+/process/inactivate qpRadiatesPhonon
+/process/inactivate qpRecombination
+/process/inactivate G4CMPSecondaryProduction
+/process/inactivate phononDownconversion
+/process/inactivate qpLocalTrapping
+
+/process/activate qpDiffusion 
+/process/activate TrackLimiter
+
+# -------------------------------------------------------------------------
+# Parameterized Random Seeds
+# -------------------------------------------------------------------------
+/QR/generator/mode gps
+/random/setSeeds 84920 10293
+
+# =========================================================================
+# SINGLE BOGOLIUBOV QP INJECTION
+# =========================================================================
+/gps/particle BogoliubovQP
+/gps/pos/type Point
+
+# -------------------------------------------------------------------------
+# Parameterized Coordinates
+# -------------------------------------------------------------------------
+/gps/pos/centre 0.699836 -1.80681 5.50007 mm
+
+/gps/ene/type Mono
+/gps/energy 1 meV
+
+/run/beamOn 1
