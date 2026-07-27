@@ -15,8 +15,8 @@ import matplotlib.colors as mcolors
 INPUT_DIR = "/home/tclassen/projects/build-dspx/logs"       # Directory containing your .log run files
 OUTPUT_DIR = "/home/tclassen/projects/output"     # Directory where PNGs will be saved
 
-X_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
-Y_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
+X_LIMITS = (-2.5, 2.5)  # Physical bounds in mm
+Y_LIMITS = (-2.5, 2.5)  # Physical bounds in mm
 # Reduced resolution to make the individual pixels slightly larger and more visible on a poster
 GRID_RES = (500, 500) 
 
