@@ -15,12 +15,10 @@ import matplotlib.colors as mcolors
 INPUT_DIR = "/home/tclassen/projects/build-dspx/logs"       # Directory containing your .log run files
 OUTPUT_DIR = "/home/tclassen/projects/output"     # Directory where PNGs will be saved
 
-#INPUT_DIR = "../build-dspx/"       # Directory containing your .log run files
-#OUTPUT_DIR = "../output"     # Directory where PNGs will be saved
-
 X_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
 Y_LIMITS = (-2.0, 2.0)  # Physical bounds in mm
-GRID_RES = (1000, 1000)
+# Reduced resolution to make the individual pixels slightly larger and more visible on a poster
+GRID_RES = (500, 500) 
 
 # Dictionary for fast unit conversion to millimeters (mm)
 UNIT_TO_MM = {
@@ -40,16 +38,14 @@ def process_chunk(args):
     """
     filename, start_byte, end_byte, x_edges, y_edges = args
     
-    # Initialize a local grid to avoid cross-process memory locks
     local_heatmap = np.zeros((len(x_edges)-1, len(y_edges)-1), dtype=np.float64)
     
     xs, ys, sls = [], [], []
-    batch_size = 100_000  # Batch size for vectorized histogramming
+    batch_size = 100_000  
     
     with open(filename, 'rb') as f:
         f.seek(start_byte)
         
-        # If we didn't start at the very beginning, skip the first partial line
         if start_byte != 0:
             f.readline()
             
@@ -61,11 +57,9 @@ def process_chunk(args):
             try:
                 line_str = line.decode('utf-8')
                 
-                # Fast string checking (avoids slow Regex)
                 if line_str.startswith('G4WT'):
                     parts = line_str.split()
                     
-                    # Ensure it's a valid step line by checking length and structure
                     if len(parts) >= 15 and parts[1] == '>' and parts[2].isdigit():
                         x_val = float(parts[3]) * UNIT_TO_MM[parts[4]]
                         y_val = float(parts[5]) * UNIT_TO_MM[parts[6]]
@@ -75,7 +69,6 @@ def process_chunk(args):
                         ys.append(y_val)
                         sls.append(sl_val)
                         
-                        # Process batch using high-speed numpy histogram2d
                         if len(xs) >= batch_size:
                             h_chunk, _, _ = np.histogram2d(
                                 xs, ys, bins=[x_edges, y_edges], weights=sls
@@ -84,10 +77,8 @@ def process_chunk(args):
                             xs, ys, sls = [], [], []
                             
             except (ValueError, KeyError, UnicodeDecodeError):
-                # Silently skip malformed lines or mid-process warnings
                 continue
                 
-        # Process any remaining data in the buffers
         if xs:
             h_chunk, _, _ = np.histogram2d(
                 xs, ys, bins=[x_edges, y_edges], weights=sls
@@ -100,15 +91,19 @@ def generate_heatmap_parallel(file_path, x_bounds, y_bounds, grid_res):
     """
     Splits the file into byte chunks and maps them to multiple CPU cores.
     """
-    # 1. Define grid edges
     x_edges = np.linspace(x_bounds[0], x_bounds[1], grid_res[0] + 1)
     y_edges = np.linspace(y_bounds[0], y_bounds[1], grid_res[1] + 1)
     
     file_size = os.path.getsize(file_path)
-    num_cores = mp.cpu_count()
+    
+    # Cap cores at 8 to prevent broken pipe errors on login nodes
+    num_cores = min(mp.cpu_count(), 8)
+    
+    if file_size == 0 or num_cores == 0:
+        return np.zeros(grid_res, dtype=np.float64), x_edges, y_edges
+        
     chunk_size = file_size // num_cores
     
-    # 2. Create byte boundaries for each core
     tasks = []
     for i in range(num_cores):
         start_byte = i * chunk_size
@@ -117,7 +112,6 @@ def generate_heatmap_parallel(file_path, x_bounds, y_bounds, grid_res):
         
     print(f"File size: {file_size / (1024**3):.2f} GB. Spawning {num_cores} parallel workers...")
     
-    # 3. Execute in parallel and sum the resulting heatmaps
     master_heatmap = np.zeros(grid_res, dtype=np.float64)
     
     with mp.Pool(num_cores) as pool:
@@ -128,23 +122,23 @@ def generate_heatmap_parallel(file_path, x_bounds, y_bounds, grid_res):
 
 def plot_quasiparticle_heatmap(heatmap, x_edges, y_edges, save_path, title_name):
     """
-    Visualizes the accumulator grid with coolwarm colormap on a LOG scale.
-    Unvisited regions (0) are masked but colored dark blue to match the bottom of the colormap.
+    Visualizes the grid with a custom high-contrast PowerNorm scale.
     """
-    cmap = matplotlib.colormaps['coolwarm'].copy()
+    # Create the custom pastel/contrasty colormap requested
+    colors = ["#215FAC", "#ED7B7B"]
+    cmap = mcolors.LinearSegmentedColormap.from_list("PastelHeat", colors)
     
-    # We must mask 0s because log(0) is mathematically undefined
-    heatmap_masked = np.ma.masked_where(heatmap == 0, heatmap)
-    
-    # Trick: Set the "bad" (masked 0s) color to the absolute bottom color of coolwarm (dark blue)
-    cmap.set_bad(color=cmap(0.0))
+    # Mask unvisited areas so we can paint them solidly with the background color
+    heatmap_masked = np.ma.masked_where(heatmap <= 0, heatmap)
+    cmap.set_bad(color="#215FAC")
     
     fig, ax = plt.subplots(figsize=(10, 8), dpi=150)
     extent = [x_edges[0], x_edges[-1], y_edges[0], y_edges[-1]]
     
-    # Revert to LogNorm using the minimum non-zero value
+    # Use PowerNorm (gamma correction). A gamma < 1 pushes lower values up the color scale,
+    # making sparse scattering highly visible against the background.
     if heatmap_masked.count() > 0:
-        norm = mcolors.LogNorm(vmin=heatmap_masked.min(), vmax=heatmap_masked.max())
+        norm = mcolors.PowerNorm(gamma=0.25, vmin=heatmap_masked.min(), vmax=heatmap_masked.max())
     else:
         norm = mcolors.Normalize()
         
@@ -158,12 +152,18 @@ def plot_quasiparticle_heatmap(heatmap, x_edges, y_edges, save_path, title_name)
         aspect='equal'
     )
     
+    # Adjust colorbar to reflect the custom setup
     cbar = fig.colorbar(im, ax=ax, pad=0.02)
-    cbar.set_label('Distance Traveled (Proxy for Dwell Time in mm)', rotation=270, labelpad=20, fontsize=12)
+    cbar.set_label('Distance Traveled (Gamma Scaled)', rotation=270, labelpad=20, fontsize=12)
     
     ax.set_xlabel('X Position (mm)', fontsize=12)
     ax.set_ylabel('Y Position (mm)', fontsize=12)
-    ax.set_title(f'Quasiparticle Heatmap (Log): {title_name}', fontsize=14, fontweight='bold')
+    ax.set_title(f'Quasiparticle Heatmap: {title_name}', fontsize=14, fontweight='bold')
+    
+    # Make the plot frame blend well with the aesthetic
+    for spine in ax.spines.values():
+        spine.set_edgecolor('#215FAC')
+        spine.set_linewidth(1.5)
     
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
@@ -175,10 +175,8 @@ def plot_quasiparticle_heatmap(heatmap, x_edges, y_edges, save_path, title_name)
 if __name__ == "__main__":
     mp.freeze_support()
     
-    # Make sure output directory exists
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # Find all .log files in input folder
     log_files = sorted(glob.glob(os.path.join(INPUT_DIR, "*.log")))
     
     if not log_files:

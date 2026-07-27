@@ -247,7 +247,8 @@ namespace QArray
         if (name.find("GroundPlane") != std::string::npos ||
             name.find("TransmissionLine") != std::string::npos ||
             name.find("ResonatorAssembly") != std::string::npos ||
-            name.find("Chip_Gate") != std::string::npos) // <-- ADD THIS  
+            name.find("Chip_Gate") != std::string::npos ||
+            name.find("DetectorSnCube") != std::string::npos)// <-- ADD THIS  
         {
             // Make sure we haven't already assigned an SD to this volume
             if (lv->GetSensitiveDetector() == nullptr) 
