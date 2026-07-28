@@ -23,5 +23,6 @@ module load miniforge
 source /home/tclassen/dependencies/geant4-install/bin/geant4.sh
 cd /home/tclassen/projects/build-dspx
 export G4CMP_CRYSTAL_MAPS="/home/tclassen/dependencies/g4cmp-install/share/G4CMP/CrystalMaps"
+ln -sfn /home/tclassen/dependencies/g4cmp-install/share/G4CMP/CrystalMaps/* ./
 mkdir -p ../output/g4sim/q_array_cmp
 ./main ../macros/neutron_gun_batch.mac

@@ -1,5 +1,6 @@
 import os
 import glob
+import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ ENERGY_COL = 'edep'
 
 # Binning settings (energies in MeV)
 MIN_ENERGY = 0.0001  # Ignores zero/near-zero energy hits
-MAX_ENERGY = 0.1    # Adjust based on maximum particle energy expected
+MAX_ENERGY = 0.05    # Adjust based on maximum particle energy expected
 NUM_BINS = 1000
 
 # Create histogram bin edges
@@ -27,7 +28,7 @@ particle_histograms = {}
 total_histogram = np.zeros(NUM_BINS)
 
 # ==========================================
-# Helper Function for Geant4 CSV Headers
+# Helper Functions
 # ==========================================
 def get_g4_csv_columns(filepath):
     """Parses `#column <type> <name>` metadata lines from Geant4 CSV files."""
@@ -39,6 +40,18 @@ def get_g4_csv_columns(filepath):
             elif not line.startswith('#'):
                 break  # Stop checking once data rows start
     return columns
+
+def generalize_particle_name(name):
+    """
+    Groups isotopes by stripping atomic mass numbers. 
+    Examples: 'Sn119' -> 'Sn', 'Cu63[0.0]' -> 'Cu', 'Pb208' -> 'Pb'
+    Standard particles ('gamma', 'e-', 'neutron') are returned unchanged.
+    """
+    # Regex: Looks for 1 capital letter, 0-1 lowercase letter, followed by 1+ digits
+    match = re.match(r'^([A-Z][a-z]?)(\d+)', str(name))
+    if match:
+        return match.group(1) # Returns just the element symbol
+    return name
 
 # ==========================================
 # 1. Parse and Bin Data Efficiently
@@ -74,16 +87,24 @@ for file_idx, filepath in enumerate(file_list):
     
     for chunk in chunk_iterator:
         # Filter out rows where energy deposited is less than MIN_ENERGY (removes 0 edep)
-        valid_hits = chunk[chunk[ENERGY_COL] >= MIN_ENERGY]
+        # Using .copy() to avoid Pandas SettingWithCopy warnings when we modify the particle names later
+        valid_hits = chunk[chunk[ENERGY_COL] >= MIN_ENERGY].copy()
         
         if valid_hits.empty:
             continue
+            
+        # Optimize regex by only applying it to unique particle names in the current chunk
+        unique_particles = valid_hits[PARTICLE_COL].unique()
+        particle_mapping = {p: generalize_particle_name(p) for p in unique_particles}
+        
+        # Apply the mapping to overwrite the specific isotopes with general element names
+        valid_hits[PARTICLE_COL] = valid_hits[PARTICLE_COL].map(particle_mapping)
             
         # Update Total Histogram
         counts, _ = np.histogram(valid_hits[ENERGY_COL], bins=bins)
         total_histogram += counts
         
-        # Group by particle type and update particle-specific histograms
+        # Group by the newly generalized particle type and update particle-specific histograms
         grouped = valid_hits.groupby(PARTICLE_COL)
         for particle, group_data in grouped:
             if particle not in particle_histograms:

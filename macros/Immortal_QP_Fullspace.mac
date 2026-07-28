@@ -2,7 +2,7 @@
 # Centered DSPX cosmic-ray visualization / QP Injection
 # =========================================================================
 
-/run/numberOfThreads 1
+/run/numberOfThreads 64
 /control/verbose 0
 /run/verbose 0
 /event/verbose 0
@@ -68,7 +68,7 @@
 # SINGLE BOGOLIUBOV QP INJECTION
 # =========================================================================
 /gps/particle BogoliubovQP
-/gps/pos/type Point
+#/gps/pos/type Point
 
 # New version which randomizes it.
 # Define the spatial distribution as a 2D plane
@@ -82,9 +82,9 @@
 # -------------------------------------------------------------------------
 # Parameterized Coordinates
 # -------------------------------------------------------------------------
-/gps/pos/centre @X@ @Y@ @Z@ mm 
+/gps/pos/centre 0. 0. 5.50024 mm 
 
 /gps/ene/type Mono
 /gps/energy 1 meV
 
-/run/beamOn 1
+/run/beamOn 64
