@@ -87,9 +87,7 @@ def create_color_norm(heatmap_data, scale_type='log', upper_percentile=99.9):
     if vmin >= vmax:
         vmax = valid_data.max()
 
-    if scale_type == 'sigmoid':
-        return SigmoidNorm(vmin=vmin, vmax=vmax, sharpness=10, midpoint=0.5)
-    elif scale_type == 'log':
+    if scale_type == 'log':
         return mcolors.LogNorm(vmin=vmin, vmax=vmax)
     else: # linear
         return mcolors.Normalize(vmin=vmin, vmax=vmax)
@@ -137,7 +135,7 @@ def render_heatmap(matrix, x_bounds, y_bounds, output_path, scale_type='log'):
         spine.set_linewidth(1.5)
 
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300)
+    plt.savefig(output_path, transparent=True, dpi=300)
     plt.close(fig)
     print(f"Heatmap figure successfully rendered to: {output_path}")
 

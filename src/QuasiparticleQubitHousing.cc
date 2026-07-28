@@ -45,6 +45,8 @@
 #include "QuasiparticleQubitHousing.hh"
 #include "QuasiparticleDetectorParameters.hh"
 
+#include "G4RotationMatrix.hh"
+
 using namespace QuasiparticleDetectorParameters;
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

@@ -6,6 +6,9 @@
 #include "G4UnionSolid.hh"
 #include <algorithm>
 
+#include "G4Box.hh"
+#include "G4SystemOfUnits.hh"
+
 ExtrudedLayerBuilder::ExtrudedLayerBuilder()
   : fMaterial(nullptr), 
     fPosition(0, 0, 0), 
@@ -71,7 +74,25 @@ G4VPhysicalVolume* ExtrudedLayerBuilder::BuildUnifiedLayer(
         subSolids = nextLevel;
     }
 
-    G4VSolid* unifiedSolid = subSolids[0];
+    G4VSolid* unifiedSolid = subSolids[0]; // The default GDS binary tree solid
+
+    // ---------------------------------------------------------
+    // DIAGNOSTIC TOGGLE: Primitive Swap Test
+    // Set to 'true' to override the GDS solid with a G4Box.
+    // Set to 'false' to run your normal binary tree.
+    // ---------------------------------------------------------
+
+    /*
+    bool useSimpleBoxTest = true; 
+    
+    if (useSimpleBoxTest) {
+        // G4Box takes HALF-dimensions: 2.5mm = 5mm total width, 100nm = 200nm total height
+        unifiedSolid = new G4Box("GroundPlane_Solid_Primitive", 2.5 * mm, 2.5 * mm, 100.0 * nm);
+        G4cout << "[DEBUG-EXTRUDED] OVERRIDE: Using G4Box primitive instead of binary tree!" << G4endl;
+    }
+    // ---------------------------------------------------------
+    */
+
     G4String logicName = fNamePrefix + "_Logic";
     fUnifiedLogical = new G4LogicalVolume(unifiedSolid, fMaterial, logicName);
 

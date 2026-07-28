@@ -47,6 +47,8 @@
 #include "QuasiparticlePad.hh"
 #include "QuasiparticleDetectorParameters.hh"
 
+#include "G4RotationMatrix.hh"
+
 using namespace QuasiparticleDetectorParameters;
 
 // Primary Constructor

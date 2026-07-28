@@ -1044,7 +1044,8 @@ std::vector<G4TwoVector> padPolygon;
 
       // 2. Calculate placement using YOUR macro-controlled rotations
       G4double jsonThickness = jsonParser.GetThickness();
-      G4double extrudedLocalZ = 0.5 * dp_housingDimZ + dp_eps + (jsonThickness / 2.0);
+      G4double overlapEps = 1.0 * nm;
+      G4double extrudedLocalZ = 0.5 * dp_housingDimZ + dp_eps + (jsonThickness / 2.0) - overlapEps;
       G4ThreeVector localExtrudedPos(0, 0, extrudedLocalZ);
       G4ThreeVector globalExtrudedPos = userPos + (*baseRot)(localExtrudedPos);
 

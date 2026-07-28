@@ -6,7 +6,7 @@
 /control/verbose 0
 /run/verbose 0
 /event/verbose 0
-/tracking/verbose 2
+/tracking/verbose 1
 /process/verbose 0
 # Turned to 2 so you can see the secondary particles list in the console
 
@@ -19,7 +19,7 @@
 /QR/geom/useQubitArray true
 #/QR/physics/killLowEnergyPhonons true
 
-/QR/output/filename ../output/g4sim/q_array_cmp/test_QPBIRTH.csv
+/QR/output/filename ../output/g4sim/q_array_cmp/test_two_QPBIRTH.csv
 # swap this to .root when using cluster
 /QR/output/writeSteps true
 /QR/output/writeAllEvents true
@@ -35,8 +35,8 @@
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-#/g4cmp/producePhonons 0.000001                                                                                                           
-/g4cmp/producePhonons 1.0
+/g4cmp/producePhonons 0.000001                                                                                                           
+#/g4cmp/producePhonons 1.0
 
 /g4cmp/produceCharges 1.0
 # gets rid of the holes and electrons as we only wanna look at qps
@@ -51,7 +51,7 @@
 #/g4cmp/maxLukePhonons 100000
 
 #/g4cmp/minEPhonons 0.000001 eV   
-/g4cmp/minEPhonons 0.00035 eV
+/g4cmp/minEPhonons 0.00033 eV
 /g4cmp/recordMinETracks false
 /g4cmp/combiningStepLength 100 um
 /g4cmp/eTrappingMFP 50 um

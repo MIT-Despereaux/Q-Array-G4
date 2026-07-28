@@ -198,6 +198,7 @@ namespace QArray
       */
 
       // 3. Map dynamic superconducting ground plane(s) - UPDATED FOR MULTIPLE EXTRUDED VOLUMES
+      /*
       for (auto* physVol : *store) {
           G4String pName = physVol->GetName();
           // This will match "GroundPlane", "GroundPlane_Extruded_Phys_0", etc.
@@ -209,6 +210,7 @@ namespace QArray
               LM->RegisterLattice(physVol, crystalGround);
           }
       }
+      */
     else
     {
       // Classic Calibration Run Fallback Mode

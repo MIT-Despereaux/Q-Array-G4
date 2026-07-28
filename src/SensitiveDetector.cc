@@ -296,17 +296,29 @@ bool SensitiveDetector::Accept(const G4Step *step)
     }
 
     // 4. BACKGROUND PARTICLES (Neutrons, Gammas, Electrons, etc.)
-    // Only register backgrounds when they first strike/enter the active volume.
-    if (step->IsFirstStepInVolume())
+    
+    G4double edep = step->GetTotalEnergyDeposit() + step->GetNonIonizingEnergyDeposit();
+
+    // Enforce the threshold logic if one is set
+    if (fStepThreshold > 0.0 && edep < fStepThreshold)
     {
-      if (fStepThreshold > 0.0)
-      {
-        G4double edep = step->GetTotalEnergyDeposit() + step->GetNonIonizingEnergyDeposit();
-        if (edep < fStepThreshold)
-        {
-          return false;
-        }
-      }
+      return false;
+    }
+
+    // Check if the primary neutral particle underwent a scattering event 
+    // that created recoil ions or secondary electrons.
+    bool createdSecondaries = false;
+    if (step->GetSecondaryInCurrentStep() != nullptr) {
+        createdSecondaries = (step->GetSecondaryInCurrentStep()->size() > 0);
+    }
+
+    // Accept the step if:
+    // A) It is the first step entering the volume (entry tracking)
+    // B) It directly deposits energy (charged particles, gamma absorption)
+    // C) It creates secondaries (crucial for neutron elastic scatters where the 
+    //    neutron track itself registers 0 edep but transfers energy to a recoil ion)
+    if (step->IsFirstStepInVolume() || edep > 0.0 || createdSecondaries)
+    {
       return true;
     }
 
