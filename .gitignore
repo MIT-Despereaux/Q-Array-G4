@@ -69,5 +69,7 @@ examples/
 # Analysis notebook outputs
 notebook/image/*.png
 notebook/image/charts/*.png
+notebook/notebook/image/charts/*.png
 !notebook/image/.gitkeep
 __marimo__
+

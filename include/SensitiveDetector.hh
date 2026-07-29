@@ -100,6 +100,9 @@ namespace QArray
     G4double fStepThreshold;
     G4bool bWriteLocalCoords;
     G4bool bWriteDeepCopyNo;
+
+    // --- NEW VARIABLE FOR EVENT ENERGY SUMMATION ---
+    G4double fTotalEventEdep;
   };
 }
 

@@ -8,8 +8,11 @@ import matplotlib.pyplot as plt
 # ==========================================
 # Configuration & Setup
 # ==========================================
-CSV_DIRECTORY = '/home/tclassen/projects/output/g4sim/q_array_cmp/'
-FILE_PATTERN = 'ISO_AmBe*.csv'
+#CSV_DIRECTORY = '/home/tclassen/projects/output/g4sim/q_array_cmp/'
+#FILE_PATTERN = 'ISO_AmBe*.csv'
+
+CSV_DIRECTORY = '../output/g4sim/q_array_cmp/'
+FILE_PATTERN = 'Does_Ga*.csv'
 
 # Column names present in your Geant4 Ntuples
 PARTICLE_COL = 'particleName' 
@@ -18,6 +21,8 @@ ENERGY_COL = 'edep'
 # Binning settings (energies in MeV)
 MIN_ENERGY = 0.0001  # Ignores zero/near-zero energy hits
 MAX_ENERGY = 0.05    # Adjust based on maximum particle energy expected
+#MAX_ENERGY = 10.0    # Adjust based on maximum particle energy expected
+
 NUM_BINS = 1000
 
 # Create histogram bin edges
