@@ -14,7 +14,19 @@
 #include "G4VSolid.hh"
 #include "G4TransportationManager.hh"
 
+// added these because I want to add a seperate Edep file, I know probably more efficient ways.
+#include "G4RunManager.hh"
+#include "G4Event.hh"
+#include "G4PrimaryVertex.hh"
+#include "G4PrimaryParticle.hh"
+#include "G4AutoLock.hh"
+#include <fstream>
+
 // #include <set>
+
+namespace {
+  G4Mutex summaryCsvMutex = G4MUTEX_INITIALIZER;
+}
 
 namespace QArray
 {
@@ -44,6 +56,9 @@ namespace QArray
 
   void SensitiveDetector::Initialize(G4HCofThisEvent *hce)
   {
+    // --- RESET EVENT ENERGY ---
+    fTotalEventEdep = 0.0;
+
     mHitCollection = new QRHitsCollection(SensitiveDetectorName,
                                           collectionName[0]);
     G4int hcid = G4SDManager::GetSDMpointer()->GetCollectionID(collectionName[0]);
@@ -183,6 +198,13 @@ namespace QArray
 
   G4bool SensitiveDetector::ProcessHits(G4Step *step, G4TouchableHistory *)
   {
+    
+    // --- ACCUMULATE ENERGY ---
+    G4double edep = step->GetTotalEnergyDeposit();
+    if (edep > 0.0) {
+        fTotalEventEdep += edep;
+    }
+
     if (!Accept(step))
       return false;
     G4int copyno = -1;
@@ -231,6 +253,29 @@ namespace QArray
 
   void SensitiveDetector::EndOfEvent(G4HCofThisEvent *)
   {
+    // Skip writing if nothing was deposited to save file space
+    if (fTotalEventEdep <= 0.0) return;
+
+    const G4Event* evt = G4RunManager::GetRunManager()->GetCurrentEvent();
+    if (!evt || evt->GetNumberOfPrimaryVertex() == 0) return;
+
+    G4PrimaryParticle* primary = evt->GetPrimaryVertex(0)->GetPrimary(0);
+    if (!primary) return;
+
+    G4String particleName = primary->GetParticleDefinition()->GetParticleName();
+    G4double initialEnergy = primary->GetKineticEnergy() / eV; // Record in eV
+    G4double depositedEnergy = fTotalEventEdep / eV;           // Record in eV
+
+    // Safely lock the thread to append to the CSV
+    G4AutoLock lock(&summaryCsvMutex);
+    std::ofstream outFile("SpectrumEnergySummary.csv", std::ios::app);
+    if (outFile.is_open())
+    {
+      outFile << particleName << "," 
+              << initialEnergy << "," 
+              << depositedEnergy << "\n";
+      outFile.close();
+    }
   }
 
 bool SensitiveDetector::Accept(const G4Step *step)
@@ -297,7 +342,7 @@ bool SensitiveDetector::Accept(const G4Step *step)
 
     // 4. BACKGROUND PARTICLES (Neutrons, Gammas, Electrons, etc.)
     
-    G4double edep = step->GetTotalEnergyDeposit() + step->GetNonIonizingEnergyDeposit();
+    G4double edep = step->GetTotalEnergyDeposit();
 
     // Enforce the threshold logic if one is set
     if (fStepThreshold > 0.0 && edep < fStepThreshold)
