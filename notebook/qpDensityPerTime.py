@@ -6,9 +6,6 @@ import os
 
 class QuasiparticleAnalyzer:
     def __init__(self, slurm_file, jj_csv_file, zone_radius_mm=0.1, time_bin_size_ns=100.0):
-        """
-        Initializes the analyzer with file paths and parameters.
-        """
         self.slurm_file = slurm_file
         self.jj_csv_file = jj_csv_file
         self.intervals_csv = "qp_intervals.csv"
@@ -17,26 +14,30 @@ class QuasiparticleAnalyzer:
         self.zone_radius_mm = zone_radius_mm
         self.time_bin_size_ns = time_bin_size_ns
         
-        # Pre-compile regex for performance
-        # Extracts: TrackID, Time(ns), X(mm), Y(mm)
-        self.regex = re.compile(
-            r"\[QP STEP REGISTERED\]\s+TrackID:\s+(\d+)\s+\|\s+Time:\s+([\d\.]+)\s+ns\s+\|\s+Pos:\s+\(([\-\d\.]+),([\-\d\.]+),[\-\d\.]+\)\s+mm"
-        )
+        # Physics Constants for Velocity Calculation
+        self.m_eff_kg = 9.109e-31  # Electron effective mass (adjust if using specific band mass for Al)
+        self.ev_to_joules = 1.602e-19
+        
+        # Unit Conversion Dictionaries
+        self.len_to_mm = {'fm': 1e-12, 'nm': 1e-6, 'um': 1e-3, 'mm': 1.0, 'cm': 10.0, 'm': 1e3}
+        self.len_to_m = {'fm': 1e-15, 'nm': 1e-9, 'um': 1e-6, 'mm': 1e-3, 'cm': 1e-2, 'm': 1.0}
+        self.e_to_ev = {'ueV': 1e-6, 'meV': 1e-3, 'eV': 1.0, 'keV': 1e3, 'MeV': 1e6}
+        
+        # Regex to catch the start of a track and the registration time
+        self.track_regex = re.compile(r"\*\s+G4Track Information:\s+Particle\s+=\s+BogoliubovQP,\s+Track ID\s+=\s+(\d+)")
+        self.reg_regex = re.compile(r"\[QP STEP REGISTERED\]\s+TrackID:\s+(\d+)\s+\|\s+Time:\s+([\d\.]+)\s+ns")
         
         self.jj_coords = self._load_jj_coordinates()
 
     def _load_jj_coordinates(self):
-        """
-        Loads the coordinates for the Josephson Junctions.
-        """
         if os.path.exists(self.jj_csv_file):
             return pd.read_csv(self.jj_csv_file)
         else:
-            print(f"Warning: {self.jj_csv_file} not found. Using mock data for testing.")
+            print(f"Warning: {self.jj_csv_file} not found. Using mock data.")
             return pd.DataFrame({
-                'JJ_ID': [1, 2, 3, 4, 5, 6, 7, 8],
-                'X_mm': [0.0, 0.5, -0.5, 1.0, -1.0, 0.0, 0.0, 1.5],
-                'Y_mm': [1.0, 1.0, 1.0, 1.5, 1.5, 0.5, 1.5, 2.0]
+                'JJ_ID':[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+                'X_mm': [-1.81656, -1.55744, -0.76656, -0.50744, 0.28244, 0.54156, 1.33244, 1.59156, -1.81656, -1.55744, -0.76656, -0.50744, 0.28244, 0.54156, 1.33244, 1.59156],
+                'Y_mm': [1.15, 1.15, 1.15, 1.15, 1.15, 1.15, 1.15, 1.15, -1.121, -1.121, -1.121, -1.121, -1.121, -1.121, -1.121, -1.121]
             })
 
     def check_segment_intersection(self, pos_start, pos_end, zone_center):
@@ -61,7 +62,6 @@ class QuasiparticleAnalyzer:
             return False, None, None
             
         discriminant = quadratic_b**2 - 4 * quadratic_a * quadratic_c
-        
         if discriminant < 0:
             return False, None, None
             
@@ -76,70 +76,143 @@ class QuasiparticleAnalyzer:
         return False, None, None
 
     def parse_simulation_data(self):
-        """
-        Parses the SLURM file to extract birth and death events for each quasiparticle.
-        """
-        print("Parsing SLURM file for birth and death events...")
-        qp_data = {}
-        
-        with open(self.slurm_file, 'r') as file_handle:
-            for line in file_handle:
-                if line.startswith("G4WT") and "[QP STEP REGISTERED]" in line:
-                    match = self.regex.search(line)
-                    if match:
-                        track_id = int(match.group(1))
-                        time_ns = float(match.group(2))
-                        x_mm = float(match.group(3))
-                        y_mm = float(match.group(4))
-                        
-                        if track_id not in qp_data:
-                            # First time seeing this ID: log as birth
-                            qp_data[track_id] = {'birth': (time_ns, x_mm, y_mm)}
-                        else:
-                            # ID already exists: log as death
-                            qp_data[track_id]['death'] = (time_ns, x_mm, y_mm)
+            """
+            Parses the random walk steps and global start times from the SLURM file.
+            Safely ignores non-quasiparticle tracks (like phonons).
+            """
+            print("Parsing random walk tracks from SLURM file...")
+            qp_data = {}
+            current_track_id = None
+            
+            # Updated regex to capture the Particle Type AND the Track ID
+            track_banner_regex = re.compile(r"\*\s+G4Track Information:\s+Particle\s+=\s+(\w+),\s+Track ID\s+=\s+(\d+)")
+            registration_regex = re.compile(r"\[QP STEP REGISTERED\]\s+TrackID:\s+(\d+)\s+\|\s+Time:\s+([\d\.]+)\s+ns")
+            
+            with open(self.slurm_file, 'r') as file_handle:
+                for line in file_handle:
+                    
+                    # 1. Look for ANY Track Declaration (to safely switch IDs on or off)
+                    if "G4Track Information" in line:
+                        match = track_banner_regex.search(line)
+                        if match:
+                            particle_type = match.group(1)
+                            track_id = int(match.group(2))
                             
+                            if particle_type == "BogoliubovQP":
+                                # It is a quasiparticle, start recording steps to this ID
+                                current_track_id = track_id
+                                if current_track_id not in qp_data:
+                                    qp_data[current_track_id] = {'start_time_nanoseconds': None, 'steps': []}
+                            else:
+                                # It is a phonon or electron, stop recording steps!
+                                current_track_id = None
+                    
+                    # 2. Look for Global Start Time
+                    elif "[QP STEP REGISTERED]" in line:
+                        match = registration_regex.search(line)
+                        if match:
+                            registered_track_id = int(match.group(1))
+                            time_nanoseconds = float(match.group(2))
+                            
+                            # Only set the start time on the first registration (birth)
+                            if registered_track_id in qp_data and qp_data[registered_track_id]['start_time_nanoseconds'] is None:
+                                qp_data[registered_track_id]['start_time_nanoseconds'] = time_nanoseconds
+                                
+                    # 3. Look for Step Data (Only processes if we are actively tracking a QP)
+                    elif current_track_id is not None and "G4WT" in line:
+                        line_parts = line.split(">")[-1].strip().split()
+                        
+                        # Geant4 step line has >15 elements and starts with the step number (integer)
+                        if len(line_parts) >= 15 and line_parts[0].isdigit():
+                            try:
+                                # Extract and convert units based on known Geant4 column structure
+                                position_x_mm = float(line_parts[1]) * self.len_to_mm[line_parts[2]]
+                                position_y_mm = float(line_parts[3]) * self.len_to_mm[line_parts[4]]
+                                kinetic_energy_ev = float(line_parts[7]) * self.e_to_ev[line_parts[8]]
+                                step_length_meters = float(line_parts[11]) * self.len_to_m[line_parts[12]]
+                                
+                                qp_data[current_track_id]['steps'].append({
+                                    'x_mm': position_x_mm,
+                                    'y_mm': position_y_mm,
+                                    'ke_ev': kinetic_energy_ev,
+                                    'step_len_m': step_length_meters
+                                })
+                            except (ValueError, KeyError):
+                                # Skip boundary summaries or malformed lines
+                                continue
+
+            return qp_data
+
+    def calculate_absolute_step_times(self, qp_data):
+        """
+        Uses non-relativistic kinematics to calculate the absolute time at each node of the random walk.
+        """
+        print("Calculating absolute times for random walk nodes...")
+        
+        for track_id, data in qp_data.items():
+            if data['start_time_nanoseconds'] is None or not data['steps']:
+                continue
+                
+            current_time_ns = data['start_time_nanoseconds']
+            
+            for step in data['steps']:
+                ke_joules = step['ke_ev'] * self.ev_to_joules
+                step['abs_time_ns'] = current_time_ns
+                
+                # If kinetic energy is essentially zero, particle stopped; time delta is 0
+                if ke_joules > 0:
+                    velocity_m_s = np.sqrt((2 * ke_joules) / self.m_eff_kg)
+                    dt_seconds = step['step_len_m'] / velocity_m_s
+                    dt_ns = dt_seconds * 1e9
+                    current_time_ns += dt_ns
+
         return qp_data
 
     def calculate_zone_intervals(self, qp_data):
         """
-        Calculates when each particle intersected with any JJ zone.
+        Evaluates every step segment to see if the QP passed through a JJ zone.
         """
-        print("Calculating intersections with JJ Zones...")
+        print("Evaluating random walk segments against JJ Zones...")
         intervals = []
 
-        for track_id, lifecycle in qp_data.items():
-            # Sanity check: Ensure particle has both birth and death recorded
-            if 'death' not in lifecycle:
-                continue 
+        for track_id, data in qp_data.items():
+            steps = data['steps']
+            if len(steps) < 2:
+                continue
                 
-            time_birth, x_birth, y_birth = lifecycle['birth']
-            time_death, x_death, y_death = lifecycle['death']
-            
-            pos_birth = (x_birth, y_birth)
-            pos_death = (x_death, y_death)
-            time_delta = time_death - time_birth
-            
-            for _, row in self.jj_coords.iterrows():
-                jj_id = int(row['JJ_ID'])
-                zone_center = (row['X_mm'], row['Y_mm'])
+            # Iterate through step segments (Node N-1 to Node N)
+            for i in range(1, len(steps)):
+                prev_step = steps[i-1]
+                curr_step = steps[i]
                 
-                intersected, entry_ratio, exit_ratio = self.check_segment_intersection(
-                    pos_start=pos_birth, 
-                    pos_end=pos_death, 
-                    zone_center=zone_center
-                )
+                # Check for skipped absolute times (happens if global start time was missing)
+                if 'abs_time_ns' not in prev_step or 'abs_time_ns' not in curr_step:
+                    continue
+
+                pos_prev = (prev_step['x_mm'], prev_step['y_mm'])
+                pos_curr = (curr_step['x_mm'], curr_step['y_mm'])
+                time_delta = curr_step['abs_time_ns'] - prev_step['abs_time_ns']
                 
-                if intersected:
-                    start_time = time_birth + (time_delta * entry_ratio)
-                    stop_time = time_birth + (time_delta * exit_ratio)
+                for _, row in self.jj_coords.iterrows():
+                    jj_id = int(row['JJ_ID'])
+                    zone_center = (row['X_mm'], row['Y_mm'])
                     
-                    intervals.append({
-                        "Start": start_time,
-                        "Stop": stop_time,
-                        "Zone #": jj_id,
-                        "Particle ID #": track_id
-                    })
+                    intersected, entry_ratio, exit_ratio = self.check_segment_intersection(
+                        pos_start=pos_prev, 
+                        pos_end=pos_curr, 
+                        zone_center=zone_center
+                    )
+                    
+                    if intersected:
+                        start_time = prev_step['abs_time_ns'] + (time_delta * entry_ratio)
+                        stop_time = prev_step['abs_time_ns'] + (time_delta * exit_ratio)
+                        
+                        intervals.append({
+                            "Start": start_time,
+                            "Stop": stop_time,
+                            "Zone #": jj_id,
+                            "Particle ID #": track_id
+                        })
 
         df_intervals = pd.DataFrame(intervals)
         df_intervals.to_csv(self.intervals_csv, index=False)
@@ -147,9 +220,7 @@ class QuasiparticleAnalyzer:
         return df_intervals
 
     def bin_time_intervals(self, df_intervals):
-        """
-        Bins the interval data into discrete time steps and counts unique particles.
-        """
+        # [Unchanged from previous OO implementation]
         print("Binning data by time...")
         if df_intervals.empty:
             return pd.DataFrame()
@@ -158,29 +229,23 @@ class QuasiparticleAnalyzer:
         time_bins = np.arange(0, max_time + self.time_bin_size_ns, self.time_bin_size_ns)
         
         binned_data = []
-        
         for i in range(len(time_bins) - 1):
             bin_start = time_bins[i]
             bin_end = time_bins[i+1]
             mid_time = (bin_start + bin_end) / 2
             
-            overlapping_intervals = df_intervals[
-                (df_intervals['Start'] < bin_end) & (df_intervals['Stop'] > bin_start)
-            ]
+            overlapping = df_intervals[(df_intervals['Start'] < bin_end) & (df_intervals['Stop'] > bin_start)]
             
             for jj_id in self.jj_coords['JJ_ID']:
-                zone_intervals = overlapping_intervals[overlapping_intervals['Zone #'] == jj_id]
-                unique_particles = zone_intervals['Particle ID #'].nunique()
-                
+                zone_intervals = overlapping[overlapping['Zone #'] == jj_id]
                 binned_data.append({
                     "Time": mid_time,
-                    "Number of QP": unique_particles,
+                    "Number of QP": zone_intervals['Particle ID #'].nunique(),
                     "Zone #": jj_id
                 })
 
         df_binned = pd.DataFrame(binned_data)
         df_binned.to_csv(self.binned_csv, index=False)
-        print(f"Saved binned data to {self.binned_csv}")
         return df_binned
 
     def plot_density(self, df_binned):
@@ -193,7 +258,7 @@ class QuasiparticleAnalyzer:
             return
 
         plt.figure(figsize=(12, 6))
-        color_map = plt.cm.get_cmap('tab10', len(self.jj_coords))
+        color_map = plt.get_cmap('tab20', len(self.jj_coords))
         
         for idx, jj_id in enumerate(self.jj_coords['JJ_ID']):
             zone_subset = df_binned[df_binned['Zone #'] == jj_id]
@@ -218,26 +283,22 @@ class QuasiparticleAnalyzer:
         print("Plot saved as 'qp_density_plot.png'")
 
     def run(self):
-        """
-        Executes the full analysis pipeline.
-        """
-        qp_data = self.parse_simulation_data()
-        df_intervals = self.calculate_zone_intervals(qp_data)
+        qp_data_raw = self.parse_simulation_data()
+        qp_data_timed = self.calculate_absolute_step_times(qp_data_raw)
+        df_intervals = self.calculate_zone_intervals(qp_data_timed)
         df_binned = self.bin_time_intervals(df_intervals)
         self.plot_density(df_binned)
 
 
 if __name__ == "__main__":
-    # Define file names
     SLURM_OUTPUT = "simulation_output.txt"
-    JJ_COORDINATES = "jj_coordinates.csv"
+    JJ_COORDINATES = ""
     
-    # Initialize and run the analyzer
     analyzer = QuasiparticleAnalyzer(
         slurm_file=SLURM_OUTPUT, 
         jj_csv_file=JJ_COORDINATES,
-        zone_radius_mm=0.1,      # 100 um
-        time_bin_size_ns=100.0   # Adjust based on expected diffusion timescale
+        zone_radius_mm=0.1,      
+        time_bin_size_ns=100.0   
     )
     
     analyzer.run()
