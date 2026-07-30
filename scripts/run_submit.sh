@@ -11,9 +11,9 @@
 #SBATCH -N 1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=16G
+#SBATCH --mem-per-cpu=4G
 #SBATCH --partition=mit_normal
-
+set -euo pipefail
 # Set up environment
 module load cmake
 module load gcc/12.2.0
@@ -25,4 +25,9 @@ cd /home/tclassen/projects/build-dspx
 export G4CMP_CRYSTAL_MAPS="/home/tclassen/dependencies/g4cmp-install/share/G4CMP/CrystalMaps"
 ln -sfn /home/tclassen/dependencies/g4cmp-install/share/G4CMP/CrystalMaps/* ./
 mkdir -p ../output/g4sim/q_array_cmp
+
+echo "Job ${SLURM_JOB_ID} on $(hostname)"
+echo "CPUs: ${SLURM_CPUS_PER_TASK}  Mem/CPU: ${SLURM_MEM_PER_CPU:-unset}"
+echo "Started $(date)"
 ./main ../macros/neutron_gun_batch.mac
+echo "Finished $(date)"
