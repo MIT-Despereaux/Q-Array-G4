@@ -27,6 +27,6 @@ namespace QArray
     TrackingAction* trackingAction = new TrackingAction(writer);
     SetUserAction(trackingAction);
 
-    // SetUserAction(new SteppingAction(event));
+    SetUserAction(new SteppingAction(event));
   }
 }
