@@ -3,6 +3,7 @@ import numpy as np
 import re
 import matplotlib.pyplot as plt
 import os
+import argparse
 
 class QuasiparticleAnalyzer:
     def __init__(self, slurm_file, jj_csv_file, zone_radius_mm=0.1, time_bin_size_ns=100.0):
@@ -41,10 +42,6 @@ class QuasiparticleAnalyzer:
             })
 
     def check_segment_intersection(self, pos_start, pos_end, zone_center):
-        """
-        Checks if a straight line segment intersects a circular zone.
-        Returns (True, entry_ratio, exit_ratio) or (False, None, None)
-        """
         pos_start = np.array(pos_start)
         pos_end = np.array(pos_end)
         center = np.array(zone_center)
@@ -76,77 +73,59 @@ class QuasiparticleAnalyzer:
         return False, None, None
 
     def parse_simulation_data(self):
-            """
-            Parses the random walk steps and global start times from the SLURM file.
-            Safely ignores non-quasiparticle tracks (like phonons).
-            """
-            print("Parsing random walk tracks from SLURM file...")
-            qp_data = {}
-            current_track_id = None
-            
-            # Updated regex to capture the Particle Type AND the Track ID
-            track_banner_regex = re.compile(r"\*\s+G4Track Information:\s+Particle\s+=\s+(\w+),\s+Track ID\s+=\s+(\d+)")
-            registration_regex = re.compile(r"\[QP STEP REGISTERED\]\s+TrackID:\s+(\d+)\s+\|\s+Time:\s+([\d\.]+)\s+ns")
-            
-            with open(self.slurm_file, 'r') as file_handle:
-                for line in file_handle:
-                    
-                    # 1. Look for ANY Track Declaration (to safely switch IDs on or off)
-                    if "G4Track Information" in line:
-                        match = track_banner_regex.search(line)
-                        if match:
-                            particle_type = match.group(1)
-                            track_id = int(match.group(2))
-                            
-                            if particle_type == "BogoliubovQP":
-                                # It is a quasiparticle, start recording steps to this ID
-                                current_track_id = track_id
-                                if current_track_id not in qp_data:
-                                    qp_data[current_track_id] = {'start_time_nanoseconds': None, 'steps': []}
-                            else:
-                                # It is a phonon or electron, stop recording steps!
-                                current_track_id = None
-                    
-                    # 2. Look for Global Start Time
-                    elif "[QP STEP REGISTERED]" in line:
-                        match = registration_regex.search(line)
-                        if match:
-                            registered_track_id = int(match.group(1))
-                            time_nanoseconds = float(match.group(2))
-                            
-                            # Only set the start time on the first registration (birth)
-                            if registered_track_id in qp_data and qp_data[registered_track_id]['start_time_nanoseconds'] is None:
-                                qp_data[registered_track_id]['start_time_nanoseconds'] = time_nanoseconds
-                                
-                    # 3. Look for Step Data (Only processes if we are actively tracking a QP)
-                    elif current_track_id is not None and "G4WT" in line:
-                        line_parts = line.split(">")[-1].strip().split()
+        print("Parsing random walk tracks from SLURM file...")
+        qp_data = {}
+        current_track_id = None
+        
+        track_banner_regex = re.compile(r"\*\s+G4Track Information:\s+Particle\s+=\s+(\w+),\s+Track ID\s+=\s+(\d+)")
+        registration_regex = re.compile(r"\[QP STEP REGISTERED\]\s+TrackID:\s+(\d+)\s+\|\s+Time:\s+([\d\.]+)\s+ns")
+        
+        with open(self.slurm_file, 'r') as file_handle:
+            for line in file_handle:
+                if "G4Track Information" in line:
+                    match = track_banner_regex.search(line)
+                    if match:
+                        particle_type = match.group(1)
+                        track_id = int(match.group(2))
                         
-                        # Geant4 step line has >15 elements and starts with the step number (integer)
-                        if len(line_parts) >= 15 and line_parts[0].isdigit():
-                            try:
-                                # Extract and convert units based on known Geant4 column structure
-                                position_x_mm = float(line_parts[1]) * self.len_to_mm[line_parts[2]]
-                                position_y_mm = float(line_parts[3]) * self.len_to_mm[line_parts[4]]
-                                kinetic_energy_ev = float(line_parts[7]) * self.e_to_ev[line_parts[8]]
-                                step_length_meters = float(line_parts[11]) * self.len_to_m[line_parts[12]]
-                                
-                                qp_data[current_track_id]['steps'].append({
-                                    'x_mm': position_x_mm,
-                                    'y_mm': position_y_mm,
-                                    'ke_ev': kinetic_energy_ev,
-                                    'step_len_m': step_length_meters
-                                })
-                            except (ValueError, KeyError):
-                                # Skip boundary summaries or malformed lines
-                                continue
+                        if particle_type == "BogoliubovQP":
+                            current_track_id = track_id
+                            if current_track_id not in qp_data:
+                                qp_data[current_track_id] = {'start_time_nanoseconds': None, 'steps': []}
+                        else:
+                            current_track_id = None
+                
+                elif "[QP STEP REGISTERED]" in line:
+                    match = registration_regex.search(line)
+                    if match:
+                        registered_track_id = int(match.group(1))
+                        time_nanoseconds = float(match.group(2))
+                        
+                        if registered_track_id in qp_data and qp_data[registered_track_id]['start_time_nanoseconds'] is None:
+                            qp_data[registered_track_id]['start_time_nanoseconds'] = time_nanoseconds
+                            
+                elif current_track_id is not None and "G4WT" in line:
+                    line_parts = line.split(">")[-1].strip().split()
+                    
+                    if len(line_parts) >= 15 and line_parts[0].isdigit():
+                        try:
+                            position_x_mm = float(line_parts[1]) * self.len_to_mm[line_parts[2]]
+                            position_y_mm = float(line_parts[3]) * self.len_to_mm[line_parts[4]]
+                            kinetic_energy_ev = float(line_parts[7]) * self.e_to_ev[line_parts[8]]
+                            step_length_meters = float(line_parts[11]) * self.len_to_m[line_parts[12]]
+                            
+                            qp_data[current_track_id]['steps'].append({
+                                'x_mm': position_x_mm,
+                                'y_mm': position_y_mm,
+                                'ke_ev': kinetic_energy_ev,
+                                'step_len_m': step_length_meters
+                            })
+                        except (ValueError, KeyError):
+                            continue
 
-            return qp_data
+        return qp_data
 
     def calculate_absolute_step_times(self, qp_data):
-        """
-        Uses non-relativistic kinematics to calculate the absolute time at each node of the random walk.
-        """
         print("Calculating absolute times for random walk nodes...")
         
         for track_id, data in qp_data.items():
@@ -159,7 +138,6 @@ class QuasiparticleAnalyzer:
                 ke_joules = step['ke_ev'] * self.ev_to_joules
                 step['abs_time_ns'] = current_time_ns
                 
-                # If kinetic energy is essentially zero, particle stopped; time delta is 0
                 if ke_joules > 0:
                     velocity_m_s = np.sqrt((2 * ke_joules) / self.m_eff_kg)
                     dt_seconds = step['step_len_m'] / velocity_m_s
@@ -169,9 +147,6 @@ class QuasiparticleAnalyzer:
         return qp_data
 
     def calculate_zone_intervals(self, qp_data):
-        """
-        Evaluates every step segment to see if the QP passed through a JJ zone.
-        """
         print("Evaluating random walk segments against JJ Zones...")
         intervals = []
 
@@ -180,12 +155,10 @@ class QuasiparticleAnalyzer:
             if len(steps) < 2:
                 continue
                 
-            # Iterate through step segments (Node N-1 to Node N)
             for i in range(1, len(steps)):
                 prev_step = steps[i-1]
                 curr_step = steps[i]
                 
-                # Check for skipped absolute times (happens if global start time was missing)
                 if 'abs_time_ns' not in prev_step or 'abs_time_ns' not in curr_step:
                     continue
 
@@ -220,7 +193,6 @@ class QuasiparticleAnalyzer:
         return df_intervals
 
     def bin_time_intervals(self, df_intervals):
-        # [Unchanged from previous OO implementation]
         print("Binning data by time...")
         if df_intervals.empty:
             return pd.DataFrame()
@@ -249,48 +221,72 @@ class QuasiparticleAnalyzer:
         return df_binned
 
     def plot_density(self, df_binned):
-        """
-        Generates a scatter plot of QP density over time per JJ zone.
-        """
-        print("Generating Scatter Plot...")
+        print("Generating Line Plot with Standard Deviation...")
         if df_binned.empty:
             print("No data available to plot.")
             return
 
-        plt.figure(figsize=(12, 6))
-        color_map = plt.get_cmap('tab20', len(self.jj_coords))
+        plt.figure(figsize=(14, 7))
+        color_map = plt.get_cmap('tab20', max(20, len(self.jj_coords)))
+        rolling_window_size = 10 
         
         for idx, jj_id in enumerate(self.jj_coords['JJ_ID']):
-            zone_subset = df_binned[df_binned['Zone #'] == jj_id]
-            active_points = zone_subset[zone_subset['Number of QP'] > 0]
+            zone_subset = df_binned[df_binned['Zone #'] == jj_id].sort_values(by='Time')
+            times = zone_subset['Time']
+            counts = zone_subset['Number of QP']
             
-            plt.scatter(
-                active_points['Time'], 
-                active_points['Number of QP'], 
-                label=f'JJ {jj_id}', 
-                color=color_map(idx),
-                alpha=0.7,
-                edgecolors='k'
+            rolling_mean = counts.rolling(window=rolling_window_size, min_periods=1).mean()
+            rolling_std = counts.rolling(window=rolling_window_size, min_periods=1).std().fillna(0)
+            
+            plt.plot(
+                times, counts, label=f'JJ {jj_id}', color=color_map(idx),
+                marker='o', linestyle='-', markersize=3, linewidth=1, alpha=0.6
+            )
+            
+            plt.fill_between(
+                times, rolling_mean - rolling_std, rolling_mean + rolling_std, 
+                color=color_map(idx), alpha=0.2, edgecolor='none'
             )
 
         plt.title('Quasiparticle Density in JJ Zones Over Time')
         plt.xlabel('Time (ns)')
-        plt.ylabel('QP Count per Bin')
+        plt.ylabel('Unique QP Count per Bin')
         plt.grid(True, linestyle='--', alpha=0.5)
-        plt.legend(title="Transmon JJs")
+        plt.legend(title="Transmon JJs", bbox_to_anchor=(1.01, 1), loc='upper left')
         plt.tight_layout()
-        plt.savefig('qp_density_plot.png', dpi=300)
-        print("Plot saved as 'qp_density_plot.png'")
+        plt.savefig('qp_density_line_plot.png', dpi=300)
+        print("Plot saved as 'qp_density_line_plot.png'")
 
-    def run(self):
-        qp_data_raw = self.parse_simulation_data()
-        qp_data_timed = self.calculate_absolute_step_times(qp_data_raw)
-        df_intervals = self.calculate_zone_intervals(qp_data_timed)
-        df_binned = self.bin_time_intervals(df_intervals)
-        self.plot_density(df_binned)
+    def run(self, graph_only=False):
+        """
+        Executes the analysis pipeline. If graph_only is True, skips calculation 
+        and directly plots from the existing binned CSV.
+        """
+        if graph_only:
+            print(f"Graph-only mode activated. Loading data directly from '{self.binned_csv}'...")
+            if os.path.exists(self.binned_csv):
+                df_binned = pd.read_csv(self.binned_csv)
+                self.plot_density(df_binned)
+            else:
+                print(f"Error: '{self.binned_csv}' not found. Please run the full pipeline first.")
+        else:
+            qp_data_raw = self.parse_simulation_data()
+            qp_data_timed = self.calculate_absolute_step_times(qp_data_raw)
+            df_intervals = self.calculate_zone_intervals(qp_data_timed)
+            df_binned = self.bin_time_intervals(df_intervals)
+            self.plot_density(df_binned)
 
 
 if __name__ == "__main__":
+    # Setup Argument Parser
+    parser = argparse.ArgumentParser(description="Analyze Quasiparticle SLURM output.")
+    parser.add_argument(
+        '-g', '--graph-only', 
+        action='store_true', 
+        help="Skip log parsing/binning and only generate the graph from existing CSVs."
+    )
+    args = parser.parse_args()
+
     SLURM_OUTPUT = "simulation_output.txt"
     JJ_COORDINATES = ""
     
@@ -301,4 +297,5 @@ if __name__ == "__main__":
         time_bin_size_ns=100.0   
     )
     
-    analyzer.run()
+    # Pass the argument to the run method
+    analyzer.run(graph_only=args.graph_only)
