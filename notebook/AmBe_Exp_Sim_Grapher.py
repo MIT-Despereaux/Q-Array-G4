@@ -24,7 +24,6 @@ df_exp = pd.read_csv(exp_file)
 exp_centers = df_exp['energy_keV'].values
 
 # Calculate the precise bin edges from the experimental centers
-# (Assuming uniform spacing in the experimental data, ~5.033 keV)
 bin_width = exp_centers[1] - exp_centers[0]
 bins = np.append(exp_centers - (bin_width / 2), exp_centers[-1] + (bin_width / 2))
 
@@ -37,10 +36,9 @@ n_per_sec = activity_ci * n_per_sec_1Ci  # 22,200 neutrons/s
 simulated_events = 25e6     # 25 million runs
 sim_time = simulated_events / n_per_sec  # ~1126 seconds
 
-efficiency = 0.77  # From the fact the experimental trigger efficiency
+efficiency = 0.77 
 
 # Scale factor: (1 / (time * bin_width)) * efficiency
-# Notice we use the dynamically calculated bin_width here
 scale_factor = (1.0 / (sim_time * bin_width)) * efficiency
 
 # Function to calculate manually scaled rates and errors
@@ -62,7 +60,7 @@ c_gamma   = "#EC2A8C"
 c_accent  = '#9E6ED0' 
 c_exp     = '#FF8C00' 
 
-def plot_spectrum(x_min, x_max, filename):
+def plot_spectrum(x_min, x_max, filename, log_scale=False):
     fig, ax = plt.subplots(figsize=(10, 6))
     fig.patch.set_facecolor('white')
 
@@ -104,8 +102,21 @@ def plot_spectrum(x_min, x_max, filename):
         max_exp_y, min_exp_y = 0, 0
 
     max_y = max(max_sim_y, max_exp_y)
-    min_y = min(0, min(min_sim_y, min_exp_y)) 
-    ax.set_ylim(min_y, max_y * 1.05)
+
+    if log_scale:
+        ax.set_yscale('log')
+        # Find the smallest positive value to set a clean bottom bound for the log axis
+        sim_pos = rate_total[sim_mask]
+        min_pos_sim = np.min(sim_pos[sim_pos > 0]) if np.any(sim_pos > 0) else 1e-5
+        
+        exp_pos = exp_subset['subtracted_rate']
+        min_pos_exp = np.min(exp_pos[exp_pos > 0]) if np.any(exp_pos > 0) else 1e-5
+        
+        min_y = min(min_pos_sim, min_pos_exp)
+        ax.set_ylim(min_y * 0.5, max_y * 2.0) # slightly wider buffer for log view
+    else:
+        min_y = min(0, min(min_sim_y, min_exp_y)) 
+        ax.set_ylim(min_y, max_y * 1.05)
 
     ax.set_xlim(x_min, x_max)
     ax.set_xlabel('Deposited Energy (keV)', fontsize=12)
@@ -120,5 +131,8 @@ def plot_spectrum(x_min, x_max, filename):
 # ==========================================
 # 5. GENERATE PLOTS
 # ==========================================
-plot_spectrum(0, 1400, 'Spectrum_Overlay_0_1400_Aligned.png')
-plot_spectrum(24, 200, 'Spectrum_Overlay_0_200_Aligned.png')
+# Plot 1: Full Range (0 - 1400 keV) - LOG SCALE
+plot_spectrum(0, 1400, 'Spectrum_Overlay_0_1400_Log.png', log_scale=True)
+
+# Plot 2: Low Energy Focus (24 - 200 keV) - LINEAR SCALE
+plot_spectrum(24, 200, 'Spectrum_Overlay_0_200_Linear.png', log_scale=False)

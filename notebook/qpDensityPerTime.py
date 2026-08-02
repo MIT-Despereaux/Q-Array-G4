@@ -254,7 +254,7 @@ class QuasiparticleAnalyzer:
         plt.grid(True, linestyle='--', alpha=0.5)
         plt.legend(title="Transmon JJs", bbox_to_anchor=(1.01, 1), loc='upper left')
         plt.tight_layout()
-        plt.savefig('qp_density_line_plot.png', dpi=300)
+        plt.savefig('qp_density_line_plot.png', transparent=True, dpi=300)
         print("Plot saved as 'qp_density_line_plot.png'")
 
     def run(self, graph_only=False):
