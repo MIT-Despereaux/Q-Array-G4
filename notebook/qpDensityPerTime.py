@@ -5,6 +5,13 @@ import matplotlib.pyplot as plt
 import os
 import argparse
 
+
+"""
+This will graph QP density over time near JJ. you will need to manually feed in location of center of JJ. Currently I have it configured for a different chip
+It will then draw a 100 um circle around each of these centers, linearly interpolate between subsquent steps of QP, and determine if a coord exists.
+It will also calculate global time of each QP by relating KE to velocity and using StepLeng to determine time. Getting ratio of length to determine start and stop time in the medium
+"""
+
 class QuasiparticleAnalyzer:
     def __init__(self, slurm_file, jj_csv_file, zone_radius_mm=0.1, time_bin_size_ns=100.0):
         self.slurm_file = slurm_file

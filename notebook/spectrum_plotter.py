@@ -32,8 +32,6 @@ def load_simulated_energies(filename):
 sim_energies = load_simulated_energies('./output/initial_data/primary_neutrons.csv')
 
 # 2. Load the reference spectrum data
-#ref_df = pd.read_csv('./scripts/Gamma_Spectrum_v2.csv')
-# 2. Load the reference spectrum data
 ref_df = pd.read_csv('./scripts/ISO_neutron_spectrum.csv')
 ref_df.columns = [c.strip() for c in ref_df.columns]  # Clean up any accidental spaces
 
@@ -41,28 +39,42 @@ E_ref = ref_df.iloc[:, 0].values  # First column: Energy points
 B_ref = ref_df.iloc[:, 1].values  # Second column: Weights/Rates
 
 # 3. Normalize the reference data by sum to yield fractional weights
-#B_ref_fractional = B_ref / np.sum(B_ref)
 B_ref_fractional = B_ref
 
 # 4. Generate the Comparison Plot
 plt.figure(figsize=(10, 6))
 
-# Calculate fractional weights for simulated data so height equals relative frequency
-sim_weights = np.ones_like(sim_energies) / len(sim_energies)
+# Define uniform binning starting at 0
+bin_width = 0.2
+max_E = 11.0 
+num_bins = int(max_E / bin_width) + 1
+bins = np.linspace(0, max_E, num_bins)
+bin_centers = bins[:-1] + (bin_width / 2)
 
-# Plot Simulated Data
-plt.hist(sim_energies, bins=E_ref, weights=sim_weights, alpha=0.35, 
-         color='#ed7b7b', edgecolor='#ed7b7b', label='Simulated Data (Fraction of Total)')
+# Compute histogram arrays for simulated data
+counts, edges = np.histogram(sim_energies, bins=bins)
+total_particles = len(sim_energies)
+fractions = counts / total_particles
 
-# Plot Reference Data on top
-plt.plot(E_ref, B_ref_fractional, color='royalblue', linewidth=2, 
-         zorder=10, label='Reference Spectrum (Fractional Weights)')
+# Assuming Poisson statistics for error bars: error = sqrt(N) / N_total
+fraction_errors = np.sqrt(counts) / total_particles
+
+# Plot Simulated Data as a bar chart with explicit error bars
+plt.bar(edges[:-1], fractions, width=bin_width, align='edge', 
+        alpha=0.35, color='#ed7b7b', edgecolor='#ed7b7b', 
+        yerr=fraction_errors, ecolor='#EC2A8C', capsize=2, 
+        label='Simulated Data (Fraction of Total)')
+
+# Interpolate and plot reference data aligned to bin centers
+ref_binned = np.interp(bin_centers, E_ref, B_ref_fractional)
+plt.plot(bin_centers, ref_binned, color='royalblue', linewidth=2, 
+         zorder=10, label='Reference Spectrum')
 
 # 5. Formatting the Plot
 plt.xlabel('Energy (MeV)')
-plt.ylabel('Fraction of Total Particles')
+plt.ylabel(f'Fraction of total particles (per {bin_width} MeV bin)')
 plt.title('Comparison of Simulated Data vs. Reference: Gammas')
-plt.xlim(0, max(E_ref)) 
+plt.xlim(0, max_E) 
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend(loc='upper right')
 

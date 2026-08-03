@@ -1,12 +1,12 @@
 # Centered DSPX cosmic-ray visualization. Run with an executable configured using:
 #   cmake -S . -B build-dspx -DQARRAY_DETECTOR_GEOMETRY=DSPX
 
-/run/numberOfThreads 8
+/run/numberOfThreads 1
 
 /control/verbose 0
 /run/verbose 0
 /event/verbose 0
-/tracking/verbose 1
+/tracking/verbose 2
 /process/verbose 0
 # Turned to 2 so you can see the secondary particles list in the console
 
@@ -19,7 +19,7 @@
 /QR/geom/useQubitArray true
 #/QR/physics/killLowEnergyPhonons true
 
-/QR/output/filename ../output/g4sim/q_array_cmp/test_two_QPBIRTH.csv
+/QR/output/filename ../output/g4sim/q_array_cmp/keV_Mac_Test_V1.csv
 # swap this to .root when using cluster
 /QR/output/writeSteps true
 /QR/output/writeAllEvents true
@@ -30,13 +30,13 @@
 # =========================================================================
 # 1. PRE-INITIALIZATION (G4CMP Physics Parameter Tweak)
 # =========================================================================
-/g4cmp/phononBounces 50
-/g4cmp/qpBounces 50
+/g4cmp/phononBounces 100
+/g4cmp/qpBounces 100
 
 # CRITICAL CHANGE: We turn production back ON so the primary particle 
 # can generate phonons/QPs inside the cube.
-/g4cmp/producePhonons 0.000001                                                                                                           
-#/g4cmp/producePhonons 1.0
+#/g4cmp/producePhonons 0.000001                                                                                                           
+/g4cmp/producePhonons 1.0
 
 /g4cmp/produceCharges 1.0
 # gets rid of the holes and electrons as we only wanna look at qps
@@ -44,16 +44,16 @@
 # Group the 5 keV energy into 2.5 keV discrete visual paths.
 # This guarantees you will see exactly ~2 clean primary visual tracks 
 # on screen instead of a massive drive-clogging cloud.
-/g4cmp/samplingEnergy 10 eV
+/g4cmp/samplingEnergy 0.1 eV
 #/g4cmp/minEPhonons 0.1 eV
 
-/g4cmp/sampleLuke 0.
-#/g4cmp/maxLukePhonons 100000
+/g4cmp/sampleLuke 1.0
+/g4cmp/maxLukePhonons 100
 
 #/g4cmp/minEPhonons 0.000001 eV   
 /g4cmp/minEPhonons 0.00033 eV
 /g4cmp/recordMinETracks false
-/g4cmp/combiningStepLength 100 um
+/g4cmp/combiningStepLength 20 um
 /g4cmp/eTrappingMFP 50 um
 /g4cmp/hTrappingMFP 50 um
 
@@ -61,7 +61,7 @@
 # 2. NOW INITIALIZE THE GEOMETRY AND PHYSICS TABLES
 # =========================================================================
 # Set production cuts to 0 so even meV/eV secondary ions are tracked
-/run/setCut 0.1 mm
+/run/setCut 5 um
 /run/setCutForAGivenParticle e- 0.1 mm
 /run/setCutForAGivenParticle proton 0.1 mm
 
@@ -98,9 +98,9 @@
 # >>> Configure sources below (Original working position)
 /QR/generator/mode gps
 /random/setSeeds 123456 567890
-#/gps/particle e-
+/gps/particle e-
 #/gps/particle neutron
-/gps/particle gamma
+#/gps/particle gamma
 
 # --- SINGLE PRIMARY TRACKER ---
 # This setup fires from outside directly through the crystal cube,

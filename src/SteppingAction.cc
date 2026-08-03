@@ -36,6 +36,27 @@ namespace QArray
       track->SetTrackStatus(fStopAndKill); 
       return;                              
     }
+    
+    // -------------------------------------------------------------------------
+    // THE 2D QUASIPARTICLE CATCHER (Boolean Seam Workaround)
+    // -------------------------------------------------------------------------
+    G4String particleName = track->GetDefinition()->GetParticleName();
+    
+    // Ensure exact name matching (check your specific QP naming convention)
+    if (particleName == "BogoliubovQP")
+    {
+      G4double zPre = step->GetPreStepPoint()->GetPosition().z();
+      G4double zPost = step->GetPostStepPoint()->GetPosition().z();
+
+      // Use a safer 1 micrometer tolerance to avoid killing valid diffusion,
+      // while still easily catching the 5.5mm teleportation glitch.
+      if (std::abs(zPost - zPre) > 1.0 * um || zPost < 0.0 * mm)
+      {
+        track->SetTrackStatus(fStopAndKill); 
+        return;                              
+      }
+    }
+
     // -------------------------------------------------------------------------
     // 1. DYNAMIC MACRO QUERY VIA METADATA REGISTRY
     // -------------------------------------------------------------------------
