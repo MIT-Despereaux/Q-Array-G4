@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+"""
+ISO AmBe spectrum versus simulated, less useful.
+"""
+
 # 1. Load and parse the raw simulation data (handling keV vs MeV)
 def load_simulated_energies(filename):
     energies_mev = []

@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.colors import LinearSegmentedColormap
 
+"""
+Birth/Death graphs for spacial location (color coded by energy) and energy distribution. Takes in a CSV file.
+"""
+
 # =====================================================================
 # CONFIGURATION
 # =====================================================================

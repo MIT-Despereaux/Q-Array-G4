@@ -9,6 +9,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 
+"""
+Heatmap of Immortal QP, good for showing if diffusion is getting stuck on internal boundaries.
+"""
+
+
 # ==========================================
 # CONFIGURATION
 # ==========================================

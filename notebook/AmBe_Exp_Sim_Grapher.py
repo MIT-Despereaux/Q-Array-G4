@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+"""
+Useful for comparing experimental Edep spectrum of AmBe on Sn to simulated.
+"""
 # ==========================================
 # 1. READ DATA
 # ==========================================
