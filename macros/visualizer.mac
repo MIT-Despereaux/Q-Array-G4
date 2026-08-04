@@ -14,7 +14,7 @@
 /QR/geom/constructLab true
 /QR/geom/constructFridge true
 /QR/geom/addPb false
-/QR/geom/useQubitArray false
+/QR/geom/useQubitArray true
 
 # 2. DISABLE ALL DATA OUTPUT
 /QR/output/enable false

@@ -8,6 +8,7 @@
 
 #include "G4Box.hh"
 #include "G4SystemOfUnits.hh"
+#include "CADMesh.hh" // <-- Added to allow STL loading
 
 ExtrudedLayerBuilder::ExtrudedLayerBuilder()
   : fMaterial(nullptr), 
@@ -42,56 +43,69 @@ G4VPhysicalVolume* ExtrudedLayerBuilder::BuildUnifiedLayer(
     const std::vector<std::vector<G4TwoVector>>& polygons,
     G4double totalThicknessFromJSON)
 {
-    if (!fMaterial || !motherVolume || polygons.empty()) return nullptr;
+    if (!fMaterial || !motherVolume) return nullptr;
 
-    G4double halfThickness = totalThicknessFromJSON / 2.0;
-    G4TwoVector offset(0,0);
-    std::vector<G4VSolid*> subSolids;
+    G4VSolid* unifiedSolid = nullptr;
 
-    G4cout << "\n[DEBUG-EXTRUDED] Extruding " << polygons.size() << " polygons..." << G4endl;
-
-    for (size_t i = 0; i < polygons.size(); ++i) {
-        auto poly = polygons[i];
-        EnsureClockwiseWinding(poly);
-        G4String sName = fNamePrefix + "_SubSolid_" + std::to_string(i);
-        subSolids.push_back(new G4ExtrudedSolid(sName, poly, halfThickness, offset, 1.0, offset, 1.0));
-    }
-
-
+    // ---------------------------------------------------------
+    // GEOMETRY TOGGLE: STL vs GDS Binary Tree
+    // Set to 'true' to load the STL file directly via CADMesh.
+    // Set to 'false' to run the G4ExtrudedSolid binary tree.
+    // ---------------------------------------------------------
+    bool useSTL = true; 
     
-    // Binary Tree Union: Merges solids pairwise to avoid stack overflow
-    G4cout << "[DEBUG-EXTRUDED] Unifying solids into single compound geometry..." << G4endl;
-    while (subSolids.size() > 1) {
-        std::vector<G4VSolid*> nextLevel;
-        for (size_t i = 0; i < subSolids.size(); i += 2) {
-            if (i + 1 < subSolids.size()) {
-                G4String uName = fNamePrefix + "_Union_" + std::to_string(i);
-                nextLevel.push_back(new G4UnionSolid(uName, subSolids[i], subSolids[i+1]));
-            } else {
-                nextLevel.push_back(subSolids[i]);
-            }
+    if (useSTL) {
+        G4cout << "\n[DEBUG-EXTRUDED] OVERRIDE: Building Layer using STL CADMesh..." << G4endl;
+        
+        // Hardcoded path to the STL output from the python script
+        G4String stlPath = "../output/extracted_chip_5_0_stl.stl"; 
+        
+        auto mesh = CADMesh::TessellatedMesh::FromSTL(stlPath);
+        mesh->SetScale(um);
+        unifiedSolid = mesh->GetSolid();
+        
+        if (!unifiedSolid) {
+            G4cerr << "[DEBUG-EXTRUDED] CRITICAL ERROR: Could not load STL at: " << stlPath << G4endl;
+            return nullptr;
         }
-        subSolids = nextLevel;
+    } 
+    else {
+        if (polygons.empty()) return nullptr;
+
+        G4double halfThickness = totalThicknessFromJSON / 2.0;
+        G4TwoVector offset(0,0);
+        std::vector<G4VSolid*> subSolids;
+
+        G4cout << "\n[DEBUG-EXTRUDED] Extruding " << polygons.size() << " polygons..." << G4endl;
+
+        for (size_t i = 0; i < polygons.size(); ++i) {
+            auto poly = polygons[i];
+            EnsureClockwiseWinding(poly);
+            G4String sName = fNamePrefix + "_SubSolid_" + std::to_string(i);
+            subSolids.push_back(new G4ExtrudedSolid(sName, poly, halfThickness, offset, 1.0, offset, 1.0));
+        }
+        
+        // Binary Tree Union: Merges solids pairwise to avoid stack overflow
+        G4cout << "[DEBUG-EXTRUDED] Unifying solids into single compound geometry..." << G4endl;
+        while (subSolids.size() > 1) {
+            std::vector<G4VSolid*> nextLevel;
+            for (size_t i = 0; i < subSolids.size(); i += 2) {
+                if (i + 1 < subSolids.size()) {
+                    G4String uName = fNamePrefix + "_Union_" + std::to_string(i);
+                    nextLevel.push_back(new G4UnionSolid(uName, subSolids[i], subSolids[i+1]));
+                } else {
+                    nextLevel.push_back(subSolids[i]);
+                }
+            }
+            subSolids = nextLevel;
+        }
+        unifiedSolid = subSolids[0]; // The default GDS binary tree solid
     }
 
-    G4VSolid* unifiedSolid = subSolids[0]; // The default GDS binary tree solid
-
     // ---------------------------------------------------------
-    // DIAGNOSTIC TOGGLE: Primitive Swap Test
-    // Set to 'true' to override the GDS solid with a G4Box.
-    // Set to 'false' to run your normal binary tree.
+    // Volume generation remains identical, preserving all naming
+    // conventions for Sensitive Detectors and Lattice linking.
     // ---------------------------------------------------------
-
-    /*
-    bool useSimpleBoxTest = true; 
-    
-    if (useSimpleBoxTest) {
-        // G4Box takes HALF-dimensions: 2.5mm = 5mm total width, 100nm = 200nm total height
-        unifiedSolid = new G4Box("GroundPlane_Solid_Primitive", 2.5 * mm, 2.5 * mm, 100.0 * nm);
-        G4cout << "[DEBUG-EXTRUDED] OVERRIDE: Using G4Box primitive instead of binary tree!" << G4endl;
-    }
-    // ---------------------------------------------------------
-    */
 
     G4String logicName = fNamePrefix + "_Logic";
     fUnifiedLogical = new G4LogicalVolume(unifiedSolid, fMaterial, logicName);
@@ -110,24 +124,6 @@ G4VPhysicalVolume* ExtrudedLayerBuilder::BuildUnifiedLayer(
 
     G4cout << "[DEBUG-EXTRUDED] Successfully built unified physical volume: " << physName << G4endl;
     return phys;
-    /*
-    // --- ADD THIS TEMPORARILY ---
-    for (size_t i = 0; i < subSolids.size(); i++) {
-        G4LogicalVolume* debugLog = new G4LogicalVolume(
-            subSolids[i], fMaterial, fNamePrefix + "_DebugLog_" + std::to_string(i));
-        
-        new G4PVPlacement(
-            fRotation, 
-            fPosition, 
-            debugLog, 
-            fNamePrefix + "_DebugPhys_" + std::to_string(i), 
-            motherVolume, 
-            false, 
-            i, 
-            false);
-    }
-    return nullptr; // We don't return a unified volume here.
-    */
 }
 
 void ExtrudedLayerBuilder::AssignSensitiveDetector(G4VSensitiveDetector* sd)
