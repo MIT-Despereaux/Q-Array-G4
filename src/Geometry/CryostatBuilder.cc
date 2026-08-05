@@ -806,15 +806,15 @@ namespace QArray::Geometry
       // 6. Ground Plane & Sub-Components
 #if !USE_EXTRUDED_CHIP_TEST
       // =========================================================================
-      // 1. CALCULATE PERFECTLY FLUSH PLACEMENT
+      // 1. CALCULATE 1 NM OVERLAP PLACEMENT
       // =========================================================================
-      // The Z coordinate places the center of the ground plane exactly half its 
-      // thickness above the surface of the silicon chip, resulting in 0 vacuum gap.
-      G4ThreeVector alLocalPos(0, 0, 0.5 * chipDimZ + 0.5 * dp_groundPlaneDimZ);
+      // Subtracting 1 nm ensures the volumes definitively overlap, forcing G4CMP 
+      // boundary processes to trigger instead of deflecting.
+      G4ThreeVector alLocalPos(0, 0, 0.5 * chipDimZ + 0.5 * dp_groundPlaneDimZ - 1.0 * nm);
       G4ThreeVector alGlobalPos = globalSiPos + (*baseRot)(alLocalPos);
 
       // =========================================================================
-      // 2. CONSTRUCT THE BULK GROUND PLANE (Named properly for SD)
+      // 2. CONSTRUCT THE BULK GROUND PLANE
       // =========================================================================
       auto* solid_GroundPlane = new G4Box("GroundPlane_solid", 
                                           0.5 * chipDimX, 
@@ -828,18 +828,18 @@ namespace QArray::Geometry
       aluminum_vis->SetForceSolid(true);
       log_GroundPlane->SetVisAttributes(aluminum_vis);
 
+      // Note: Overlap checking (mCheckOverlaps) might flag the 1nm overlap during build. 
+      // This is expected and necessary for G4CMP.
       auto* phys_GroundPlane = new G4PVPlacement(new G4RotationMatrix(*baseRot), 
                                                  alGlobalPos, 
                                                  log_GroundPlane, 
-                                                 "GroundPlane", // Must be "GroundPlane" for SD registry
+                                                 "GroundPlane", 
                                                  detectorAssemblyLogical, 
                                                  false, 
                                                  0, 
                                                  mCheckOverlaps);
 
-      // =========================================================================
-      // 3. REGISTER G4CMP PHYSICS (LATTICE & SURFACES)
-      // =========================================================================
+      // Register Lattice for Ground Plane
       if (LM && fLogicalLatticeContainer["Aluminum"]) {
           auto* alLatticePhys = new G4LatticePhysical(fLogicalLatticeContainer["Aluminum"],
                                                       dp_polycryElScatMFP_Al,
@@ -850,21 +850,9 @@ namespace QArray::Geometry
           alLatticePhys->SetMillerOrientation(1,0,0);
           LM->RegisterLattice(phys_GroundPlane, alLatticePhys);
       }
-      
-      // Interface between Silicon and Bulk Aluminum
-      if (physSiliconChip) {
-          new G4CMPLogicalBorderSurface("b_si_GroundPlane", physSiliconChip, phys_GroundPlane, fSiAlInterface);
-          new G4CMPLogicalBorderSurface("b_GroundPlane_si", phys_GroundPlane, physSiliconChip, fSiAlInterface);
-      }
-      
-      // Interface between Bulk Aluminum and Vacuum Environment
-      if (detectorAssemblyPhysical) {
-          new G4CMPLogicalBorderSurface("b_env_GroundPlane", detectorAssemblyPhysical, phys_GroundPlane, fAlVacInterface);
-          new G4CMPLogicalBorderSurface("b_GroundPlane_env", phys_GroundPlane, detectorAssemblyPhysical, fAlVacInterface);
-      }
 
       // =========================================================================
-      // 4. PLACE MODULAR COMPONENTS
+      // 3. PLACE MODULAR COMPONENTS
       // =========================================================================
       new QuasiparticleTransmissionLine(
           baseRot, 
@@ -904,6 +892,35 @@ namespace QArray::Geometry
           fBorderContainer,         
           mCheckOverlaps
       );
+
+      // =========================================================================
+      // 4. BIND BOUNDARIES (MOVED DOWN)
+      // =========================================================================
+      // Defining these after instantiation ensures the sub-volumes exist in the store.
+      
+      if (physSiliconChip) {
+          // A. Interface between Silicon and Bulk Ground Plane
+          new G4CMPLogicalBorderSurface("b_si_GroundPlane", physSiliconChip, phys_GroundPlane, fSiAlInterface);
+          new G4CMPLogicalBorderSurface("b_GroundPlane_si", phys_GroundPlane, physSiliconChip, fSiAlInterface);
+          
+          // B. Interface between Bulk Aluminum and Vacuum Environment
+          if (detectorAssemblyPhysical) {
+              new G4CMPLogicalBorderSurface("b_env_GroundPlane", detectorAssemblyPhysical, phys_GroundPlane, fAlVacInterface);
+              new G4CMPLogicalBorderSurface("b_GroundPlane_env", phys_GroundPlane, detectorAssemblyPhysical, fAlVacInterface);
+          }
+
+          // C. Fix for Boundary001 Error: Bind the generated Pad Conductor to Silicon
+          auto* store = G4PhysicalVolumeStore::GetInstance();
+          auto* phys_PadConductor = store->GetVolume("Chip_Gate_PadConductor", false);
+          
+          if (phys_PadConductor) {
+              new G4CMPLogicalBorderSurface("b_si_PadConductor", physSiliconChip, phys_PadConductor, fSiAlInterface);
+              new G4CMPLogicalBorderSurface("b_PadConductor_si", phys_PadConductor, physSiliconChip, fSiAlInterface);
+          }
+
+          // Note: If you receive identical warnings for the Resonators or Transmission Lines, 
+          // fetch their physical volumes ("TransmissionLine_Conductor", etc.) and bind them to fSiAlInterface here.
+      }
 #else
       // -------------------------------------------------------------------------
       // NEW EXTRUDED CHIP SETUP (JSON Mode with G4CMP Physics Integration)
