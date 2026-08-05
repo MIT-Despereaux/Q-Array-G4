@@ -98,9 +98,9 @@
 # >>> Configure sources below (Original working position)
 /QR/generator/mode gps
 /random/setSeeds 123456 567890
-/gps/particle e-
+#/gps/particle e-
 #/gps/particle neutron
-#/gps/particle gamma
+/gps/particle gamma
 
 # --- SINGLE PRIMARY TRACKER ---
 # This setup fires from outside directly through the crystal cube,
@@ -118,7 +118,6 @@
 /gps/ene/type Mono
 #/gps/ene/mono 5.0 MeV
 /gps/ene/mono 1 keV
-
 
 # Fire 1 primary event
 /run/beamOn 1

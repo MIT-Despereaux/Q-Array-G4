@@ -4,13 +4,14 @@ gds_extract_chip.py
 
 Extracts a region of a GDS file, merges polygons, and cleans 
 collinear/microscopic vertices before exporting to JSON. 
-(Dicing grid removed for STL compatibility).
+(Updated to extract topological holes using Shapely).
 """
 
 import gdstk
 import json
 import os
 import math
+from shapely.geometry import Polygon as ShapelyPolygon, MultiPolygon
 
 def get_bounding_box(coords):
     x_coords = [p[0] for p in coords]
@@ -85,26 +86,45 @@ def extract_chip_geometry(gds_path, layer, datatype, region_coords, output_path)
     if not filtered_polygons: return
 
     print("[*] Merging overlapping polygons...")
-    # This boolean 'or' operation unites touching shapes into singular polygons
     merged_polygons = gdstk.boolean(filtered_polygons, [], "or")
     
     center_x = (min_x + max_x) / 2.0
     center_y = (min_y + max_y) / 2.0
     
-    print("[*] Cleaning and re-centering extracted polygons...")
+    print("[*] Cleaning and re-centering extracted polygons (with hole detection)...")
     export_polygons = []
     
-    # We now iterate directly over the united geometry, preserving its full, unbroken shape
     for poly in merged_polygons:
-        # 1. Zero-center the points (extracting only exterior points)
+        # 1. Zero-center the raw points
         centered_pts = [[pt[0] - center_x, pt[1] - center_y] for pt in poly.points]
         
-        # 2. Aggressively clean floating-point artifacts and collinearities
-        cleaned_pts = clean_polygon(centered_pts)
+        # 2. Convert to Shapely to resolve GDS cutlines into true holes
+        shapely_poly = ShapelyPolygon(centered_pts).buffer(0)
         
-        # 3. Only keep valid polygons
-        if len(cleaned_pts) >= 3:
-            export_polygons.append(cleaned_pts)
+        # buffer(0) can sometimes split weakly-connected shapes into a MultiPolygon
+        if isinstance(shapely_poly, MultiPolygon):
+            sub_polys = list(shapely_poly.geoms)
+        else:
+            sub_polys = [shapely_poly]
+            
+        for sp in sub_polys:
+            # 3. Extract and clean the exterior
+            ext_cleaned = clean_polygon(list(sp.exterior.coords))
+            if len(ext_cleaned) < 3:
+                continue
+                
+            # 4. Extract and clean the holes
+            holes_cleaned = []
+            for interior in sp.interiors:
+                h_cleaned = clean_polygon(list(interior.coords))
+                if len(h_cleaned) >= 3:
+                    holes_cleaned.append(h_cleaned)
+                    
+            # 5. Save in the new dictionary format
+            export_polygons.append({
+                "exterior": ext_cleaned,
+                "holes": holes_cleaned
+            })
             
     print(f"[*] Final export count after cleaning: {len(export_polygons)} unified shapes.")
         

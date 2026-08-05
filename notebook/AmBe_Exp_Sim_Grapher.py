@@ -33,6 +33,12 @@ bins = np.append(exp_centers - (bin_width / 2), exp_centers[-1] + (bin_width / 2
 # ==========================================
 # 3. SCALING FACTORS 
 # ==========================================
+
+"""
+Here is how I convert the simulated to experimental. We know that the source we're simulating is 10 mCi and we know how many neutron/gamma events we're simulating
+From this we could determine how many neutrons per curie should be released. we can use that to determine how many seconds this run is over
+By knowing time we can know how to bin. lastly we scale with efficiency of our experimental set up to equivalate the two.
+"""
 activity_ci = 0.01          # 10 mCi
 n_per_sec_1Ci = 2.2e6       # AmBe nominal yield per Curie
 n_per_sec = activity_ci * n_per_sec_1Ci  # 22,200 neutrons/s
