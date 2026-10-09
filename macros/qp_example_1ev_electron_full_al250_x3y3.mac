@@ -16,6 +16,8 @@
 /smoke/expectedMaterial G4_Si
 /smoke/expectedGroundPlaneMaterial G4_Al
 /smoke/expectedGroundPlaneThicknessNm 250
+# Merge the resonator and feedline base Al into the continuous ground-plane film.
+/smoke/mergeConnectedAl true
 /run/initialize
 /random/setSeeds {seed1} {seed2}
 /gps/number 1
