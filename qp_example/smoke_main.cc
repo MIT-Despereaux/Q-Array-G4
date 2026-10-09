@@ -21,11 +21,22 @@
 #include "G4VPhysicalVolume.hh"
 #include "G4PhysicalVolumeStore.hh"
 #include "G4Box.hh"
+#include "G4AffineTransform.hh"
+#include "G4LogicalVolume.hh"
+#include "G4Material.hh"
+#include "G4Navigator.hh"
+#include "G4Polyhedron.hh"
+#include "G4TransportationManager.hh"
+#include "G4CMPLogicalBorderSurface.hh"
+#include "G4RotationMatrix.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4Version.hh"
 #include <nlohmann/json.hpp>
 #include <chrono>
 #include <fstream>
+#include <functional>
+#include <tuple>
+#include <vector>
 #include <iomanip>
 #include <sstream>
 #include <set>
@@ -99,6 +110,9 @@ namespace QArray
     G4bool recordAllQPSteps = false;
     G4double qpSampleIntervalNs = 0.;
     G4String expectedMaterial;
+    G4String geometryDumpFile;
+    G4bool mergeConnectedAl = false;
+    nlohmann::json mergeReport;
     G4String expectedGroundPlaneMaterial;
     G4double expectedGroundPlaneThicknessNm = -1.;
     G4bool geometryValid = true;
@@ -161,6 +175,60 @@ namespace QArray
     G4GeneralParticleSource fGPS;
   };
 
+  // Record the ground plane and fail if it, or any volume patterned into it,
+  // does not match the macro's expected material and thickness.
+  void CheckGeometry(SmokeState& fState)
+  {
+    const auto* groundPlane =
+        G4PhysicalVolumeStore::GetInstance()->GetVolume("GroundPlane", false);
+    const auto* solid = groundPlane
+        ? dynamic_cast<const G4Box*>(groundPlane->GetLogicalVolume()->GetSolid()) : nullptr;
+    const auto material = groundPlane
+        ? groundPlane->GetLogicalVolume()->GetMaterial()->GetName() : G4String("missing");
+    const auto thicknessNm = solid ? 2. * solid->GetZHalfLength()/nm : -1.;
+    // Every volume patterned into the film (resonators, feedline, gaps) must
+    // span the full film thickness; a thinner one leaves Al above or below it.
+    G4int filmVolumes = 0;
+    G4int thinFilmVolumes = 0;
+    nlohmann::json thinNames = nlohmann::json::array();
+    std::function<void(const G4LogicalVolume*)> checkFilm = [&](const G4LogicalVolume* logical)
+    {
+      for (std::size_t i = 0; i < logical->GetNoDaughters(); ++i)
+      {
+        const auto* daughter = logical->GetDaughter(i)->GetLogicalVolume();
+        G4ThreeVector low, high;
+        daughter->GetSolid()->BoundingLimits(low, high);
+        ++filmVolumes;
+        // 0.01 nm tolerance: the stock feedline is deliberately ~2 pm thicker.
+        if (std::abs((high.z()-low.z())/nm - thicknessNm) > 0.01)
+        {
+          ++thinFilmVolumes;
+          if (thinNames.size() < 10)
+            thinNames.push_back({logical->GetDaughter(i)->GetName(), (high.z()-low.z())/nm});
+        }
+        checkFilm(daughter);
+      }
+    };
+    if (groundPlane) checkFilm(groundPlane->GetLogicalVolume());
+    fState.groundPlane = {{"material", material}, {"thickness_nm", thicknessNm},
+                          {"film_volumes", filmVolumes},
+                          {"film_volumes_not_full_thickness", thinFilmVolumes},
+                          {"first_thin_film_volumes_nm", thinNames}};
+    G4cout << "SMOKE_GROUND_PLANE " << fState.groundPlane.dump() << G4endl;
+
+    fState.geometryValid = groundPlane && solid;
+    if (!fState.expectedGroundPlaneMaterial.empty())
+      fState.geometryValid = fState.geometryValid &&
+        material == fState.expectedGroundPlaneMaterial;
+    if (fState.expectedGroundPlaneThicknessNm > 0.)
+      fState.geometryValid = fState.geometryValid &&
+        std::abs(thicknessNm-fState.expectedGroundPlaneThicknessNm) < 1e-6 &&
+        thinFilmVolumes == 0;
+    if (!fState.geometryValid)
+      G4Exception("SmokeRunAction", "SmokeGeometry", FatalException,
+                  "Ground-plane material, thickness, or patterned-film thickness does not match the macro");
+  }
+
   class SmokeRunAction : public G4UserRunAction
   {
   public:
@@ -173,26 +241,7 @@ namespace QArray
         G4Exception("SmokeRunAction", "SmokeConfiguration", FatalException,
                     "This workflow requires /g4cmp/recordMinETracks false");
 
-      const auto* groundPlane =
-          G4PhysicalVolumeStore::GetInstance()->GetVolume("GroundPlane", false);
-      const auto* solid = groundPlane
-          ? dynamic_cast<const G4Box*>(groundPlane->GetLogicalVolume()->GetSolid()) : nullptr;
-      const auto material = groundPlane
-          ? groundPlane->GetLogicalVolume()->GetMaterial()->GetName() : G4String("missing");
-      const auto thicknessNm = solid ? 2. * solid->GetZHalfLength()/nm : -1.;
-      fState.groundPlane = {{"material", material}, {"thickness_nm", thicknessNm}};
-      G4cout << "SMOKE_GROUND_PLANE " << fState.groundPlane.dump() << G4endl;
-
-      fState.geometryValid = groundPlane && solid;
-      if (!fState.expectedGroundPlaneMaterial.empty())
-        fState.geometryValid = fState.geometryValid &&
-          material == fState.expectedGroundPlaneMaterial;
-      if (fState.expectedGroundPlaneThicknessNm > 0.)
-        fState.geometryValid = fState.geometryValid &&
-          std::abs(thicknessNm-fState.expectedGroundPlaneThicknessNm) < 1e-6;
-      if (!fState.geometryValid)
-        G4Exception("SmokeRunAction", "SmokeGeometry", FatalException,
-                    "Ground-plane material or thickness does not match the macro");
+      CheckGeometry(fState);
     }
   private:
     SmokeState& fState;
@@ -400,6 +449,145 @@ namespace QArray
   };
 }
 
+namespace QArray
+{
+  // Write the upward-facing faces of every placed volume in global mm, one JSON
+  // object per line, so analysis plots can draw the as-built chip layout.
+  void DumpGeometryTopFaces(const G4String& path)
+  {
+    std::ofstream out(path);
+    auto* world = G4TransportationManager::GetTransportationManager()
+      ->GetNavigatorForTracking()->GetWorldVolume();
+    std::function<void(const G4VPhysicalVolume*, const G4AffineTransform&, G4int)> walk =
+      [&](const G4VPhysicalVolume* pv, const G4AffineTransform& parent, G4int depth)
+    {
+      const G4AffineTransform local(pv->GetRotation(), pv->GetTranslation());
+      G4AffineTransform global;
+      global.Product(local, parent);
+      const auto* logical = pv->GetLogicalVolume();
+      if (depth > 0)
+      {
+        auto* polyhedron = logical->GetSolid()->CreatePolyhedron();
+        for (G4int face = 1; polyhedron && face <= polyhedron->GetNoFacets(); ++face)
+        {
+          const auto normal = global.TransformAxis(G4ThreeVector(
+            polyhedron->GetNormal(face).x(), polyhedron->GetNormal(face).y(),
+            polyhedron->GetNormal(face).z())).unit();
+          if (normal.z() < 0.99) continue;
+          G4int n = 0;
+          G4Point3D nodes[4];
+          polyhedron->GetFacet(face, n, nodes);
+          nlohmann::json polygon = nlohmann::json::array();
+          G4double z = 0.;
+          for (G4int i = 0; i < n; ++i)
+          {
+            const auto p = global.TransformPoint(G4ThreeVector(nodes[i].x(), nodes[i].y(), nodes[i].z()));
+            polygon.push_back({p.x()/mm, p.y()/mm});
+            z = p.z()/mm;
+          }
+          out << nlohmann::json{{"volume", pv->GetName()}, {"material", logical->GetMaterial()->GetName()},
+                                {"depth", depth}, {"z_mm", z}, {"polygon", polygon}}.dump() << '\n';
+        }
+        delete polyhedron;
+      }
+      for (std::size_t i = 0; i < logical->GetNoDaughters(); ++i)
+        walk(logical->GetDaughter(i), global, depth+1);
+    };
+    walk(world, G4AffineTransform(), 0);
+  }
+}
+
+namespace QArray
+{
+  // The stock example builds each resonator and the feedline on its own Al
+  // "base" volume embedded in the ground plane. Those bases are the same
+  // continuous film, but G4CMP's QP transport treats the Al-Al volume boundary
+  // asymmetrically. With mergeConnectedAl, every Al volume placed directly in
+  // the ground plane is dissolved into it: its daughters (gaps, pads) are moved
+  // into the ground plane with unchanged global placement, and its Al-vacuum
+  // border surfaces are re-created against the ground plane.
+  class MergedAlDetectorConstruction : public QuasiparticleDetectorConstruction
+  {
+  public:
+    explicit MergedAlDetectorConstruction(SmokeState& state) : fState(state) {}
+    G4VPhysicalVolume* Construct() override
+    {
+      auto* world = QuasiparticleDetectorConstruction::Construct();
+      if (fState.mergeConnectedAl) Merge();
+      return world;
+    }
+  private:
+    void Merge()
+    {
+      auto* plane = G4PhysicalVolumeStore::GetInstance()->GetVolume("GroundPlane", false);
+      if (!plane) G4Exception("MergedAlDetectorConstruction", "SmokeMerge", FatalException,
+                              "No GroundPlane volume to merge into");
+      auto* planeLog = plane->GetLogicalVolume();
+      const auto* planeMat = planeLog->GetMaterial();
+      G4int dissolved = 0, moved = 0, borders = 0;
+      nlohmann::json names = nlohmann::json::array();
+      for (G4bool changed = true; changed;)
+      {
+        changed = false;
+        for (std::size_t i = 0; i < planeLog->GetNoDaughters(); ++i)
+        {
+          auto* base = planeLog->GetDaughter(i);
+          auto* baseLog = base->GetLogicalVolume();
+          if (baseLog->GetMaterial() != planeMat) continue;
+          const auto baseRot = base->GetObjectRotationValue();
+          const auto baseTrans = base->GetObjectTranslation();
+          std::vector<G4VPhysicalVolume*> children;
+          for (std::size_t j = 0; j < baseLog->GetNoDaughters(); ++j)
+            children.push_back(baseLog->GetDaughter(j));
+          for (auto* child : children)
+          {
+            const G4RotationMatrix rot = baseRot * child->GetObjectRotationValue();
+            const G4ThreeVector trans = baseRot * child->GetObjectTranslation() + baseTrans;
+            baseLog->RemoveDaughter(child);
+            child->SetMotherLogical(planeLog);
+            child->SetRotation(rot.isIdentity() ? nullptr : new G4RotationMatrix(rot.inverse()));
+            child->SetTranslation(trans);
+            planeLog->AddDaughter(child);
+            ++moved;
+            // Carry the base's surface with this child over to the ground plane.
+            for (const auto& [from, to, a, b] : {std::tuple{base, child, plane, child},
+                                                 std::tuple{child, base, child, plane}})
+            {
+              auto* surface = G4CMPLogicalBorderSurface::GetSurface(from, to);
+              if (!surface || G4CMPLogicalBorderSurface::GetSurface(a, b)) continue;
+              new G4CMPLogicalBorderSurface(a->GetName()+"_merged_"+b->GetName(), a, b,
+                                            surface->GetSurfaceProperty());
+              ++borders;
+            }
+          }
+          planeLog->RemoveDaughter(base);
+          names.push_back(base->GetName());
+          ++dissolved;
+          changed = true;
+          break;
+        }
+      }
+      // Every remaining ground-plane daughter must have a defined surface both ways.
+      nlohmann::json missing = nlohmann::json::array();
+      for (std::size_t i = 0; i < planeLog->GetNoDaughters(); ++i)
+      {
+        auto* d = planeLog->GetDaughter(i);
+        const auto* in = G4CMPLogicalBorderSurface::GetSurface(plane, d);
+        const auto* out = G4CMPLogicalBorderSurface::GetSurface(d, plane);
+        if (!in || !out || in->GetSurfaceProperty() != out->GetSurfaceProperty())
+          missing.push_back({d->GetName(), d->GetLogicalVolume()->GetMaterial()->GetName(),
+                             in != nullptr, out != nullptr});
+      }
+      fState.mergeReport = {{"dissolved_al_volumes", dissolved}, {"moved_daughters", moved},
+                            {"daughters_missing_ground_plane_border", missing},
+                            {"borders_created", borders}, {"dissolved_names", names},
+                            {"ground_plane_daughters", planeLog->GetNoDaughters()}};
+      G4cout << "SMOKE_MERGE_AL " << fState.mergeReport.dump() << G4endl;
+    }
+    SmokeState& fState;
+  };
+}
+
 int main(int argc, char** argv)
 {
   if (argc != 2 && argc != 4) { G4cerr << "usage: qp_example_smoke macro.mac [seed1 seed2]\n"; return EXIT_FAILURE; }
@@ -408,6 +596,8 @@ int main(int argc, char** argv)
   if (!state.StepsReady()) { G4cerr << "Cannot write step output\n"; return EXIT_FAILURE; }
   G4GenericMessenger messenger(&state, "/smoke/", "Bounded transport validation");
   messenger.DeclareProperty("maxQPSteps", state.maxQPSteps);
+  messenger.DeclareProperty("dumpGeometry", state.geometryDumpFile);
+  messenger.DeclareProperty("mergeConnectedAl", state.mergeConnectedAl);
   messenger.DeclareProperty("requireQPs", state.requireQPs);
   messenger.DeclareProperty("recordAllQPSteps", state.recordAllQPSteps);
   messenger.DeclareProperty("qpSampleIntervalNs", state.qpSampleIntervalNs);
@@ -417,7 +607,7 @@ int main(int argc, char** argv)
   G4CMPConfigManager::Instance();
   QuasiparticleConfigManager::Instance();
   auto* manager = new G4RunManager;
-  manager->SetUserInitialization(new QuasiparticleDetectorConstruction);
+  manager->SetUserInitialization(new QArray::MergedAlDetectorConstruction(state));
   G4PhysListFactory factory;
   auto* physics = factory.GetReferencePhysList("QBBC_EMV");
   physics->SetVerboseLevel(0);
@@ -431,12 +621,18 @@ int main(int argc, char** argv)
   ui->ApplyCommand("/control/alias seed1 "+seed1);
   ui->ApplyCommand("/control/alias seed2 "+seed2);
   const auto status = ui->ApplyCommand(G4String("/control/execute ")+argv[1]);
+  if (status == 0 && !state.geometryDumpFile.empty())
+  {
+    QArray::CheckGeometry(state);
+    QArray::DumpGeometryTopFaces(state.geometryDumpFile);
+  }
   const G4bool passed = status == 0 && !state.aborted && state.geometryValid &&
     (state.expectedMaterial.empty() || state.primary.value("material", G4String()) == state.expectedMaterial) &&
     (!state.requireQPs || (state.qpTracks > 0 && !state.movingQPTracks.empty()));
   nlohmann::json summary = {{"passed", passed}, {"ui_status", status}, {"aborted", state.aborted},
     {"completed_events", state.completedEvents}, {"primary", state.primary},
-    {"ground_plane", state.groundPlane},
+    {"ground_plane", state.groundPlane}, {"merge_connected_al", state.mergeConnectedAl},
+    {"merge_report", state.mergeReport},
     {"primary_edep_eV", state.primaryEdep/eV}, {"phonon_tracks", state.phononTracks},
     {"qp_tracks", state.qpTracks}, {"moving_qp_tracks", state.movingQPTracks.size()},
     {"qp_step_rows", state.qpStepRows}, {"record_all_qp_steps", state.recordAllQPSteps},

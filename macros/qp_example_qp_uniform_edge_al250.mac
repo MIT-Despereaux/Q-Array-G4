@@ -1,0 +1,31 @@
+# Single near-gap QPs started uniformly in a 0.56 mm square straddling resonator 2's right edge (x = 2.412 mm).
+# A transparent, unbiased boundary keeps the two halves at equal density.
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/g4cmp/recordMinETracks false
+/g4cmp/phononBounces 10000
+/g4cmp/qpBounces 1000000
+/g4cmp/minEPhonons 0.00035 eV
+/g4cmp/samplingEnergy 100 eV
+/smoke/maxQPSteps 0
+/smoke/recordAllQPSteps false
+/smoke/qpSampleIntervalNs 100
+/smoke/requireQPs true
+/smoke/expectedMaterial G4_Al
+/smoke/expectedGroundPlaneMaterial G4_Al
+/smoke/expectedGroundPlaneThicknessNm 250
+/run/initialize
+/random/setSeeds {seed1} {seed2}
+/gps/number 1
+/gps/particle BogoliubovQP
+/gps/pos/type Plane
+/gps/pos/shape Square
+/gps/pos/centre 2.412 1.0 5.000225 mm
+/gps/pos/halfx 0.28 mm
+/gps/pos/halfy 0.28 mm
+/gps/direction -1 0 0
+/gps/ene/type Mono
+/gps/ene/mono 0.00019 eV
+/run/beamOn 2000

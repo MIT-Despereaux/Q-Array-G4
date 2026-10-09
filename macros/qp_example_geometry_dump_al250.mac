@@ -1,0 +1,8 @@
+# Write the as-built 250 nm Al chip layout (upward faces, global mm) for plots.
+/control/verbose 0
+/run/verbose 0
+/g4cmp/recordMinETracks false
+/smoke/expectedGroundPlaneMaterial G4_Al
+/smoke/expectedGroundPlaneThicknessNm 250
+/smoke/dumpGeometry geometry_top_faces.jsonl
+/run/initialize

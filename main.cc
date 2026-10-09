@@ -6,6 +6,7 @@
 #include "DetectorConstruction_LEIDEN_II.hh"
 #endif
 #include "ActionInitialization.hh"
+#include "EventAction.hh"
 
 #include "G4RunManagerFactory.hh"
 #include "G4SteppingVerbose.hh"
@@ -21,6 +22,7 @@
 // ---------------------
 
 #include "MCSampler.hh"
+#include <cstdlib>
 
 using namespace QArray;
 
@@ -86,7 +88,15 @@ int main(int argc, char **argv)
     // batch mode
     G4String command = "/control/execute ";
     G4String fileName = argv[1];
-    UImanager->ApplyCommand(command + fileName);
+    const auto result = UImanager->ApplyCommand(command + fileName);
+    if (result != 0 || EventAction::HadAbortedEvents())
+    {
+      G4cerr << "Failed to execute macro " << fileName << ": UI status " << result
+             << ", aborted events=" << EventAction::HadAbortedEvents() << G4endl;
+      delete visManager;
+      delete runManager;
+      return EXIT_FAILURE;
+    }
   }
   else
   {

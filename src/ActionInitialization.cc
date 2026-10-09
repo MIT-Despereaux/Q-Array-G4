@@ -4,6 +4,7 @@
 #include "EventAction.hh"
 #include "TrackingAction.hh"
 #include "SteppingAction.hh"
+#include "G4CMPStackingAction.hh"
 
 namespace QArray
 {
@@ -16,6 +17,7 @@ namespace QArray
   {
     PrimaryGeneratorAction *primary = new PrimaryGeneratorAction();
     SetUserAction(primary);
+    SetUserAction(new G4CMPStackingAction);
 
     RunAction *runAction = new RunAction(primary);
     SetUserAction(runAction);

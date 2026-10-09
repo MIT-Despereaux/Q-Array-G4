@@ -27,7 +27,37 @@ case "${1:-phonon}" in
     mode=phonon-1mev-full-al250
     executable=qp_example_smoke_al250
     ;;
-  *) echo "usage: $0 [geometry|phonon|electron|electron-full|electron-10mev-full-al250|electron-10mev-full-al250-capped|electron-10mev-full-al250-cap1m|phonon-1mev-full-al250]" >&2; exit 2 ;;
+  geometry-dump-al250)
+    macro=qp_example_geometry_dump_al250.mac
+    mode=geometry-dump-al250
+    executable=qp_example_smoke_al250
+    ;;
+  electron-100mev-full-al250)
+    macro=qp_example_100mev_electron_full_al250.mac
+    mode=electron-100mev-full-al250
+    executable=qp_example_smoke_al250
+    ;;
+  electron-10ev-full-al250)
+    macro=qp_example_10ev_electron_full_al250.mac
+    mode=electron-10ev-full-al250
+    executable=qp_example_smoke_al250
+    ;;
+  electron-1ev-full-al250)
+    macro=qp_example_1ev_electron_full_al250.mac
+    mode=electron-1ev-full-al250
+    executable=qp_example_smoke_al250
+    ;;
+  electron-1ev-full-al250-x3y3)
+    macro=qp_example_1ev_electron_full_al250_x3y3.mac
+    mode=electron-1ev-full-al250-x3y3
+    executable=qp_example_smoke_al250
+    ;;
+  electron-10ev-full-al250-x3y3)
+    macro=qp_example_10ev_electron_full_al250_x3y3.mac
+    mode=electron-10ev-full-al250-x3y3
+    executable=qp_example_smoke_al250
+    ;;
+  *) echo "usage: $0 [geometry|phonon|electron|electron-full|electron-10mev-full-al250|electron-10mev-full-al250-capped|electron-10mev-full-al250-cap1m|phonon-1mev-full-al250|geometry-dump-al250|electron-100mev-full-al250|electron-10ev-full-al250|electron-1ev-full-al250|electron-1ev-full-al250-x3y3|electron-10ev-full-al250-x3y3]" >&2; exit 2 ;;
 esac
 deps_root=${QARRAY_DEPS_ROOT:-"$HOME/qarray-deps"}
 build_dir=${QARRAY_QP_BUILD_DIR:-"$repo_root/build-qp-example-stock"}

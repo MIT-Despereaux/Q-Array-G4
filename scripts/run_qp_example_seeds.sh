@@ -23,7 +23,12 @@ mode=${1:-}; n=${2:-}; first=${3:-1}; jobs=${4:-4}
 case "$mode" in
   electron-10mev-full-al250) macro=qp_example_10mev_electron_full_al250.mac ;;
   phonon-1mev-full-al250) macro=qp_example_1mev_phonon_full_al250.mac ;;
-  *) echo "usage: $0 {electron-10mev-full-al250|phonon-1mev-full-al250} N_SEEDS [FIRST_SEED] [MAX_PARALLEL]" >&2; exit 2 ;;
+  electron-1ev-full-al250) macro=qp_example_1ev_electron_full_al250.mac ;;
+  electron-1ev-full-al250-x3y3) macro=qp_example_1ev_electron_full_al250_x3y3.mac ;;
+  electron-10ev-full-al250-x3y3) macro=qp_example_10ev_electron_full_al250_x3y3.mac ;;
+  electron-10ev-full-al250) macro=qp_example_10ev_electron_full_al250.mac ;;
+  electron-100mev-full-al250) macro=qp_example_100mev_electron_full_al250.mac ;;
+  *) echo "usage: $0 {electron-10mev-full-al250|electron-100mev-full-al250|electron-10ev-full-al250|electron-1ev-full-al250|electron-1ev-full-al250-x3y3|electron-10ev-full-al250-x3y3|phonon-1mev-full-al250} N_SEEDS [FIRST_SEED] [MAX_PARALLEL]" >&2; exit 2 ;;
 esac
 [[ "$n" =~ ^[0-9]+$ && "$n" -ge 1 ]] || { echo "N_SEEDS must be a positive integer" >&2; exit 2; }
 if [[ ! -x "$build_dir/$executable" || ! -d "$G4LATTICEDATA" ]]; then

@@ -10,9 +10,19 @@
 #include "G4RunManager.hh"
 
 #include <exception>
+#include <atomic>
 
 namespace QArray
 {
+  namespace
+  {
+    std::atomic<G4bool> hadAbortedEvents{false};
+  }
+
+  G4bool EventAction::HadAbortedEvents()
+  {
+    return hadAbortedEvents.load();
+  }
   inline EventAction::timept getms()
   {
     return std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::system_clock::now());
@@ -89,6 +99,11 @@ namespace QArray
 
   void EventAction::EndOfEventAction(const G4Event *event)
   {
+    if (event->IsAborted())
+    {
+      hadAbortedEvents.store(true);
+      G4cerr << "SIMULATION_EVENT_ABORTED event=" << event->GetEventID() << G4endl;
+    }
     if (iReportProgress)
     {
       G4int eventID = event->GetEventID();

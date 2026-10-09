@@ -11,6 +11,7 @@
 /QR/output/writeSteps true
 /QR/output/filename dspx_sn_only_scoring
 
+/g4cmp/recordMinETracks false
 /run/initialize
 
 /QR/generator/mode particleGun

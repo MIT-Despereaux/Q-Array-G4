@@ -1166,6 +1166,10 @@ std::vector<G4TwoVector> padPolygon;
       }
 
       std::filesystem::path stlPath = std::filesystem::path("../src/Geometry") / spec.filename;
+      if (!std::filesystem::exists(stlPath)) {
+        const auto copiedMesh = std::filesystem::path(spec.filename).filename();
+        if (std::filesystem::exists(copiedMesh)) stlPath = copiedMesh;
+      }
 
       // =========================================================================================
       // CRITICAL DEBUG: Print the absolute system path so you know exactly where it's looking

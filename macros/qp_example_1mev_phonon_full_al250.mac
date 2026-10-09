@@ -4,8 +4,8 @@
 /event/verbose 0
 /tracking/verbose 0
 /g4cmp/recordMinETracks false
-/g4cmp/phononBounces 10
-/g4cmp/qpBounces 100
+/g4cmp/phononBounces 10000
+/g4cmp/qpBounces 1000000
 /g4cmp/minEPhonons 0.00035 eV
 /g4cmp/samplingEnergy 1 eV
 /smoke/maxQPSteps 0

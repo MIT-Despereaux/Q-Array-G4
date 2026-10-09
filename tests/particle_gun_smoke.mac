@@ -1,4 +1,5 @@
 # Minimal no-visualization smoke test for the default particle gun path.
+/g4cmp/recordMinETracks false
 /run/initialize
 /QR/generator/mode particleGun
 /QR/generator/sideL 0.05 m

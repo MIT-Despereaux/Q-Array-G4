@@ -168,102 +168,43 @@ namespace QArray
 
   void DetectorConstruction::ConstructSDandField()
   {
-#ifdef USE_G4CMP
-    auto* LM = G4LatticeManager::GetLatticeManager();
-    auto meta = Metadata::GetInstance();
-    auto* store = G4PhysicalVolumeStore::GetInstance();
-
-    // Safe multi-threaded lookup matching dynamic macro configurations
-    if (meta->GetBool("/QR/geom/useQubitArray"))
-    {
-      // 1. Map tracking substrate
-      auto* physSiliconChip = store->GetVolume("SiliconChip", false);
-      if (physSiliconChip) {
-        auto* latSilicon = LM->LoadLattice(physSiliconChip->GetLogicalVolume()->GetMaterial(), "Si");
-        auto* crystalSilicon = new G4LatticePhysical(latSilicon);
-        crystalSilicon->SetMillerOrientation(1, 0, 0);
-        LM->RegisterLattice(physSiliconChip, crystalSilicon);
-      }
-
-      // 2. Map copper housing structure 
-      // *** COMMENTED OUT TO PREVENT PHONON CRASH IN MACROSCOPIC METAL ***
-      /*
-      auto* physQubitHousing = store->GetVolume("QubitHousing", false);
-      if (physQubitHousing) {
-        auto* latHousing = LM->LoadLattice(physQubitHousing->GetLogicalVolume()->GetMaterial(), "Cu");
-        auto* crystalHousing = new G4LatticePhysical(latHousing);
-        crystalHousing->SetMillerOrientation(1, 0, 0);
-        LM->RegisterLattice(physQubitHousing, crystalHousing);
-      }
-      */
-
-      // 3. Map dynamic superconducting ground plane(s) - UPDATED FOR MULTIPLE EXTRUDED VOLUMES
-      /*
-      for (auto* physVol : *store) {
-          G4String pName = physVol->GetName();
-          // This will match "GroundPlane", "GroundPlane_Extruded_Phys_0", etc.
-          if (pName.find("GroundPlane") != std::string::npos) {
-              using namespace QuasiparticleDetectorParameters;
-              auto* latGround = LM->LoadLattice(physVol->GetLogicalVolume()->GetMaterial(), "Al");
-              auto* crystalGround = new G4LatticePhysical(latGround, dp_polycryElScatMFP_Al, dp_scDelta0_Al, dp_scTeff_Al, dp_scDn_Al, dp_scTauQPTrap_Al);
-              crystalGround->SetMillerOrientation(1, 0, 0);
-              LM->RegisterLattice(physVol, crystalGround);
-          }
-      }
-      */
-    else
-    {
-      // Classic Calibration Run Fallback Mode
-      auto* crystalPhys = store->GetVolume("DetectorSnCubePhysical", false);
-      if (crystalPhys) {
-        auto* latticeLogical = LM->LoadLattice(crystalPhys->GetLogicalVolume()->GetMaterial(), "Si");
-        auto* crystalLattice = new G4LatticePhysical(latticeLogical);
-        crystalLattice->SetMillerOrientation(1, 0, 0);
-        LM->RegisterLattice(crystalPhys, crystalLattice);
-      }
-    }
-#endif
-
-// 1. Fetch the Logical Volume Store and SD Manager
     auto* lvStore = G4LogicalVolumeStore::GetInstance();
-    auto* sdm = G4SDManager::GetSDMpointer();
-
-    // 2. Keep your existing Silicon setup (assuming it works fine)
-    auto* siliconSD = new QArray::SensitiveDetector("SiliconSD", true, "SiliconHits");
-    sdm->AddNewDetector(siliconSD);
-    auto* log_siliconChip = lvStore->GetVolume("SiliconChip_log", false);
-    if (log_siliconChip) {
-        log_siliconChip->SetSensitiveDetector(siliconSD);
+    if (!Metadata::GetInstance()->GetBool("/QR/geom/useQubitArray"))
+    {
+      // Keep calibration scoring compatible with the DSPX inventory tests.
+      for (auto* logical : *lvStore)
+      {
+        const auto& logicalName = logical->GetName();
+        const auto& materialName = logical->GetMaterial()->GetName();
+        const auto detectorName = ScoringDetectorName(logicalName);
+        const G4bool registrationOnly =
+            materialName == "G4_AIR" || materialName == "G4_Galactic";
+        logical->SetSensitiveDetector(new SensitiveDetector(detectorName));
+        G4cout << "DSPX_SCORING logical=" << logicalName
+               << " detector=" << detectorName
+               << " material=" << materialName
+               << " requirement=" << (registrationOnly ? "registration" : "positive")
+               << G4endl;
+      }
+      return;
     }
 
-    // 3. Dynamically assign unique SDs to all Ground, Transmission, and Resonator volumes
-    for (auto* lv : *lvStore) 
+    auto* siliconSD = new SensitiveDetector("SiliconSD", true, "SiliconHits");
+    if (auto* chip = lvStore->GetVolume("SiliconChip_log", false))
+      chip->SetSensitiveDetector(siliconSD);
+    for (auto* logical : *lvStore)
     {
-        G4String name = lv->GetName();
-        
-        // Skip SiliconChip_log since we just handled it
-        if (name == "SiliconChip_log") continue;
-
-        // If the logical volume name contains any of our target keywords...
-        // If the logical volume name contains any of our target keywords...
-        if (name.find("GroundPlane") != std::string::npos ||
-            name.find("TransmissionLine") != std::string::npos ||
-            name.find("ResonatorAssembly") != std::string::npos ||
-            name.find("Chip_Gate") != std::string::npos ||
-            name.find("DetectorSnCube") != std::string::npos)// <-- ADD THIS  
-        {
-            // Make sure we haven't already assigned an SD to this volume
-            if (lv->GetSensitiveDetector() == nullptr) 
-            {
-                // Create a completely unique SD specifically for this logical volume
-                G4String sdName = name + "_SD";
-                G4String hcName = name + "_Hits";
-                
-                auto* uniqueSD = new QArray::SensitiveDetector(sdName, true, hcName);
-                sdm->AddNewDetector(uniqueSD);
-                lv->SetSensitiveDetector(uniqueSD);
-            }
-        }
+      const G4String name = logical->GetName();
+      if (name == "SiliconChip_log") continue;
+      if (name.find("GroundPlane") != std::string::npos ||
+               name.find("TransmissionLine") != std::string::npos ||
+               name.find("ResonatorAssembly") != std::string::npos ||
+               name.find("Chip_Gate") != std::string::npos)
+      {
+        if (!logical->GetSensitiveDetector())
+          logical->SetSensitiveDetector(new SensitiveDetector(name + "_SD", true,
+                                                               name + "_Hits"));
+      }
     }
   }
   void DetectorConstruction::ConstructFridge()

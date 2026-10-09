@@ -171,6 +171,7 @@ endif()
 # Add the executable, and link it to the Geant4 and G4CMP libraries
 #
 add_executable(main main.cc ${sources} ${headers})
+target_include_directories(main PRIVATE ${G4CMP_INCLUDE_DIRS})
 target_link_libraries(main ${Geant4_LIBRARIES} ${G4CMP_LIBRARIES} nlohmann_json::nlohmann_json)
 target_compile_definitions(main PRIVATE QARRAY_DETECTOR_GEOMETRY_${QARRAY_DETECTOR_GEOMETRY})
 if(WITH_CRY)

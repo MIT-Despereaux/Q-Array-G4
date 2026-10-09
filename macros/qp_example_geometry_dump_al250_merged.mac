@@ -1,0 +1,9 @@
+# Write the 250 nm Al chip layout with connected Al merged into the ground plane.
+/control/verbose 0
+/run/verbose 0
+/g4cmp/recordMinETracks false
+/smoke/expectedGroundPlaneMaterial G4_Al
+/smoke/expectedGroundPlaneThicknessNm 250
+/smoke/mergeConnectedAl true
+/smoke/dumpGeometry geometry_top_faces.jsonl
+/run/initialize

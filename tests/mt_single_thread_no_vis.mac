@@ -5,6 +5,7 @@
 /QR/geom/addPb true
 /QR/geom/tableVer 20230601
 
+/g4cmp/recordMinETracks false
 /run/initialize
 
 /QR/generator/mode particleGun

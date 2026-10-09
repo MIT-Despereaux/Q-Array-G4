@@ -1,4 +1,5 @@
 # This macro should fail in default builds where WITH_CRY is OFF.
 /QR/generator/mode cry
+/g4cmp/recordMinETracks false
 /run/initialize
 /run/beamOn 1

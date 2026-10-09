@@ -10,7 +10,11 @@
 /QR/output/writeSteps true
 /QR/output/filename energy_deposition_dspx
 
+/g4cmp/recordMinETracks false
 /run/initialize
+# This test checks ordinary energy deposition and detector inventory.
+# QP transport is checked separately by the GDS phonon macro.
+/process/inactivate G4CMPSecondaryProduction
 
 /QR/generator/mode volumeScan
 

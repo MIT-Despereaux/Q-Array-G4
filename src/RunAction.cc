@@ -9,6 +9,7 @@
 #include "G4LogicalVolume.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4CMPConfigManager.hh"
 
 namespace QArray
 {
@@ -61,6 +62,9 @@ namespace QArray
 
   void RunAction::BeginOfRunAction(const G4Run *run)
   {
+    G4cout << "G4CMP_RECORD_MIN_E_TRACKS value="
+           << (G4CMPConfigManager::RecordMinETracks() ? "true" : "false")
+           << G4endl;
     if (isMaster)
     {
       // load the random state from the uuid seed

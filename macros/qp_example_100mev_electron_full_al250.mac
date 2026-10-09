@@ -1,0 +1,28 @@
+# One fully recorded 100 meV electron event with a 250 nm aluminum ground plane.
+/control/verbose 1
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+/g4cmp/recordMinETracks false
+/g4cmp/phononBounces 10000
+/g4cmp/qpBounces 1000000
+/g4cmp/minEPhonons 0.00035 eV
+# The 100 meV event is below this threshold, so secondary production is not downsampled.
+/g4cmp/samplingEnergy 1 eV
+/smoke/maxQPSteps 0
+/smoke/recordAllQPSteps false
+/smoke/qpSampleIntervalNs 100
+/smoke/requireQPs true
+/smoke/expectedMaterial G4_Si
+/smoke/expectedGroundPlaneMaterial G4_Al
+/smoke/expectedGroundPlaneThicknessNm 250
+/run/initialize
+/random/setSeeds {seed1} {seed2}
+/gps/number 1
+/gps/particle e-
+/gps/pos/type Point
+/gps/pos/centre 0 0 5.0 mm
+/gps/direction 0 0 1
+/gps/ene/type Mono
+/gps/ene/mono 100 meV
+/run/beamOn 1
