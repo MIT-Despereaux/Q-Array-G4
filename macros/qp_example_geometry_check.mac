@@ -1,0 +1,5 @@
+# Initialize the unchanged G4CMP quasiparticle example geometry.
+/control/verbose 0
+/run/verbose 0
+/g4cmp/recordMinETracks false
+/run/initialize

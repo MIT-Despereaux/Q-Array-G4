@@ -1,0 +1,22 @@
+# One phonon inside the stock example's aluminum resonator base layer.
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/g4cmp/recordMinETracks false
+/g4cmp/phononBounces 10
+/g4cmp/qpBounces 20
+/g4cmp/minEPhonons 0.00035 eV
+/smoke/maxQPSteps 1000
+/smoke/requireQPs true
+/smoke/expectedMaterial G4_Al
+/run/initialize
+/random/setSeeds 148854 4824
+/gps/number 1
+/gps/particle phononTF
+/gps/pos/type Point
+/gps/pos/centre -2.1 1.8 5.000145 mm
+/gps/direction 1 0 0
+/gps/ene/type Mono
+/gps/ene/mono 0.001 eV
+/run/beamOn 1

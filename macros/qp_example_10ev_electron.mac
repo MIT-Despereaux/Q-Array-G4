@@ -1,0 +1,23 @@
+# One 10 eV electron at lateral center, 100 nm below the silicon's top face.
+/control/verbose 0
+/run/verbose 0
+/event/verbose 0
+/tracking/verbose 0
+/g4cmp/recordMinETracks false
+/g4cmp/phononBounces 10
+/g4cmp/qpBounces 20
+/g4cmp/minEPhonons 0.00035 eV
+/g4cmp/samplingEnergy 1 eV
+/smoke/maxQPSteps 1000
+/smoke/requireQPs true
+/smoke/expectedMaterial G4_Si
+/run/initialize
+/random/setSeeds 148854 4824
+/gps/number 1
+/gps/particle e-
+/gps/pos/type Point
+/gps/pos/centre 0 0 5.0 mm
+/gps/direction 0 0 1
+/gps/ene/type Mono
+/gps/ene/mono 10 eV
+/run/beamOn 1

@@ -1,0 +1,27 @@
+# One uncapped 1 meV transverse-fast phonon in the 250 nm aluminum geometry.
+/control/verbose 1
+/run/verbose 1
+/event/verbose 0
+/tracking/verbose 0
+/g4cmp/recordMinETracks false
+/g4cmp/phononBounces 10
+/g4cmp/qpBounces 100
+/g4cmp/minEPhonons 0.00035 eV
+/g4cmp/samplingEnergy 1 eV
+/smoke/maxQPSteps 0
+/smoke/recordAllQPSteps false
+/smoke/qpSampleIntervalNs 100
+/smoke/requireQPs true
+/smoke/expectedMaterial G4_Al
+/smoke/expectedGroundPlaneMaterial G4_Al
+/smoke/expectedGroundPlaneThicknessNm 250
+/run/initialize
+/random/setSeeds {seed1} {seed2}
+/gps/number 1
+/gps/particle phononTF
+/gps/pos/type Point
+/gps/pos/centre -2.1 1.8 5.000145 mm
+/gps/direction 1 0 0
+/gps/ene/type Mono
+/gps/ene/mono 0.001 eV
+/run/beamOn 1
